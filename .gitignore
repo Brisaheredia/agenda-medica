@@ -16,3 +16,10 @@ target/
 # OS
 .DS_Store
 Thumbs.db
+
+# Archivos generados por TypeScript/Vite
+*.tsbuildinfo
+/frontend/vite.config.js
+/frontend/vite.config.d.ts
+/frontend-anterior/vite.config.js
+/frontend-anterior/vite.config.d.ts
