@@ -5,6 +5,7 @@ import type { Franja, NuevoPaciente, Paciente } from "../types";
 import { hora, reservable } from "../types";
 import { Icon } from "./Icon";
 import { Modal } from "./Modal";
+import { PacienteForm } from "./PacienteForm";
 const vacio: NuevoPaciente = {
   dni: "",
   nombre: "",
@@ -265,61 +266,15 @@ export function BookingPanel({
           busy={guardando}
           close={() => setCrear(false)}
         >
-          <form onSubmit={guardarPaciente} className="stack">
-            <p className="muted">
-              Al guardar, quedará seleccionado para este turno.
-            </p>
-            <fieldset disabled={guardando}>
-              <div className="form-grid">
-                {(
-                  ["dni", "nombre", "apellido", "telefono", "email"] as const
-                ).map((campo) => (
-                  <label key={campo}>
-                    {
-                      {
-                        dni: "DNI",
-                        nombre: "Nombre",
-                        apellido: "Apellido",
-                        telefono: "Teléfono",
-                        email: "Email",
-                      }[campo]
-                    }
-                    <input
-                      type={
-                        campo === "email"
-                          ? "email"
-                          : campo === "telefono"
-                            ? "tel"
-                            : "text"
-                      }
-                      required={["dni", "nombre", "apellido"].includes(campo)}
-                      maxLength={
-                        campo === "dni"
-                          ? 20
-                          : campo === "telefono"
-                            ? 50
-                            : campo === "email"
-                              ? 150
-                              : 100
-                      }
-                      value={nuevo[campo]}
-                      onChange={(e) =>
-                        setNuevo({ ...nuevo, [campo]: e.target.value })
-                      }
-                    />
-                  </label>
-                ))}
-              </div>
-              {error && (
-                <p className="alert error" role="alert">
-                  {error}
-                </p>
-              )}
-              <button className="primary full">
-                {guardando ? "Guardando…" : "Guardar y seleccionar"}
-              </button>
-            </fieldset>
-          </form>
+          <PacienteForm
+            value={nuevo}
+            busy={guardando}
+            intro="Al guardar, quedar? seleccionado para este turno."
+            error={error}
+            submitLabel={guardando ? "Guardando?" : "Guardar y seleccionar"}
+            onChange={(campo, value) => setNuevo({ ...nuevo, [campo]: value })}
+            onSubmit={guardarPaciente}
+          />
         </Modal>
       )}
     </section>

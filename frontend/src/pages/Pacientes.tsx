@@ -4,6 +4,7 @@ import { abortado, detalleError } from "../api";
 import type { NuevoPaciente, Paciente } from "../types";
 import { Icon } from "../components/Icon";
 import { Modal } from "../components/Modal";
+import { PacienteForm } from "../components/PacienteForm";
 
 const vacio: NuevoPaciente = {
   dni: "",
@@ -265,67 +266,15 @@ export function PacientesPage({
           busy={mutando}
           close={() => setModal(false)}
         >
-          <form className="stack" onSubmit={guardar}>
-            <fieldset disabled={mutando}>
-              <div className="form-grid">
-                {(
-                  ["dni", "nombre", "apellido", "telefono", "email"] as const
-                ).map((campo) => (
-                  <label key={campo}>
-                    {
-                      {
-                        dni: "DNI",
-                        nombre: "Nombre",
-                        apellido: "Apellido",
-                        telefono: "Teléfono",
-                        email: "Email",
-                      }[campo]
-                    }
-                    <input
-                      type={
-                        campo === "email"
-                          ? "email"
-                          : campo === "telefono"
-                            ? "tel"
-                            : "text"
-                      }
-                      required={["dni", "nombre", "apellido"].includes(campo)}
-                      maxLength={
-                        campo === "dni"
-                          ? 20
-                          : campo === "telefono"
-                            ? 50
-                            : campo === "email"
-                              ? 150
-                              : 100
-                      }
-                      value={form[campo]}
-                      onChange={(e) =>
-                        setForm({ ...form, [campo]: e.target.value })
-                      }
-                    />
-                  </label>
-                ))}
-              </div>
-              {error && (
-                <p className="alert error" role="alert">
-                  {error}
-                </p>
-              )}
-              <div className="dialog-actions">
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => setModal(false)}
-                >
-                  Cancelar
-                </button>
-                <button className="primary">
-                  {mutando ? "Guardando…" : "Guardar paciente"}
-                </button>
-              </div>
-            </fieldset>
-          </form>
+          <PacienteForm
+            value={form}
+            busy={mutando}
+            error={error}
+            submitLabel={mutando ? "Guardando?" : "Guardar paciente"}
+            onChange={(campo, value) => setForm({ ...form, [campo]: value })}
+            onSubmit={guardar}
+            onCancel={() => setModal(false)}
+          />
         </Modal>
       )}
 

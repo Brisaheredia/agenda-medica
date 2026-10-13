@@ -315,6 +315,9 @@ small {
   padding: 14px 12px;
   font-weight: 500;
 }
+a.nav-item {
+  text-decoration: none;
+}
 .nav-item.active {
   background: var(--primary);
   color: #fff;
