@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { detalleError } from "../api";
 import { hoy, moverDia } from "../types";
+import { CalendarioSemanalDisponibilidad } from "../components/CalendarioSemanalDisponibilidad";
 import { Icon } from "../components/Icon";
 
 type Props = {
@@ -10,7 +11,7 @@ type Props = {
   api: <T>(path: string, options?: RequestInit) => Promise<T>;
 };
 
-const dias = [
+const diasSemana = [
   ["MONDAY", "Lunes"],
   ["TUESDAY", "Martes"],
   ["WEDNESDAY", "Miércoles"],
@@ -38,7 +39,6 @@ export function DisponibilidadPage({
   const [generando, setGenerando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
-
   async function guardarPlantilla(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!profesionalId || busy || guardandoPlantilla) return;
@@ -126,6 +126,11 @@ export function DisponibilidadPage({
         </div>
       )}
 
+      <CalendarioSemanalDisponibilidad
+        profesionalId={profesionalId}
+        api={api}
+      />
+
       <div className="availability-forms">
         <form className="card availability-form" onSubmit={guardarPlantilla}>
           <div className="panel-heading">
@@ -144,7 +149,7 @@ export function DisponibilidadPage({
                 value={diaSemana}
                 onChange={(e) => setDiaSemana(e.target.value)}
               >
-                {dias.map(([valor, etiqueta]) => (
+                {diasSemana.map(([valor, etiqueta]) => (
                   <option key={valor} value={valor}>
                     {etiqueta}
                   </option>
