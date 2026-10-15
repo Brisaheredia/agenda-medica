@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, abortado, crearApi, detalleError } from "./api";
-import { crearDemoApi } from "./demo";
-import type {
-  Profesional,
-  Sesion,
-  Turno,
-} from "./types";
+import type { Profesional, Sesion, Turno } from "./types";
 import { fechaLarga, hoy, moverDia } from "./types";
 import { TurnoDialog } from "./components/TurnoDialog";
 import type { Accion } from "./components/TurnoDialog";
@@ -21,44 +16,8 @@ import { AppLayout } from "./components/AppLayout";
 import "./styles.css";
 
 export default function App() {
-  const [demo, setDemo] = useState(
-    () => new URLSearchParams(window.location.search).get("demo") === "1",
-  );
-  const [version, setVersion] = useState(0);
-  function cambiarModo(value: boolean) {
-    const url = new URL(window.location.href);
-    if (value) url.searchParams.set("demo", "1");
-    else url.searchParams.delete("demo");
-    window.history.replaceState(null, "", url);
-    setDemo(value);
-  }
-  return (
-    <AgendaApp
-      key={`${demo}-${version}`}
-      demo={demo}
-      cambiarModo={cambiarModo}
-      reiniciarDemo={() => setVersion((n) => n + 1)}
-    />
-  );
-}
-
-function AgendaApp({
-  demo,
-  cambiarModo,
-  reiniciarDemo,
-}: {
-  demo: boolean;
-  cambiarModo: (value: boolean) => void;
-  reiniciarDemo: () => void;
-}) {
   const { pathname: ruta, navigate } = usePathname();
   const [sesion, setSesion] = useState<Sesion | null>(() => {
-    if (demo)
-      return {
-        token: "demo-in-memory",
-        email: "Datos de ejemplo",
-        rol: "ADMIN",
-      };
     try {
       const s = JSON.parse(localStorage.getItem("agendaSesion") ?? "null");
       return s?.token &&
@@ -85,22 +44,35 @@ function AgendaApp({
   );
   const mutation = useRef(false);
   const salir = useCallback(() => {
-    if (demo) {
-      cambiarModo(false);
-      return;
-    }
     localStorage.removeItem("agendaSesion");
     setSesion(null);
     setProfesional(null);
     setDialog(null);
     setMensaje(null);
-  }, [demo, cambiarModo]);
-  const api = useMemo(
-    () => (demo ? crearDemoApi() : crearApi(sesion, salir)),
-    [demo, sesion, salir],
-  );
-  const agenda = useAgenda({ api, habilitada: ruta === "/", sesionActiva: !!sesion, profesional });
-  const { fecha, setFecha, franjas, turnos, setRevision, cargando, errorAgenda, setErrorAgenda, selected, setSelected, filtro, setFiltro, ready } = agenda;
+  }, []);
+  const api = useMemo(() => crearApi(sesion, salir), [sesion, salir]);
+  const agenda = useAgenda({
+    api,
+    habilitada: ruta === "/",
+    sesionActiva: !!sesion,
+    profesional,
+  });
+  const {
+    fecha,
+    setFecha,
+    franjas,
+    turnos,
+    setRevision,
+    cargando,
+    errorAgenda,
+    setErrorAgenda,
+    selected,
+    setSelected,
+    irAFranja,
+    filtro,
+    setFiltro,
+    ready,
+  } = agenda;
   const gestionar = sesion?.rol === "ADMIN" || sesion?.rol === "RECEPCION";
   const cerrar = sesion?.rol === "ADMIN" || sesion?.rol === "MEDICO";
 
@@ -121,8 +93,6 @@ function AgendaApp({
       });
     return () => controller.abort();
   }, [api, sesion, intentoProfesional]);
-
-
 
   async function login(e: React.FormEvent) {
     e.preventDefault();
@@ -192,45 +162,128 @@ function AgendaApp({
     }
   }
 
-  if (!sesion) return (
-    <LoginPage email={email} setEmail={setEmail} password={password} setPassword={setPassword} busy={loginBusy} mensaje={mensaje} ingresar={login} probarDemo={() => cambiarModo(true)} />
-  );
+  if (!sesion)
+    return (
+      <LoginPage
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        busy={loginBusy}
+        mensaje={mensaje}
+        ingresar={login}
+      />
+    );
 
   const disponibilidad = ruta === "/disponibilidad";
   const pacientesPage = ruta === "/pacientes";
   const bloqueosPage = ruta === "/bloqueos";
   const auditoriaPage = ruta === "/auditoria";
-  const menu: { icon: string; label: string; href?: string; active?: boolean }[] = [
+  const menu: {
+    icon: string;
+    label: string;
+    href?: string;
+    active?: boolean;
+  }[] = [
     { icon: "calendar", label: "Agenda", href: "/", active: ruta === "/" },
-    { icon: "people", label: "Pacientes", href: "/pacientes", active: pacientesPage },
-    { icon: "clock", label: "Disponibilidad", href: "/disponibilidad", active: disponibilidad },
-    { icon: "block", label: "Bloqueos y excepciones", href: "/bloqueos", active: bloqueosPage },
-    { icon: "audit", label: "Auditoria", href: "/auditoria", active: auditoriaPage },
+    {
+      icon: "people",
+      label: "Pacientes",
+      href: "/pacientes",
+      active: pacientesPage,
+    },
+    {
+      icon: "clock",
+      label: "Disponibilidad",
+      href: "/disponibilidad",
+      active: disponibilidad,
+    },
+    {
+      icon: "block",
+      label: "Bloqueos y excepciones",
+      href: "/bloqueos",
+      active: bloqueosPage,
+    },
+    {
+      icon: "audit",
+      label: "Auditoria",
+      href: "/auditoria",
+      active: auditoriaPage,
+    },
   ];
-  const pageContent =
-          bloqueosPage ? (
-            <BloqueosPage api={api} profesionalId={profesional?.id} esAdmin={sesion.rol === "ADMIN"} />
-          ) : auditoriaPage ? (
-            <AuditoriaPage api={api} esAdmin={sesion.rol === "ADMIN"} />
-          ) : pacientesPage ? (
-            <PacientesPage
-              api={api}
-              puedeGestionar={sesion.rol === "ADMIN" || sesion.rol === "RECEPCION"}
-            />
-          ) : disponibilidad ? (
-            <DisponibilidadPage
-              profesionalId={profesional?.id}
-              esAdmin={sesion.rol === "ADMIN"}
-              busy={busy}
-              api={api}
-            />
-          ) : (
-            <AgendaPage demo={demo} cambiarModo={cambiarModo} busy={busy} mensaje={mensaje} setMensaje={setMensaje} fecha={fecha} cambiarFecha={cambiarFecha} hoy={hoy} moverDia={moverDia} fechaLarga={fechaLarga} profesional={profesional} cargando={cargando} errorAgenda={errorAgenda} setErrorAgenda={setErrorAgenda} setRevision={setRevision} setIntentoProfesional={setIntentoProfesional} franjas={franjas} turnos={turnos} ready={ready} filtro={filtro} setFiltro={setFiltro} gestionar={gestionar} cerrar={cerrar} selected={selected} setSelected={setSelected} setDialog={setDialog} api={api} guardar={guardar} />
-          );
+  const pageContent = bloqueosPage ? (
+    <BloqueosPage
+      api={api}
+      profesionalId={profesional?.id}
+      esAdmin={sesion.rol === "ADMIN"}
+    />
+  ) : auditoriaPage ? (
+    <AuditoriaPage api={api} esAdmin={sesion.rol === "ADMIN"} />
+  ) : pacientesPage ? (
+    <PacientesPage
+      api={api}
+      puedeGestionar={sesion.rol === "ADMIN" || sesion.rol === "RECEPCION"}
+    />
+  ) : disponibilidad ? (
+    <DisponibilidadPage
+      profesionalId={profesional?.id}
+      esAdmin={sesion.rol === "ADMIN"}
+      busy={busy}
+      api={api}
+    />
+  ) : (
+    <AgendaPage
+      busy={busy}
+      mensaje={mensaje}
+      setMensaje={setMensaje}
+      fecha={fecha}
+      cambiarFecha={cambiarFecha}
+      hoy={hoy}
+      moverDia={moverDia}
+      fechaLarga={fechaLarga}
+      profesional={profesional}
+      profesionalId={profesional?.id}
+      cargando={cargando}
+      errorAgenda={errorAgenda}
+      setErrorAgenda={setErrorAgenda}
+      setRevision={setRevision}
+      setIntentoProfesional={setIntentoProfesional}
+      franjas={franjas}
+      turnos={turnos}
+      ready={ready}
+      filtro={filtro}
+      setFiltro={setFiltro}
+      gestionar={gestionar}
+      cerrar={cerrar}
+      selected={selected}
+      setSelected={setSelected}
+      setDialog={setDialog}
+      api={api}
+      guardar={guardar}
+      irAFranja={irAFranja}
+    />
+  );
   return (
-    <AppLayout menu={menu} profesional={profesional} sesion={sesion} busy={busy} salir={salir} demo={demo} cambiarModo={cambiarModo} reiniciarDemo={reiniciarDemo} navigate={navigate} overlay={dialog ? (
-      <TurnoDialog turno={dialog.turno} tipo={dialog.tipo} api={api} busy={busy} close={() => setDialog(null)} submit={guardar} />
-    ) : null}>
+    <AppLayout
+      menu={menu}
+      profesional={profesional}
+      sesion={sesion}
+      busy={busy}
+      salir={salir}
+      navigate={navigate}
+      overlay={
+        dialog ? (
+          <TurnoDialog
+            turno={dialog.turno}
+            tipo={dialog.tipo}
+            api={api}
+            busy={busy}
+            close={() => setDialog(null)}
+            submit={guardar}
+          />
+        ) : null
+      }
+    >
       {pageContent}
     </AppLayout>
   );

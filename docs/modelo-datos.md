@@ -17,6 +17,9 @@ Regla recurrente semanal con día, horario, duración y vigencia.
 ### ExcepcionAgenda
 Apertura o cierre excepcional para una fecha o período concreto.
 
+### ConfiguracionAgenda
+Configuración única persistida con duración estándar del turno y horizonte máximo para generar franjas y reservar turnos. Valores iniciales: 30 minutos y 90 días.
+
 ### Franja
 Slot materializado de agenda. Tiene profesional, inicio, fin, estado y origen. Se utiliza `@Version` y, al reservar, bloqueo pesimista de fila.
 

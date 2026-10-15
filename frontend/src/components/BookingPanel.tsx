@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
 import type { Franja, NuevoPaciente, Paciente } from "../types";
-import { hora, reservable } from "../types";
+import { fechaLarga, hora, reservable } from "../types";
 import { Icon } from "./Icon";
 import { Modal } from "./Modal";
 import { PacienteForm } from "./PacienteForm";
@@ -20,6 +20,8 @@ export function BookingPanel({
   select,
   busy,
   ready,
+  profesionalId,
+  irAFranja,
   reservar,
 }: {
   api: Api;
@@ -28,6 +30,8 @@ export function BookingPanel({
   select: (f: Franja | null) => void;
   busy: boolean;
   ready: boolean;
+  profesionalId?: number;
+  irAFranja: (franja: Franja) => void;
   reservar: (paciente: Paciente, motivo: string) => Promise<boolean>;
 }) {
   const [query, setQuery] = useState("");
@@ -40,6 +44,8 @@ export function BookingPanel({
   const [crear, setCrear] = useState(false);
   const [nuevo, setNuevo] = useState(vacio);
   const [guardando, setGuardando] = useState(false);
+  const [buscandoProxima, setBuscandoProxima] = useState(false);
+  const [proximaFranja, setProximaFranja] = useState<Franja | null>(null);
   const searching = useRef<AbortController | null>(null);
   const creating = useRef(false);
   useEffect(() => () => searching.current?.abort(), []);
@@ -90,6 +96,27 @@ export function BookingPanel({
     }
   }
   const disponibles = franjas.filter(reservable);
+  async function buscarProxima() {
+    if (!profesionalId || buscandoProxima) return;
+    setBuscandoProxima(true);
+    setError("");
+    setProximaFranja(null);
+    try {
+      const horarios = await api<Franja[]>(
+        `/api/agenda/disponibles?profesionalId=${profesionalId}`,
+      );
+      const primera = horarios.find(reservable);
+      if (primera) setProximaFranja(primera);
+      else
+        setError(
+          "No hay horarios futuros disponibles. Revisá Disponibilidad para generar nuevas franjas.",
+        );
+    } catch (e) {
+      setError(detalleError(e));
+    } finally {
+      setBuscandoProxima(false);
+    }
+  }
   return (
     <section className="booking card" aria-labelledby="booking-title">
       <header className="panel-heading">
@@ -97,7 +124,13 @@ export function BookingPanel({
           <h2 id="booking-title">Asignar turno</h2>
           <p className="muted">Elegí un horario y un paciente.</p>
         </div>
-        <Icon name="calendar" />
+        <a
+          className="secondary small booking-availability-link"
+          href="/disponibilidad"
+        >
+          <Icon name="calendar" size={15} />
+          Horarios
+        </a>
       </header>
       {selected ? (
         <div className="slot-summary">
@@ -112,15 +145,45 @@ export function BookingPanel({
       ) : (
         <div className="slot-placeholder">
           <Icon name="clock" />
-          <span>Seleccioná una franja libre en la agenda.</span>
+          <span>
+            {ready
+              ? disponibles.length
+                ? "Elegí una franja libre en la agenda o en el selector."
+                : "Todavía no hay franjas libres para esta fecha."
+              : "Esperando los horarios de la agenda…"}
+          </span>
         </div>
       )}
-      <fieldset disabled={busy || guardando || !ready}>
+      <fieldset disabled={busy || guardando}>
+        <div className="next-slot-search">
+          <button
+            type="button"
+            className="secondary small"
+            disabled={!profesionalId || buscandoProxima || busy}
+            onClick={() => void buscarProxima()}
+          >
+            {buscandoProxima ? "Buscando…" : "Buscar próximo horario libre"}
+          </button>
+          {proximaFranja && (
+            <button
+              type="button"
+              className="next-slot-result"
+              onClick={() => {
+                irAFranja(proximaFranja);
+                setProximaFranja(null);
+              }}
+            >
+              {fechaLarga(proximaFranja.inicio.slice(0, 10))},{" "}
+              {hora(proximaFranja.inicio)} hs · Seleccionar
+            </button>
+          )}
+        </div>
         <label>
           Horario disponible
           <select
             aria-label="Horario disponible"
             value={selected?.id ?? ""}
+            disabled={!disponibles.length}
             onChange={(e) =>
               select(
                 disponibles.find((f) => f.id === Number(e.target.value)) ??
@@ -128,7 +191,13 @@ export function BookingPanel({
               )
             }
           >
-            <option value="">Seleccionar horario…</option>
+            <option value="">
+              {disponibles.length
+                ? "Seleccionar horario…"
+                : ready
+                  ? "No hay horarios libres para esta fecha"
+                  : "Cargando horarios…"}
+            </option>
             {disponibles.map((f) => (
               <option key={f.id} value={f.id}>
                 {hora(f.inicio)} – {hora(f.fin)}
@@ -136,6 +205,20 @@ export function BookingPanel({
             ))}
           </select>
         </label>
+        {ready && disponibles.length === 0 && (
+          <div className="booking-empty-state" role="status">
+            <p>
+              {franjas.length === 0
+                ? "La agenda de esta fecha no tiene franjas generadas. Configurá un horario semanal y generá las franjas para el período."
+                : "Las franjas de esta fecha están ocupadas, bloqueadas o ya pasaron. Probá otra fecha en la agenda."}
+            </p>
+            {franjas.length === 0 && (
+              <a className="text-button" href="/disponibilidad">
+                Ir a Disponibilidad
+              </a>
+            )}
+          </div>
+        )}
         <div className="field-heading">
           <label htmlFor="patient-search">Paciente</label>
           <button
@@ -240,7 +323,7 @@ export function BookingPanel({
         <p className="booking-note">El turno quedará reservado al confirmar.</p>
         <button
           className="primary full"
-          disabled={!paciente || !selected || !reservable(selected)}
+          disabled={!ready || !paciente || !selected || !reservable(selected)}
           onClick={async () => {
             if (paciente && (await reservar(paciente, motivo))) {
               setPaciente(null);

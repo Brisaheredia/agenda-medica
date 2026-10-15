@@ -4,10 +4,10 @@ import { Agenda } from "../components/ListaTurnos";
 import { BookingPanel } from "../components/BookingPanel";
 import { Icon } from "../components/Icon";
 import type { Accion } from "../components/TurnoDialog";
+import { CalendarioSemanalAgenda } from "../components/CalendarioSemanalAgenda";
+import { useState } from "react";
 
 type Props = {
-  demo: boolean;
-  cambiarModo: (value: boolean) => void;
   busy: boolean;
   mensaje: { tipo: "error" | "success"; texto: string } | null;
   setMensaje: (
@@ -19,6 +19,7 @@ type Props = {
   moverDia: (fecha: string, dias: number) => string;
   fechaLarga: (fecha: string) => string;
   profesional: Profesional | null;
+  profesionalId?: number;
   cargando: boolean;
   errorAgenda: string;
   setErrorAgenda: (value: string) => void;
@@ -35,12 +36,11 @@ type Props = {
   setSelected: (value: Franja | null) => void;
   setDialog: (value: { turno: Turno; tipo: Accion } | null) => void;
   api: <T>(path: string, options?: RequestInit) => Promise<T>;
+  irAFranja: (franja: Franja) => void;
   guardar: (path: string, body?: object) => Promise<boolean>;
 };
 export function AgendaPage(props: Props) {
   const {
-    demo,
-    cambiarModo,
     busy,
     mensaje,
     setMensaje,
@@ -50,6 +50,7 @@ export function AgendaPage(props: Props) {
     moverDia,
     fechaLarga,
     profesional,
+    profesionalId,
     cargando,
     errorAgenda,
     setErrorAgenda,
@@ -67,7 +68,9 @@ export function AgendaPage(props: Props) {
     setDialog,
     api,
     guardar,
+    irAFranja,
   } = props;
+  const [vista, setVista] = useState<"dia" | "semana">("dia");
   const filters: { id: Filtro; label: string }[] = [
     { id: "TODOS", label: "Todos" },
     { id: "LIBRE", label: "Disponibles" },
@@ -81,24 +84,17 @@ export function AgendaPage(props: Props) {
     <>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">ORGANIZACIÓN DIARIA</p>
+          <p className="eyebrow">{vista === "dia" ? "ORGANIZACIÓN DIARIA" : "ORGANIZACIÓN SEMANAL"}</p>
           <h1>Agenda del consultorio</h1>
-          <p className="muted">Todos los horarios del día, en un solo lugar.</p>
+          <p className="muted">
+            {vista === "dia"
+              ? "Todos los horarios del día, en un solo lugar."
+              : "Consultá los turnos y horarios de toda la semana."}
+          </p>
         </div>
-        <div className="page-heading-actions">
-          {!demo && (
-            <button
-              className="secondary small"
-              disabled={busy}
-              onClick={() => cambiarModo(true)}
-            >
-              Probar ejemplos
-            </button>
-          )}
-          <span className="page-label">
-            <Icon name="calendar" size={16} />
-            Vista diaria
-          </span>
+        <div className="page-heading-actions agenda-view-toggle" role="group" aria-label="Vista de agenda">
+          <button className={vista === "dia" ? "filter active" : "filter"} aria-pressed={vista === "dia"} onClick={() => setVista("dia")}>Día</button>
+          <button className={vista === "semana" ? "filter active" : "filter"} aria-pressed={vista === "semana"} onClick={() => setVista("semana")}>Semana</button>
         </div>
       </div>
       {mensaje && (
@@ -116,7 +112,7 @@ export function AgendaPage(props: Props) {
           </button>
         </div>
       )}
-      <section className="date-toolbar card" aria-label="Navegación por fecha">
+      {vista === "dia" && <section className="date-toolbar card" aria-label="Navegación por fecha">
         <div className="date-controls">
           <button
             className="icon-button"
@@ -161,7 +157,8 @@ export function AgendaPage(props: Props) {
           <Icon name="refresh" size={16} />
           Actualizar
         </button>
-      </section>
+      </section>}
+      {vista === "semana" && profesional && <CalendarioSemanalAgenda profesionalId={profesionalId} api={api} irAlDia={(dia) => { cambiarFecha(dia); setVista("dia"); }} />}
       {errorAgenda && (
         <div className="alert error" role="alert">
           <span>{errorAgenda}</span>
@@ -177,7 +174,7 @@ export function AgendaPage(props: Props) {
           </button>
         </div>
       )}
-      <section
+      {vista === "dia" && <section
         className="metrics"
         aria-label="Resumen de la agenda"
         aria-busy={!ready}
@@ -213,8 +210,8 @@ export function AgendaPage(props: Props) {
             </span>
           </article>
         ))}
-      </section>
-      <div className={`agenda-layout ${!gestionar ? "read-only" : ""}`}>
+      </section>}
+      {vista === "dia" && <div className={`agenda-layout ${!gestionar ? "read-only" : ""}`}>
         <section aria-labelledby="agenda-title">
           <div className="agenda-heading">
             <h2 id="agenda-title">Horarios y turnos</h2>
@@ -263,6 +260,8 @@ export function AgendaPage(props: Props) {
             franjas={ready ? franjas : []}
             selected={selected}
             select={setSelected}
+            profesionalId={profesionalId}
+            irAFranja={irAFranja}
             busy={busy}
             ready={ready}
             reservar={(paciente: Paciente, motivo: string) =>
@@ -276,7 +275,7 @@ export function AgendaPage(props: Props) {
             }
           />
         )}
-      </div>
+      </div>}
     </>
   );
 }

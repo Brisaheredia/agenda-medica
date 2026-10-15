@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { detalleError } from "../api";
 import { hoy, moverDia } from "../types";
 import { CalendarioSemanalDisponibilidad } from "../components/CalendarioSemanalDisponibilidad";
@@ -31,6 +31,8 @@ export function DisponibilidadPage({
   const [horaInicio, setHoraInicio] = useState("09:00");
   const [horaFin, setHoraFin] = useState("17:00");
   const [duracionMin, setDuracionMin] = useState(30);
+  const [horizonteDias, setHorizonteDias] = useState(90);
+  const [guardandoConfiguracion, setGuardandoConfiguracion] = useState(false);
   const [vigenciaDesde, setVigenciaDesde] = useState(hoy());
   const [vigenciaHasta, setVigenciaHasta] = useState("");
   const [desde, setDesde] = useState(hoy());
@@ -39,6 +41,45 @@ export function DisponibilidadPage({
   const [generando, setGenerando] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    api<{ duracionEstandarMin: number; horizonteReservaDias: number }>(
+      "/api/configuracion/agenda",
+      { signal: controller.signal },
+    )
+      .then((config) => {
+        setDuracionMin(config.duracionEstandarMin);
+        setHorizonteDias(config.horizonteReservaDias);
+        setHasta(moverDia(hoy(), Math.min(30, config.horizonteReservaDias)));
+      })
+      .catch((e) => {
+        if (e instanceof Error && e.name !== "AbortError")
+          setError(detalleError(e));
+      });
+    return () => controller.abort();
+  }, [api]);
+
+  async function guardarConfiguracion(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!esAdmin || guardandoConfiguracion) return;
+    setGuardandoConfiguracion(true);
+    setError("");
+    setMensaje("");
+    try {
+      await api("/api/configuracion/agenda", {
+        method: "PUT",
+        body: JSON.stringify({
+          duracionEstandarMin: duracionMin,
+          horizonteReservaDias: horizonteDias,
+        }),
+      });
+      setMensaje("Configuración de agenda guardada.");
+    } catch (e) {
+      setError(detalleError(e));
+    } finally {
+      setGuardandoConfiguracion(false);
+    }
+  }
   async function guardarPlantilla(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!profesionalId || busy || guardandoPlantilla) return;
@@ -130,6 +171,55 @@ export function DisponibilidadPage({
         profesionalId={profesionalId}
         api={api}
       />
+
+      <form
+        className="card agenda-settings-form"
+        onSubmit={guardarConfiguracion}
+      >
+        <div className="panel-heading">
+          <div>
+            <h2>Configuración de agenda</h2>
+            <p>
+              Valores iniciales para nuevas plantillas y el período máximo de
+              reserva.
+            </p>
+          </div>
+          <Icon name="clock" />
+        </div>
+        <fieldset disabled={!esAdmin || busy || guardandoConfiguracion}>
+          <div className="availability-fields">
+            <label>
+              Duración estándar de turno (minutos)
+              <input
+                type="number"
+                min="5"
+                max="240"
+                step="5"
+                required
+                value={duracionMin}
+                onChange={(e) => setDuracionMin(Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Anticipación máxima para reservar (días)
+              <input
+                type="number"
+                min="1"
+                max="365"
+                required
+                value={horizonteDias}
+                onChange={(e) => setHorizonteDias(Number(e.target.value))}
+              />
+            </label>
+          </div>
+          <button
+            className="primary"
+            disabled={!esAdmin || busy || guardandoConfiguracion}
+          >
+            {guardandoConfiguracion ? "Guardando…" : "Guardar configuración"}
+          </button>
+        </fieldset>
+      </form>
 
       <div className="availability-forms">
         <form className="card availability-form" onSubmit={guardarPlantilla}>
@@ -229,6 +319,7 @@ export function DisponibilidadPage({
                 Desde
                 <input
                   type="date"
+                  max={moverDia(hoy(), horizonteDias)}
                   required
                   value={desde}
                   onChange={(e) => setDesde(e.target.value)}
@@ -239,6 +330,7 @@ export function DisponibilidadPage({
                 <input
                   type="date"
                   min={desde}
+                  max={moverDia(hoy(), horizonteDias)}
                   required
                   value={hasta}
                   onChange={(e) => setHasta(e.target.value)}

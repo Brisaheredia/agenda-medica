@@ -20,6 +20,7 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
   const [horaFin, setHoraFin] = useState("");
   const [motivo, setMotivo] = useState("");
   const [esApertura, setEsApertura] = useState(false);
+  const [esFeriado, setEsFeriado] = useState(false);
   const [duracionMin, setDuracionMin] = useState(30);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -121,6 +122,7 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
                 aria-pressed={!esApertura}
                 onClick={() => {
                   setEsApertura(false);
+                  setEsFeriado(false);
                   setResultado(null);
                 }}
               >
@@ -132,6 +134,7 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
                 aria-pressed={esApertura}
                 onClick={() => {
                   setEsApertura(true);
+                  setEsFeriado(false);
                   setResultado(null);
                   if (!horaInicio) {
                     setHoraInicio("09:00");
@@ -140,6 +143,21 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
                 }}
               >
                 Apertura extraordinaria
+              </button>
+              <button
+                type="button"
+                className={esFeriado ? "filter active" : "filter"}
+                aria-pressed={esFeriado}
+                onClick={() => {
+                  setEsApertura(false);
+                  setEsFeriado(true);
+                  setHoraInicio("");
+                  setHoraFin("");
+                  setMotivo((actual) => actual || "Feriado / día no laborable");
+                  setResultado(null);
+                }}
+              >
+                Feriado / día no laborable
               </button>
             </div>
             <p className="muted block-help">
@@ -236,7 +254,9 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
                 ? "Guardando…"
                 : esApertura
                   ? "Crear apertura"
-                  : "Crear bloqueo"}
+                  : esFeriado
+                    ? "Registrar día no laborable"
+                    : "Crear bloqueo"}
             </button>
           </fieldset>
         </form>

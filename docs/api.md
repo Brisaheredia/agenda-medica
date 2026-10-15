@@ -19,8 +19,12 @@ Base path: `/api`
 - `POST /api/agenda/generar-franjas`
 - `POST /api/agenda/excepciones`
 - `POST /api/agenda/bloqueos`
+- `GET /api/configuracion/agenda`
+- `PUT /api/configuracion/agenda` (solo ADMIN)
 
-La consulta `/disponibles` devuelve únicamente franjas `LIBRE` futuras del profesional. Si `desde` no se informa, usa la fecha y hora actuales.
+La consulta `/disponibles` devuelve franjas `LIBRE` futuras dentro del horizonte configurado. Si `desde` no se informa, usa la fecha y hora actuales.
+
+La configuración devuelve y permite actualizar `duracionEstandarMin` (5 a 240 minutos) y `horizonteReservaDias` (1 a 365 días). Si todavía no hay una fila configurada, se usan los valores iniciales de 30 minutos y 90 días. La configuración afecta las nuevas generaciones y reservas; no modifica turnos ya creados ni plantillas existentes.
 
 Cierre parcial:
 
@@ -54,7 +58,7 @@ La creación y la reprogramación bloquean la franja con `PESSIMISTIC_WRITE` y r
 
 - `GET /api/auditoria` devuelve las últimas 100 operaciones.
 
-Actualmente se auditan creación/cancelación/reprogramación de turnos, atención/ausencia, creación de plantillas, generación de franjas y excepciones de agenda. El usuario queda nulo hasta incorporar autenticación JWT.
+Se auditan creación, actualización y desactivación de pacientes; cambios de turnos; plantillas, generación de franjas, excepciones y configuración de agenda. Cuando la operación llega con JWT válido, se asocia el usuario autenticado. El endpoint devuelve los 100 eventos más recientes.
 
 ## Errores
 
@@ -64,4 +68,4 @@ Actualmente se auditan creación/cancelación/reprogramación de turnos, atenci�
 
 ## Seguridad
 
-Spring Security está incorporado, pero los endpoints permanecen temporalmente abiertos para desarrollo. JWT y roles se implementarán antes de cerrar el MVP.
+La API requiere JWT para las rutas protegidas. `ADMIN` gestiona disponibilidad, bloqueos, excepciones, configuración, usuarios y auditoría; `ADMIN` y `RECEPCION` gestionan pacientes y turnos; `ADMIN` y `MEDICO` registran atención y ausencia. El login y la documentación OpenAPI/Swagger son públicos.

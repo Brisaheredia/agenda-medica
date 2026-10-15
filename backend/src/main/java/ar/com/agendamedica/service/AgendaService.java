@@ -37,19 +37,22 @@ public class AgendaService {
     private final ExcepcionAgendaRepository excepcionRepository;
     private final TurnoRepository turnoRepository;
     private final AuditoriaService auditoriaService;
+    private final ConfiguracionAgendaService configuracionService;
 
     public AgendaService(FranjaRepository franjaRepository,
                          ProfesionalRepository profesionalRepository,
                          PlantillaDisponibilidadRepository plantillaRepository,
                          ExcepcionAgendaRepository excepcionRepository,
                          TurnoRepository turnoRepository,
-                         AuditoriaService auditoriaService) {
+                         AuditoriaService auditoriaService,
+                         ConfiguracionAgendaService configuracionService) {
         this.franjaRepository = franjaRepository;
         this.profesionalRepository = profesionalRepository;
         this.plantillaRepository = plantillaRepository;
         this.excepcionRepository = excepcionRepository;
         this.turnoRepository = turnoRepository;
         this.auditoriaService = auditoriaService;
+        this.configuracionService = configuracionService;
     }
 
     @Transactional(readOnly = true)
@@ -68,12 +71,15 @@ public class AgendaService {
 
         LocalDateTime inicioBusqueda = desde == null ? LocalDateTime.now() : desde;
 
+        LocalDateTime limite = LocalDateTime.now()
+                .plusDays(configuracionService.obtener().getHorizonteReservaDias());
         return franjaRepository
                 .findByProfesionalIdAndEstadoAndInicioGreaterThanEqualOrderByInicioAsc(
                         profesionalId,
                         EstadoFranja.LIBRE,
                         inicioBusqueda)
                 .stream()
+                .filter(franja -> !franja.getInicio().isAfter(limite))
                 .map(FranjaResponse::from)
                 .toList();
     }
@@ -116,8 +122,9 @@ public class AgendaService {
         if (request.hasta().isBefore(request.desde())) {
             throw new BadRequestException("La fecha hasta no puede ser anterior a desde");
         }
-        if (ChronoUnit.DAYS.between(request.desde(), request.hasta()) > 90) {
-            throw new BadRequestException("Se pueden generar como máximo 90 días por operación");
+        int horizonteDias = configuracionService.obtener().getHorizonteReservaDias();
+        if (ChronoUnit.DAYS.between(LocalDate.now(), request.hasta()) > horizonteDias) {
+            throw new BadRequestException("El período supera el horizonte de agenda configurado (" + horizonteDias + " días)");
         }
 
         List<PlantillaDisponibilidad> plantillas =

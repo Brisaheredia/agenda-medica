@@ -1,5 +1,4 @@
 import { Brand } from "../components/Brand";
-import { Icon } from "../components/Icon";
 
 type Props = {
   email: string;
@@ -9,7 +8,6 @@ type Props = {
   busy: boolean;
   mensaje: { tipo: "error" | "success"; texto: string } | null;
   ingresar: (event: React.FormEvent<HTMLFormElement>) => void;
-  probarDemo: () => void;
 };
 
 export function LoginPage({
@@ -20,7 +18,6 @@ export function LoginPage({
   busy,
   mensaje,
   ingresar,
-  probarDemo,
 }: Props) {
   return (
     <main className="login-shell">
@@ -61,18 +58,6 @@ export function LoginPage({
             {mensaje.texto}
           </p>
         )}
-        <div className="demo-entry">
-          <button
-            type="button"
-            className="secondary full"
-            disabled={busy}
-            onClick={probarDemo}
-          >
-            <Icon name="calendar" size={17} />
-            Probar con datos de ejemplo
-          </button>
-          <p>Sin cuenta y sin encender el backend.</p>
-        </div>
         <p className="login-footer">Agenda Médica · Gestión del consultorio</p>
       </section>
     </main>

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
 import type { Filtro, Franja, Profesional, Turno } from "../types";
-import { hoy, moverDia } from "../types";
+import { hoy } from "../types";
 
 export function useAgenda({
   api,
@@ -15,11 +15,7 @@ export function useAgenda({
   sesionActiva: boolean;
   profesional: Profesional | null;
 }) {
-  const [fecha, setFecha] = useState(() =>
-    new URLSearchParams(window.location.search).get("demo") === "1"
-      ? moverDia(hoy(), 1)
-      : hoy(),
-  );
+  const [fecha, setFecha] = useState(() => hoy());
   const [franjas, setFranjas] = useState<Franja[]>([]);
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [revision, setRevision] = useState(0);
@@ -28,6 +24,7 @@ export function useAgenda({
   const [errorAgenda, setErrorAgenda] = useState("");
   const [selected, setSelected] = useState<Franja | null>(null);
   const [filtro, setFiltro] = useState<Filtro>("TODOS");
+  const pendingFranjaId = useRef<number | null>(null);
 
   const key = `${profesional?.id}/${fecha}/${revision}`;
   const ready =
@@ -51,6 +48,13 @@ export function useAgenda({
       .then(([franjasDelDia, turnosDelDia]) => {
         setFranjas(franjasDelDia);
         setTurnos(turnosDelDia);
+        if (pendingFranjaId.current !== null) {
+          const seleccionada = franjasDelDia.find(
+            (franja) => franja.id === pendingFranjaId.current,
+          );
+          if (seleccionada) setSelected(seleccionada);
+          pendingFranjaId.current = null;
+        }
         setLoadedKey(key);
       })
       .catch((error: unknown) => {
@@ -66,6 +70,17 @@ export function useAgenda({
     return () => controller.abort();
   }, [api, habilitada, sesionActiva, profesional, fecha, key]);
 
+  function irAFranja(franja: Franja) {
+    const fechaFranja = franja.inicio.slice(0, 10);
+    if (fechaFranja === fecha) {
+      setSelected(franja);
+      return;
+    }
+    pendingFranjaId.current = franja.id;
+    setFecha(fechaFranja);
+    setFiltro("TODOS");
+  }
+
   return {
     fecha,
     setFecha,
@@ -78,6 +93,7 @@ export function useAgenda({
     setErrorAgenda,
     selected,
     setSelected,
+    irAFranja,
     filtro,
     setFiltro,
     ready,

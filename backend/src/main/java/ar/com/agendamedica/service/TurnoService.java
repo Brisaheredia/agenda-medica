@@ -34,17 +34,20 @@ public class TurnoService {
     private final FranjaRepository franjaRepository;
     private final PacienteService pacienteService;
     private final AuditoriaService auditoriaService;
+    private final ConfiguracionAgendaService configuracionService;
 
     public TurnoService(TurnoRepository turnoRepository,
                         TurnoEventoRepository turnoEventoRepository,
                         FranjaRepository franjaRepository,
                         PacienteService pacienteService,
-                        AuditoriaService auditoriaService) {
+                        AuditoriaService auditoriaService,
+                        ConfiguracionAgendaService configuracionService) {
         this.turnoRepository = turnoRepository;
         this.turnoEventoRepository = turnoEventoRepository;
         this.franjaRepository = franjaRepository;
         this.pacienteService = pacienteService;
         this.auditoriaService = auditoriaService;
+        this.configuracionService = configuracionService;
     }
 
     @Transactional
@@ -227,6 +230,11 @@ public class TurnoService {
     private void validarFranjaDisponible(Franja franja) {
         if (franja.getInicio().isBefore(LocalDateTime.now())) {
             throw new BadRequestException("No se puede reservar una franja en el pasado");
+        }
+        LocalDateTime limite = LocalDateTime.now()
+                .plusDays(configuracionService.obtener().getHorizonteReservaDias());
+        if (franja.getInicio().isAfter(limite)) {
+            throw new BadRequestException("La franja excede el horizonte de reserva configurado");
         }
         if (franja.getEstado() != EstadoFranja.LIBRE) {
             throw new ConflictException("La franja ya no está disponible");

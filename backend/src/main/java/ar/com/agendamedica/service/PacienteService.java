@@ -14,9 +14,11 @@ import java.util.List;
 @Service
 public class PacienteService {
     private final PacienteRepository pacienteRepository;
+    private final AuditoriaService auditoriaService;
 
-    public PacienteService(PacienteRepository pacienteRepository) {
+    public PacienteService(PacienteRepository pacienteRepository, AuditoriaService auditoriaService) {
         this.pacienteRepository = pacienteRepository;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional
@@ -28,7 +30,9 @@ public class PacienteService {
         Paciente paciente = new Paciente();
         aplicarDatos(paciente, request);
         paciente.setActivo(true);
-        return PacienteResponse.from(pacienteRepository.save(paciente));
+        paciente = pacienteRepository.save(paciente);
+        auditoriaService.registrar("CREAR_PACIENTE", "Paciente", paciente.getId(), "Registro creado");
+        return PacienteResponse.from(paciente);
     }
 
     @Transactional(readOnly = true)
@@ -69,7 +73,9 @@ public class PacienteService {
                 });
 
         aplicarDatos(paciente, request);
-        return PacienteResponse.from(pacienteRepository.save(paciente));
+        paciente = pacienteRepository.save(paciente);
+        auditoriaService.registrar("ACTUALIZAR_PACIENTE", "Paciente", paciente.getId(), "Datos actualizados");
+        return PacienteResponse.from(paciente);
     }
 
     @Transactional
@@ -77,6 +83,7 @@ public class PacienteService {
         Paciente paciente = obtenerEntidad(id);
         paciente.setActivo(false);
         pacienteRepository.save(paciente);
+        auditoriaService.registrar("DESACTIVAR_PACIENTE", "Paciente", paciente.getId(), "Registro desactivado");
     }
 
     @Transactional(readOnly = true)

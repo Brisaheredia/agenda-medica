@@ -15,9 +15,6 @@ type Props = {
   sesion: Sesion;
   busy: boolean;
   salir: () => void;
-  demo: boolean;
-  cambiarModo: (value: boolean) => void;
-  reiniciarDemo: () => void;
   navigate: (to: string) => void;
   children: ReactNode;
   overlay?: ReactNode;
@@ -29,9 +26,6 @@ export function AppLayout({
   sesion,
   busy,
   salir,
-  demo,
-  cambiarModo,
-  reiniciarDemo,
   navigate,
   children,
   overlay,
@@ -50,10 +44,15 @@ export function AppLayout({
       event.altKey ||
       link.target === "_blank" ||
       link.hasAttribute("download")
-    ) return;
+    )
+      return;
     const url = new URL(link.href);
     if (url.origin !== window.location.origin) return;
-    if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+    if (
+      url.pathname === window.location.pathname &&
+      url.search === window.location.search
+    )
+      return;
     event.preventDefault();
     navigate(`${url.pathname}${url.search}${url.hash}`);
   }
@@ -73,11 +72,11 @@ export function AppLayout({
         </div>
         <p className="nav-label">OPERACIÓN PRINCIPAL</p>
         <nav aria-label="Navegación principal">
-          {menu.map((item) => (
+          {menu.map((item) =>
             item.href ? (
               <a
                 key={item.label}
-                href={`${item.href}${window.location.search}`}
+                href={item.href}
                 className={`nav-item ${item.active ? "active" : ""}`}
                 aria-current={item.active ? "page" : undefined}
               >
@@ -90,8 +89,8 @@ export function AppLayout({
                 <span>{item.label}</span>
                 <small>Pendiente</small>
               </button>
-            )
-          ))}
+            ),
+          )}
         </nav>
         <div className="sidebar-foot">
           <Icon name="audit" />
@@ -140,61 +139,6 @@ export function AppLayout({
           </div>
         </header>
         <main id="main" className="content">
-          {demo && (
-            <section className="demo-banner" aria-label="Modo de demostración">
-              <div>
-                <strong>Modo de demostración</strong>
-                <p>
-                  Pacientes y turnos ficticios. Los cambios duran hasta recargar
-                  o reiniciar. Empezamos con horarios de mañana.
-                </p>
-              </div>
-              <div className="demo-actions">
-                <button
-                  className="secondary small"
-                  disabled={busy}
-                  onClick={reiniciarDemo}
-                >
-                  <Icon name="refresh" size={15} />
-                  Reiniciar ejemplos
-                </button>
-                <button
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() => cambiarModo(false)}
-                >
-                  Salir de la demostración
-                </button>
-              </div>
-            </section>
-          )}
-          {demo && (
-            <details className="demo-guide">
-              <summary>Ideas para probar esta versión</summary>
-              <ol>
-                <li>
-                  Elegí un horario disponible, buscá <strong>Luna</strong> y
-                  confirmá un turno para Bruno.
-                </li>
-                <li>
-                  Reprogramá el turno de <strong>Clara Ríos</strong> eligiendo
-                  otra fecha y horario.
-                </li>
-                <li>
-                  Cancelá una reserva indicando un motivo y consultá el filtro{" "}
-                  <strong>Cancelados</strong>.
-                </li>
-                <li>
-                  Creá un paciente desde <strong>Nuevo paciente</strong> y
-                  asignale un horario.
-                </li>
-                <li>
-                  Para registrar atención o ausencia, elegí una fecha pasada y
-                  probá con el turno reservado de las 11:00.
-                </li>
-              </ol>
-            </details>
-          )}
           {children}
         </main>
       </div>
