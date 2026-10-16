@@ -71,7 +71,6 @@ export function LoginPage({
             <Icon name="calendar" size={17} />
             Probar con datos de ejemplo
           </button>
-          <p>Sin cuenta y sin encender el backend.</p>
         </div>
         <p className="login-footer">Agenda Médica · Gestión del consultorio</p>
       </section>
