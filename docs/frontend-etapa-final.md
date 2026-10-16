@@ -116,9 +116,9 @@ La aceptación del diseño surge de la prueba del nuevo frontend y de la decisi�
 
 Para registrar la validación funcional de la entrega, corresponde comprobar con el backend activo la persistencia al recargar, los permisos de cada rol, los conflictos de reserva y el vencimiento de sesión. La publicación en un servidor se verifica por separado.
 
-## Mejoras pendientes y preparación para producción
+## Estado actual del sistema
 
-Los siguientes puntos quedan registrados como trabajo pendiente. El cierre del diseño del frontend no implica que estas mejoras estén implementadas ni que el sistema ya esté preparado para producción.
+Las funcionalidades definidas para esta etapa se encuentran implementadas. A partir de este punto, el trabajo se orienta a la validación integral del sistema, corrección de posibles errores, pruebas finales y preparación para su despliegue.
 
 ### Mejoras funcionales
 
