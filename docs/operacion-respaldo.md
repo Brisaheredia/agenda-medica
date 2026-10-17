@@ -6,7 +6,7 @@ Procedimiento propuesto para el responsable técnico. Los comandos de respaldo/r
 
 Administración verifica días habilitados, duración y cierres; recepción mantiene contactos y compromisos; soporte mantiene servicios, configuración, respaldos y recuperación. El equipo debe asignar personas concretas y reemplazos antes de usar datos reales.
 
-Al comenzar la jornada, comprobar acceso, profesional activo y agenda. Al suspender atención, conservar compromisos y coordinar reprogramación. Falta completar la bandeja de afectados; no considerar que los IDs actuales constituyen un circuito resuelto.
+Al comenzar la jornada, comprobar acceso, profesional activo y agenda. Al suspender atención, conservar compromisos y coordinar reprogramación. Consultar Reprogramaciones para recuperar pacientes y contactos; coordinar manualmente antes de elegir el nuevo horario. Se excluyen cancelaciones del paciente. Los registros antiguos sin origen no se clasifican por conjetura.
 
 Ante un incidente, registrar hora/zona, commit, pantalla, operación, ID técnico del recurso y error. No incluir contraseñas, JWT, datos clínicos ni listados completos de pacientes en tickets o logs. Evitar cambios manuales de estados sin análisis y respaldo.
 

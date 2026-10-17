@@ -15,7 +15,7 @@ Proponer una tarjeta con problema, comportamiento esperado, criterio de aceptaci
 - Medir colaboradores operativos por separado de DTO/enums/imports. No bajar una cifra mediante fachadas que sólo ocultan el mismo acoplamiento.
 - No introducir dependencias circulares. Mantener la transacción del caso de uso completa al extraer responsabilidades.
 - En frontend conservar HTTP compartido, separar borrador de configuración confirmada y evitar transferir todo el estado de una pantalla a App por props.
-- Evitar consultas por paciente en un bucle de interfaz para la futura lista de afectados; preferir una respuesta orientada al caso de uso.
+- Evitar consultas por paciente en un bucle de interfaz en la lista de afectados; preferir una respuesta orientada al caso de uso.
 - Formatear de manera legible y consistente. No agregar pruebas que sólo reflejen asignaciones triviales; cubrir reglas de negocio y regresiones relevantes.
 
 Antes de introducir otro servicio, explicar su responsabilidad, dependencias y cómo reduce decisiones coordinadas. AgendaService y TurnoService son los primeros candidatos de revisión, sin convertir una mejora de interfaz pequeña en una reescritura total.
@@ -36,6 +36,6 @@ La documentación se guarda en Git junto al código. Incluir los cambios documen
 
 ## Gestión de dependencias y deuda
 
-El frontend declara latest y tiene lockfile; usar npm ci para reproducir instalación. Proponer fijar rangos compatibles y agregar lint/runner sólo como tareas explícitas. Backend depende de Maven y tiene cinco tests; falta autonomía de configuración JWT de test. Gestionar migraciones, error HTTP uniforme y configuración de producción como pendientes visibles.
+El frontend declara latest y tiene lockfile; usar npm ci para reproducir instalación. Proponer fijar rangos compatibles y agregar lint/runner sólo como tareas explícitas. Backend depende de Maven y tiene catorce escenarios de integración más nueve unitarios; la integración define una clave JWT exclusiva de test. Gestionar migraciones, error HTTP uniforme y configuración de producción como pendientes visibles.
 
 No afirmar ausencia de vulnerabilidades: esta revisión documental no ejecutó un análisis de dependencias ni una auditoría de despliegue. Los defectos confirmados y riesgos identificados se mantienen en [pendientes](pendientes-riesgos.md).

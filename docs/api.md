@@ -1,6 +1,6 @@
 # Contrato de API
 
-Contrato del código `96fc37a`. Base `/api`, JSON UTF-8. URL de ejemplo basada en el valor por defecto del proyecto: `http://localhost:8080`. Sustituir host y puerto por los efectivos de cada entorno; el contrato no exige un puerto particular. OpenAPI generado en `/v3/api-docs` y Swagger en `/swagger-ui.html` complementan esta descripción.
+Contrato actualizado el 17 de octubre de 2026 con consultas de excepciones y reprogramaciones. Base `/api`, JSON UTF-8. URL de ejemplo basada en el valor por defecto del proyecto: `http://localhost:8080`. Sustituir host y puerto por los efectivos de cada entorno; el contrato no exige un puerto particular. OpenAPI generado en `/v3/api-docs` y Swagger en `/swagger-ui.html` complementan esta descripción.
 
 ## Autenticación y convenciones
 
@@ -30,8 +30,10 @@ Roles: **A**=ADMIN, **R**=RECEPCION, **M**=MEDICO, **T**=cualquiera autenticado.
 | DELETE | `/pacientes/{id}` | A,R | 204, baja lógica |
 | GET | `/agenda?profesionalId=1&fecha=2026-10-19` | T | 200 FranjaResponse[] |
 | GET | `/agenda/disponibles?profesionalId=1&desde=2026-10-19T08:00:00` | T | 200 FranjaResponse[] |
+| GET | `/agenda/excepciones?profesionalId=1&desde=2026-10-19&hasta=2026-10-25` | T | 200 ExcepcionAgendaResumen[] |
+| GET | `/agenda/reprogramaciones-pendientes?profesionalId=1` | T | 200 TurnoAfectadoResponse[] |
 | POST | `/agenda/plantillas` | A | 201 PlantillaDisponibilidadResponse |
-| POST | `/agenda/generar-franjas` | A | 200 GenerarFranjasResponse |
+| POST | `/agenda/generar-franjas` | A | 200 GenerarFranjasResponse, aditiva y limitada a un mes |
 | POST | `/agenda/excepciones` | A | 201 ExcepcionAgendaResponse |
 | POST | `/agenda/bloqueos` | A | 201 ExcepcionAgendaResponse |
 | GET | `/configuracion/agenda` | T | 200 ConfiguracionAgendaResponse |
@@ -68,7 +70,7 @@ DNI obligatorio, máximo 20; nombre/apellido obligatorios, máximo 100 cada uno;
 {"duracionEstandarMin":40,"horizonteReservaDias":90}
 ```
 
-Duración entera de 5 a 240; horizonte entero de 1 a 365. GET sin fila devuelve 40/90 sin insertar; PUT persiste. No cambia franjas/plantillas existentes ni expone parámetros de días/horas.
+Duración fija de 40; horizonte entero de 1 a 365. GET devuelve siempre 40 y el horizonte persistido (90 si no existe). PUT permite omitir duracionEstandarMin o enviar 40; otro valor devuelve 400. Sólo se configura el horizonte. La columna de duración anterior se conserva por compatibilidad y se normaliza a 40 al guardar, sin reescribir citas ni franjas históricas.
 
 ### Plantilla semanal
 
@@ -76,7 +78,7 @@ Duración entera de 5 a 240; horizonte entero de 1 a 365. GET sin fila devuelve 
 {"profesionalId":1,"diaSemana":"MONDAY","horaInicio":"08:00","horaFin":"20:00","duracionMin":40,"vigenciaDesde":"2026-10-19","vigenciaHasta":null}
 ```
 
-Día enum MONDAY…SUNDAY; campos obligatorios salvo vigenciaHasta; duración mínima 5 sin máximo declarado en este DTO. Fin posterior a inicio y vigenciaHasta no anterior a vigenciaDesde. El servidor acepta la duración recibida; no impone igualdad con configuración general. El frontend de selección múltiple realiza una llamada por día; no existe endpoint de lote.
+Día enum MONDAY…SUNDAY; campos obligatorios salvo vigenciaHasta; duracionMin opcional y restringida a 40. Fin posterior a inicio y vigenciaHasta no anterior a vigenciaDesde. duracionMin es opcional por compatibilidad; si se envía debe ser 40. Otro valor devuelve 400. La plantilla nueva siempre guarda 40. El frontend de selección múltiple realiza una llamada por día; no existe endpoint de lote.
 
 ### Generación
 
@@ -84,7 +86,9 @@ Día enum MONDAY…SUNDAY; campos obligatorios salvo vigenciaHasta; duración m�
 {"profesionalId":1,"desde":"2026-10-19","hasta":"2026-10-23"}
 ```
 
-Las fechas son obligatorias; hasta no anterior a desde y no debe superar el horizonte configurado. Respuesta `{creadas, existentes, omitidasPorCierre}`. La repetición secuencial cuenta inicios existentes sin borrarlos. No garantiza resolución de generaciones concurrentes ni de intervalos superpuestos.
+Contrato anterior aditivo: fechas obligatorias, dentro del mismo mes y horizonte. Usa el estándar guardado; omite pasado y cierres, conserva intervalos exactamente iguales y rechaza cualquier otra superposición con 409. Respuesta `{creadas, existentes, omitidasPorCierre}`. La operación conserva compromisos e historial; no hay circuito de cambio de duración.
+
+La generación utiliza el horario vigente más reciente por día y siempre 40 minutos. Antes de crear retira únicamente franjas futuras LIBRES de otra duración que no tengan referencias en Turno ni TurnoEvento. Todo ocurre en una transacción con bloqueo del profesional; ante una superposición con datos preservados responde 409 y revierte cambios. No cancela ni mueve turnos.
 
 ### Cierre, bloqueo y apertura
 
@@ -102,7 +106,7 @@ POST `/agenda/excepciones` usa el mismo núcleo más tipo y duración:
 {"profesionalId":1,"fecha":"2026-10-24","horaInicio":"08:00","horaFin":"12:00","tipo":"APERTURA","duracionMin":40,"motivo":"Atención extraordinaria"}
 ```
 
-Tipo obligatorio APERTURA/CIERRE. APERTURA exige ambas horas y duracionMin mínima 5; para CIERRE la duración puede ser null. Se conservan compromisos y se devuelven afectados después de guardar.
+Tipo obligatorio APERTURA/CIERRE. APERTURA exige ambas horas; duracionMin es opcional y sólo admite 40; para CIERRE la duración puede ser null. Se conservan compromisos y se devuelven afectados después de guardar.
 
 ### Turnos
 
@@ -112,21 +116,21 @@ Crear:
 {"pacienteId":1,"franjaId":10,"motivoConsulta":"Consulta de ejemplo"}
 ```
 
-Paciente/franja obligatorios, motivo opcional hasta 500. Paciente activo; franja futura y dentro del horizonte, LIBRE y sin otro turno activo.
+Paciente/franja obligatorios, motivo opcional hasta 500. Paciente activo; franja de exactamente 40 minutos, futura y dentro del horizonte, LIBRE, sin cierre ni otro turno activo del mismo profesional en un intervalo superpuesto. Reserva/reprogramación y generación se coordinan con bloqueo por profesional.
 
 Cancelar:
 
 ```json
-{"motivo":"Cambio solicitado por el paciente"}
+{"motivo":"Cambio solicitado por el paciente","origen":"PACIENTE"}
 ```
 
-Motivo obligatorio no vacío, máximo 500. Reprogramar:
+Motivo obligatorio no vacío, máximo 500. Origen PACIENTE o CONSULTORIO; omitido/null se interpreta PACIENTE para compatibilidad con clientes previos. Esto no rellena el origen de turnos históricos. CONSULTORIO bloquea el horario y deja pendiente al paciente; PACIENTE libera sólo sin cierre aplicable. Reprogramar:
 
 ```json
 {"franjaId":11,"motivo":"Nuevo horario coordinado"}
 ```
 
-Destino obligatorio y distinto del actual; motivo opcional máximo 500; requiere turno activo y franja válida. Atención/ausencia no requieren cuerpo y sólo se admiten a partir del inicio del turno.
+Destino obligatorio y distinto del actual; motivo opcional máximo 500; requiere turno activo o cancelado con origen CONSULTORIO, y destino válido. Una cancelación CONSULTORIO reprogramada pasa a RESERVADO y limpia sus campos actuales de cancelación; el evento anterior se conserva. Atención/ausencia no requieren cuerpo y sólo se admiten a partir del inicio del turno.
 
 ### Usuarios
 
@@ -143,14 +147,16 @@ Email obligatorio válido y único; password 8–100; rol ADMIN/RECEPCION/MEDICO
 | PacienteResponse | id, dni, nombre, apellido, telefono, email, activo |
 | ProfesionalResponse | id, nombre, apellido, matricula, activo |
 | FranjaResponse | id, profesionalId, inicio, fin, estado, origen |
-| TurnoResponse | id, pacienteId, paciente (apellido/nombre), profesionalId, franjaId, inicio, fin, estado, motivoConsulta, createdAt |
+| TurnoResponse | id, pacienteId, paciente (apellido/nombre), profesionalId, franjaId, inicio, fin, estado, motivoConsulta, createdAt, origenCancelacion, motivoCancelacion |
 | PlantillaDisponibilidadResponse | id, profesionalId, diaSemana, horaInicio, horaFin, duracionMin, vigenciaDesde, vigenciaHasta |
 | ExcepcionAgendaResponse | id, profesionalId, fecha, horaInicio, horaFin, tipo, motivo, franjasCreadas, franjasBloqueadas, turnosAfectados (IDs) |
+| ExcepcionAgendaResumen | id, profesionalId, fecha, horaInicio, horaFin, tipo, motivo |
+| TurnoAfectadoResponse | turno (TurnoResponse), dni, telefono, email, motivo de suspensión |
 | ConfiguracionAgendaResponse | duracionEstandarMin, horizonteReservaDias |
 | AuditoriaResponse | id, accion, entidad, entidadId, fecha, metadata, usuarioId |
 | UsuarioResponse | id, email, rol, activo; nunca passwordHash |
 
-Los horarios libres están limitados por el horizonte y se ordenan por inicio. No aceptan hasta, no generan franjas y no devuelven pacientes. Un desde pasado puede devolver franjas antiguas: pendiente de corrección.
+Los horarios libres están limitados por el horizonte y se ordenan por inicio. No aceptan hasta, no generan franjas y no devuelven pacientes. Un desde pasado se ajusta a ahora; el límite superior siempre se calcula desde ahora, y se excluyen otras duraciones, cierres aplicables y solapamientos con turnos activos.
 
 ## Errores y límites
 
@@ -158,4 +164,6 @@ El advice de negocio devuelve `{timestamp,status,error,message,path,validationEr
 
 No todos los errores técnicos ni de Spring Security pasan por ese advice. Se comprobó que omitir profesionalId podía terminar en **403** por el tratamiento de errores, aunque el usuario fuese ADMIN. No asumir que todo 403 significa un rol incorrecto ni que todos los cuerpos serán JSON homogéneo. El frontend ya incluye profesionalId en el calendario; falta uniformar el contrato del servidor.
 
-No existen GET de plantillas/excepciones/conflictos, historial de eventos por turno, agenda arbitraria por rango, búsqueda de usuarios por email, alta de profesional, confirmación explícita, notificaciones ni portal público. Distinguirlos de operaciones previstas por el SRS. El [registro de pendientes](pendientes-riesgos.md) indica diferencias y prioridades.
+La consulta de excepciones requiere profesionalId, desde y hasta (inclusive); rechaza hasta anterior a desde. Pendientes devuelve activos afectados por cierres y cancelados con origen CONSULTORIO, ordenados por inicio y sin duplicar por cierres solapados. Incluye fechas pasadas aún sin resolver y excluye cancelados por paciente o sin origen. No necesita una consulta por paciente. Los roles actuales no se modifican.
+
+No existen GET de plantillas/conflictos, historial de eventos por turno, agenda arbitraria por rango, búsqueda de usuarios por email, alta de profesional, confirmación explícita, notificaciones ni portal público. Distinguirlos de operaciones previstas por el SRS. El [registro de pendientes](pendientes-riesgos.md) indica diferencias y prioridades.

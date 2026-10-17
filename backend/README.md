@@ -1,6 +1,6 @@
 # Backend de Agenda Médica
 
-API REST de pacientes, disponibilidad, turnos, usuarios y auditoría. Código en `backend/`, dentro del repositorio. Base revisada: `96fc37a`, 17 de octubre de 2026.
+API REST de pacientes, disponibilidad, turnos, usuarios y auditoría. Código en `backend/`, dentro del repositorio. Actualizado con origen de cancelación y reprogramaciones, 17 de octubre de 2026.
 
 ## Requisitos y ejecución
 
@@ -30,13 +30,13 @@ El puerto por defecto del código versionado es 8080 y se puede cambiar mediante
 | `config` | Seguridad, administrador inicial y seed dev |
 | `exception` | Errores de negocio y respuestas de validación |
 
-La reserva bloquea una Franja con `PESSIMISTIC_WRITE` dentro de una transacción. La reprogramación conserva el ID de turno y registra origen/destino. No afirmar que ese mecanismo impide intervalos superpuestos entre franjas diferentes: es una limitación pendiente.
+La reserva bloquea una Franja con `PESSIMISTIC_WRITE` dentro de una transacción. Los cambios de un mismo turno también se serializan por bloqueo pesimista. La reprogramación bloquea sus franjas en orden de ID, conserva el ID del turno y registra origen/destino. DisponibilidadService revalida cierres al reservar/liberar; AgendaConsultaService recupera los pendientes con sus contactos. La reserva también comprueba intervalos entre franjas distintas y se serializa con la generación mediante bloqueo del profesional. La generación habilita un mes por operación, siempre con duración fija de 40 minutos y sin modificar citas asignadas.
 
 ## Configuración y datos iniciales
 
-`ConfiguracionAgenda` usa ID 1, duración inicial de 40 minutos y horizonte inicial de 90 días. La BD determina el valor guardado. Si no hay fila, GET devuelve valores iniciales sin insertarlos; PUT crea o actualiza. Cambiar el inicializador no actualiza una fila existente.
+`ConfiguracionAgenda` usa ID 1, duración fija de 40 minutos y horizonte inicial de 90 días. Sólo el horizonte es configurable. Si no hay fila, GET devuelve valores iniciales sin insertarlos; PUT crea o actualiza. La columna previa de duración se conserva por compatibilidad: la API siempre expone 40 y rechaza otros valores; al guardar se persiste 40 sin reescribir historia.
 
-`BootstrapAdmin` crea un ADMIN sólo si no existe **ningún usuario** y se definieron email/contraseña de bootstrap. No modifica claves de usuarios existentes. El perfil `dev` crea un profesional, dos pacientes y ocho franjas para el día siguiente; esas franjas siguen siendo de 30 minutos y pueden caer en fin de semana. El seed no representa el horario acordado ni habilita lunes a viernes automáticamente.
+`BootstrapAdmin` crea un ADMIN sólo si no existe **ningún usuario** y se definieron email/contraseña de bootstrap. No modifica claves de usuarios existentes. El perfil `dev` crea un profesional y dos pacientes de ejemplo; ya no crea franjas automáticamente. La agenda se habilita explícitamente por mes.
 
 ## Compilación y pruebas
 
@@ -45,6 +45,8 @@ mvn -B test
 mvn -B package
 ```
 
-Ambos requieren que la suite pueda iniciar MySQL por Docker y que JWT tenga una clave válida en test. No usar opciones que omitan tests como evidencia de aprobación. La clase actual tiene cinco escenarios; ver [pruebas](../docs/pruebas-aceptacion.md). No se incluyen migraciones Flyway/Liquibase ni endpoints de administración de profesionales.
+La integración requiere MySQL por Docker y define su propia clave JWT exclusiva de test. Hay catorce escenarios de integración y nueve pruebas unitarias; no usar opciones que omitan tests como evidencia de aprobación. Ver [pruebas](../docs/pruebas-aceptacion.md). No se incluyen Flyway/Liquibase ni endpoints de administración de profesionales. Para bases previas con DDL deshabilitado, revisar el [SQL aditivo](sql/2026-10-17-origen-cancelacion.sql); no ejecutarlo si ddl-auto=update ya creó las columnas. No se asigna un origen inventado a cancelaciones históricas.
+
+**Duración fija:** no hace falta la migración mensual propuesta anteriormente. El circuito de cambio de duración y su SQL fueron retirados. La generación limpia sólo franjas futuras libres de otra duración sin turnos/eventos asociados y revierte todo ante conflictos con datos que deban conservarse.
 
 Contrato completo, códigos y ejemplos: [API](../docs/api.md). Antes de publicar: [operación](../docs/operacion-respaldo.md) y [pendientes](../docs/pendientes-riesgos.md).

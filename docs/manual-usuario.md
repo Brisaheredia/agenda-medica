@@ -1,8 +1,8 @@
 # Manual de uso de Agenda Médica
 
-Guía para administración, recepción y médico. Describe la interfaz del commit `96fc37a`. Para instalar la aplicación, utilizar [instalación](instalacion-configuracion.md).
+Guía para administración, recepción y médico. Actualizado con colores y reprogramaciones el 17 de octubre de 2026. Para instalar la aplicación, utilizar [instalación](instalacion-configuracion.md).
 
-El horario acordado es lunes a viernes de **08:00 a 20:00**, con turnos estándar inicialmente de **40 minutos**. El administrador puede cambiar la configuración; verificar su valor guardado antes de habilitar nuevos horarios.
+El horario acordado es lunes a viernes de **08:00 a 20:00**, con turnos de **40 minutos fijos**. La duración no se edita. La anticipación máxima para reservar sigue siendo configurable.
 
 ## Acceso y permisos
 
@@ -17,7 +17,7 @@ Abrir la dirección entregada por soporte, ingresar email y contraseña y pulsar
 | Configurar horarios, cierres y aperturas | Sí | No | No |
 | Consultar auditoría | Sí | No | No |
 
-Estos son los permisos actuales. La participación de recepción y médico en configuración/asistencia debe confirmarse contra la matriz de actores del documento inicial. Si la sesión vence, volver a ingresar. Un mensaje de permisos debe informarse con la pantalla y operación realizadas, sin compartir contraseña ni token.
+Estos son los permisos actuales. El responsable dejó pendiente su revisión hasta aportar los requisitos funcionales; esta entrega no los modifica. La participación de recepción y médico en configuración/asistencia debe confirmarse contra la matriz de actores del documento inicial. Si la sesión vence, volver a ingresar. Un mensaje de permisos debe informarse con la pantalla y operación realizadas, sin compartir contraseña ni token.
 
 ## Preparar la agenda por primera vez
 
@@ -25,17 +25,17 @@ Entrar en **Disponibilidad** con Administración. La pantalla tiene calendario, 
 
 ### Guardar configuración
 
-1. En **Configuración de agenda**, verificar **Duración estándar de turno: 40**.
+1. En **Configuración de agenda** se informa **Duración fija: 40 minutos**; no es editable.
 2. Elegir la **Anticipación máxima para reservar**, por ejemplo 90 días si esa es la política vigente.
 3. Pulsar **Guardar configuración** y esperar confirmación.
 
-Editar un campo sin guardar no cambia la configuración vigente. Cambiar la duración no modifica automáticamente los turnos ya dados ni los horarios generados anteriormente.
+La configuración editable es la anticipación máxima. La duración de 40 minutos es una regla fija; no existe cambio de duración ni regeneración por ese motivo.
 
 ### Elegir días y horario
 
 1. En **1. Días y horario de atención**, pulsar **Lunes a viernes**. También se puede marcar o desmarcar cada día; **Toda la semana** incluye sábado y domingo, y **Limpiar** quita todos.
 2. Verificar **Desde 08:00** y **Hasta 20:00**. Son horarios editables del formulario.
-3. Verificar el texto que informa la duración tomada de la configuración guardada.
+3. Verificar el texto que informa que cada turno dura 40 minutos.
 4. Elegir **Vigente desde** y, si corresponde, **Vigente hasta**.
 5. Pulsar **Guardar horario para 5 días**. El número cambia con la selección.
 
@@ -43,13 +43,16 @@ Un horario común se guarda para los días elegidos. Para horarios distintos, re
 
 La pantalla todavía no lista las reglas existentes ni permite editarlas/eliminarlas. No repetir una carga para “ver qué pasa”: primero consultar a soporte si ya se configuró ese período.
 
-### Habilitar las fechas
+### Habilitar el mes
 
-1. En **2. Habilitar horarios para reservar**, indicar fechas **Desde** y **Hasta** dentro de la anticipación permitida.
-2. Pulsar **Habilitar horarios**.
-3. Leer cuántos horarios se crearon, ya existían o se omitieron por cierres. El calendario se actualiza al finalizar; navegar a la semana habilitada si fuera otra.
+1. Guardar los días y horarios de atención.
+2. En **2. Habilitar horarios del mes**, elegir el mes. Su último día debe estar dentro de la anticipación máxima configurada.
+3. Pulsar **Habilitar horarios**. Se informa cuántos se crearon, ya existían o se omitieron por cierres.
+4. Consultar la semana habilitada; el calendario se actualiza al finalizar.
 
-Guardar los días/horarios y habilitar fechas son dos pasos distintos. Sin habilitación no aparecen los nuevos horarios para reservar. Un día continuo de 08:00 a 20:00 con 40 minutos debería producir **18 horarios**, desde 08:00–08:40 hasta 19:20–20:00, siempre que no haya cierres ni datos previos incompatibles.
+Se procesa un mes por vez. Los 90 días son un límite de anticipación, no una generación automática. Todos los horarios nuevos duran 40 minutos; 08:00–20:00 produce 18 por día sin cierres. Repetir no duplica horarios ni cambia turnos asignados.
+
+Al habilitar el período se retiran únicamente franjas futuras de otra duración que estén LIBRES y sin turnos ni eventos históricos. Si un horario antiguo tiene compromisos o historial y se superpone con la grilla, se informa conflicto y se revierte toda la operación; no se borran citas ni se cancelan pacientes automáticamente. Las reservas antiguas conservan sus tiempos registrados, pero una franja de otra duración no admite reservas nuevas. No hace falta la migración mensual propuesta anteriormente.
 
 ## Registrar y buscar pacientes
 
@@ -65,6 +68,18 @@ En **Agenda**, elegir **Día** o **Semana**. En día, el centro muestra **Hoy** 
 
 En semana se muestran siete días y se puede entrar a uno para gestionarlo. Los filtros del día permiten ver disponibles, reservados, atendidos, ausentes, bloqueados y cancelados. El resumen cuenta franjas, disponibilidad futura y turnos reservados/confirmados. No es un reporte de actividad por período.
 
+Los colores se comparten con Disponibilidad:
+
+| Color | Significado |
+|---|---|
+| Rojo | Cierre o cancelación del consultorio; un turno activo afectado necesita reprogramación |
+| Naranja | Cancelación solicitada por el paciente |
+| Verde | Horario futuro disponible |
+| Azul | Turno ocupado, atendido o ausente; el texto precisa el resultado |
+| Gris claro | Sin horarios, horario pasado o cancelación antigua sin origen registrado |
+
+El domingo tiene fondo rojizo. Cada horario conserva su estado aunque el día contenga varios colores. El encabezado prioriza cierres, luego disponibilidad, cancelaciones del paciente y ocupación. Un domingo rojizo por sí solo no significa cierre: leer sus horarios y etiquetas.
+
 ## Asignar un turno
 
 1. Elegir una franja libre futura desde la lista o el selector **Horario disponible**.
@@ -78,9 +93,9 @@ Si otra persona ocupó la franja, el sistema informa conflicto y actualiza la ag
 
 ## Cancelar, reprogramar y registrar atención
 
-**Cancelar:** abrir la acción del turno activo, escribir motivo obligatorio y confirmar. El registro cancelado queda visible con su filtro. En condiciones normales libera el horario.
+**Cancelar:** abrir la acción del turno activo, escribir motivo y elegir quién solicitó la cancelación. Si llamó el paciente, se muestra en naranja y libera el horario sólo cuando no existe un cierre. Si suspendió el médico/consultorio, se muestra en rojo, bloquea ese horario y agrega el paciente a Reprogramaciones. Los registros antiguos sin origen quedan grises; no se supone que los canceló el paciente.
 
-**Reprogramar:** abrir la acción del turno, elegir nueva fecha, seleccionar un horario disponible y confirmar. El motivo es opcional en el formulario actual. Se mantiene el mismo turno y se registra el cambio. Si el nuevo horario no puede reservarse, la operación debe conservar el compromiso original y mostrar el error.
+**Reprogramar:** abrir la acción del turno, elegir **Buscar horarios desde**, seleccionar entre las alternativas futuras dentro del horizonte y confirmar. El motivo es opcional en el formulario actual. Se mantiene el mismo turno y se registra el cambio. Si el nuevo horario no puede reservarse, la operación debe conservar el compromiso original y mostrar el error.
 
 **Atendido o ausente:** Administración/Médico pueden registrar el resultado una vez alcanzado el inicio del turno. Confirmar la acción en el diálogo. No se permite mover un turno ya ATENDIDO/AUSENTE por el flujo normal.
 
@@ -90,11 +105,19 @@ En **Bloqueos y excepciones**, Administración elige:
 
 - **Bloquear horarios:** fecha completa o intervalo con motivo opcional.
 - **Feriado / día no laborable:** cierre manual de la fecha; no descarga feriados automáticamente.
-- **Apertura extraordinaria:** fecha, intervalo y duración. El formulario todavía propone 30 minutos de manera independiente: seleccionar expresamente la duración vigente de 40 antes de guardar, si corresponde.
+- **Apertura extraordinaria:** fecha e intervalo; usa la duración fija de 40 minutos, mostrada como lectura. Rechaza intervalos superpuestos con franjas vigentes. Una apertura no elimina un cierre existente.
 
-Un cierre conserva turnos ya reservados e informa sus identificadores. **Todavía falta la lista con nombres/teléfonos y resolución desde ella**. Hasta que exista, ubicar los turnos en Agenda y los contactos en Pacientes para coordinar manualmente.
+Un cierre conserva los turnos y muestra un enlace a **Reprogramaciones** con la cantidad de afectados. Cancelar o mover un turno no habilita su horario anterior si sigue cerrado.
 
-Hay un defecto pendiente: cancelar o mover un turno dentro de un cierre puede mostrar su horario anterior como libre. No reasignar ese horario si el consultorio sigue cerrado; informar a soporte. Este manual no presenta ese flujo como validado para operación real sin corregirlo.
+## Llamar y reprogramar pacientes afectados
+
+1. Abrir **Reprogramaciones** en el menú, o el enlace que aparece tras bloquear horarios.
+2. Consultar nombre, DNI, teléfono, email, fecha/hora original y motivo de suspensión. Se puede filtrar por paciente/contacto y fecha original.
+3. Llamar para coordinar un nuevo horario. Si falta contacto, completarlo desde Pacientes.
+4. Pulsar **Reprogramar**, buscar desde una fecha y seleccionar una alternativa disponible.
+5. Confirmar: se conserva la identidad e historial y el turno desaparece de pendientes cuando queda fuera del cierre.
+
+La lista se recupera de la BD al volver a entrar; incluye turnos activos afectados por cierres y cancelaciones individuales con origen CONSULTORIO. Excluye cancelaciones del paciente y registros históricos cuyo origen no consta. No envía avisos ni reprograma automáticamente. Consultan los tres roles; reprograman Administración/Recepción según los permisos actuales, pendientes de validación funcional.
 
 ## Auditoría y ayuda
 
@@ -107,6 +130,7 @@ Administración puede abrir **Auditoría**, actualizar y filtrar los últimos 10
 | No se puede confirmar | Revisar paciente, franja futura y mensaje del sistema |
 | Un cambio falla parcialmente al guardar días | Reintentar sólo los días que quedaron seleccionados |
 | Mensaje de sesión o permisos | Volver a ingresar si venció; informar operación y rol si persiste |
-| Se necesita lista de afectados o historial detallado | Son capacidades pendientes, no opciones ocultas del menú |
+| Se necesita lista de afectados | Abrir Reprogramaciones |
+| Se necesita historial detallado del turno | La pantalla específica sigue pendiente |
 
 No existe modo demo activo en esta versión. Usar datos ficticios únicamente en una base de prueba identificada por soporte.

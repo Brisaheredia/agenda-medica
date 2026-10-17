@@ -1,6 +1,6 @@
 # Frontend de Agenda Médica
 
-Interfaz React para personal del consultorio. Código en `frontend/`, dentro del repositorio. Base revisada: `96fc37a`, 17 de octubre de 2026.
+Interfaz React para personal del consultorio. Código en `frontend/`, dentro del repositorio. Actualizado con colores y reprogramaciones, 17 de octubre de 2026.
 
 ## Ejecutar
 
@@ -31,8 +31,9 @@ npm run preview
 |---|---|---|
 | `/` | Agenda | Día/semana, reserva y acciones de turno |
 | `/pacientes` | Pacientes | Búsqueda, alta, edición y baja lógica |
-| `/disponibilidad` | Disponibilidad | Configuración, selección de días y generación |
+| `/disponibilidad` | Disponibilidad | Configuración, días y generación por mes con duración fija de 40 |
 | `/bloqueos` | Bloqueos y excepciones | Cierre, apertura y día no laborable manual |
+| `/reprogramaciones` | Reprogramaciones | Pacientes afectados, contacto y cambio de horario manual |
 | `/auditoria` | Auditoría | Últimos eventos; sólo ADMIN |
 
 El login se muestra al no existir sesión, sin ruta `/login` independiente. La navegación usa History API mediante `usePathname`; el hosting debe devolver `index.html` al recargar rutas de la SPA.
@@ -45,8 +46,8 @@ El login se muestra al no existir sesión, sin ruta `/login` independiente. La n
 - HTTP 401 cierra sesión; HTTP 403 muestra falta de permisos. El backend todavía puede devolver 403 ante ciertos errores que no son de permisos.
 - “Hoy” aparece en el centro sólo para la fecha actual; los controles laterales muestran fechas adyacentes. En otros días aparece “Volver a hoy”.
 - Disponibilidad ofrece casillas por día, “Lunes a viernes”, “Toda la semana” y “Limpiar”. Se propone 08:00–20:00 como formulario nuevo, no como lectura de plantillas existentes.
-- La duración del horario semanal se toma de la configuración recuperada/guardada. Editar el campo general sin guardar no cambia la duración aplicada a las nuevas plantillas.
+- La duración es fija en 40 minutos: no hay campo editable ni se envía una duración desde el cliente. Sólo se guarda el horizonte de reserva.
 - Guardar varios días realiza una petición por día, secuencialmente. No es una única transacción: si falla, se informan éxitos parciales y quedan seleccionados los pendientes.
-- Tras habilitar fechas se recarga el calendario. “Próximo horario libre” muestra sólo el primer resultado de la lista obtenida.
+- GeneracionMensual habilita un mes por operación. El backend conserva reservas e historial; al terminar se actualiza el calendario. No hay cambio de duración ni regeneración asociada. “Próximo horario libre” muestra la primera alternativa.
 
-Los calendarios semanales consultan siete días; Agenda hace dos peticiones por día. Mantener esta particularidad visible en análisis de rendimiento. Ver [arquitectura](../docs/arquitectura.md) y [manual](../docs/manual-usuario.md).
+Ambas pantallas usan el mismo calendario semanal: dos peticiones por día más una consulta de excepciones por semana (15 en total). Los colores se resuelven en `lib/agendaVisual.ts`; `LeyendaAgenda` los explica sin depender sólo del color. Reprogramaciones consulta un DTO con contacto, sin pedir un paciente por fila. Mantener esta particularidad visible en análisis de rendimiento. Ver [arquitectura](../docs/arquitectura.md) y [manual](../docs/manual-usuario.md).

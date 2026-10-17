@@ -80,6 +80,10 @@ npm run dev
 
 Crear `.env.local` con la línea correspondiente y reiniciar Vite si se modifica. Abrir su URL informada. Ingresar con el usuario creado mediante bootstrap, no con una contraseña supuesta. Si ya existían usuarios, el bootstrap no reemplaza sus credenciales.
 
+## Duración fija
+
+Esta versión no requiere la migración mensual propuesta para cambios de duración: ese circuito fue retirado. Reiniciar el backend actualizado. Los horarios nuevos siempre duran 40 minutos y las citas anteriores se conservan. La estructura de origen de cancelación se mantiene como parte del circuito de suspensiones; con DDL manual revisar su SQL específico.
+
 ## Comprobación inicial
 
 1. Swagger abre y el frontend muestra el login.

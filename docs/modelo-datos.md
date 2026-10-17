@@ -1,6 +1,6 @@
 # Modelo de datos y estados
 
-Modelo lógico derivado de las diez entidades JPA actuales. MySQL conserva configuración, pacientes, reglas, franjas y compromisos. Los nombres y restricciones se basan en las entidades del commit `96fc37a`; no existe un esquema versionado por migraciones.
+Modelo lógico derivado de las diez entidades JPA actuales. MySQL conserva configuración, pacientes, reglas, franjas y compromisos. Los nombres y restricciones se basan en las entidades revisadas el 17 de octubre de 2026; no existe un esquema versionado por migraciones.
 
 ## Entidades
 
@@ -9,15 +9,15 @@ Modelo lógico derivado de las diez entidades JPA actuales. MySQL conserva confi
 | Usuario / usuarios | ID, email único, password_hash, rol, activo, created_at, updated_at. Cuenta operativa. |
 | Paciente / pacientes | ID, DNI único, nombre, apellido, teléfono/email opcionales, activo y marcas de tiempo. |
 | Profesional / profesionales | ID, nombre, apellido, matrícula única, activo y marcas de tiempo. |
-| ConfiguracionAgenda / configuracion_agenda | ID fijo 1, duracion_estandar_min, horizonte_reserva_dias. Valores iniciales 40/90 si falta la fila. |
+| ConfiguracionAgenda / configuracion_agenda | ID fijo 1, duracion_estandar_min, horizonte_reserva_dias. Duración fija 40; horizonte inicial 90 si falta la fila. La columna de duración se conserva por compatibilidad. |
 | PlantillaDisponibilidad / plantillas_disponibilidad | Profesional, día de semana, inicio/fin, duracion_min, vigencia_desde/hasta. |
 | ExcepcionAgenda / excepciones_agenda | Profesional, fecha, horas opcionales, tipo APERTURA/CIERRE, motivo. |
 | Franja / franjas | Profesional, inicio/fin concretos, estado, origen y version. |
-| Turno / turnos | Paciente, profesional, franja, copia de inicio/fin, estado, motivo_consulta, created_at y updated_at. |
+| Turno / turnos | Paciente, profesional, franja, copia de inicio/fin, estado, motivo_consulta, origen_cancelacion nullable (PACIENTE/CONSULTORIO), motivo_cancelacion nullable, created_at y updated_at. |
 | TurnoEvento / turno_eventos | Turno, tipo, fecha, usuario opcional, franja_anterior_id/nueva_id y detalle. |
 | Auditoria / auditoria | Usuario opcional, acción, entidad, entidad_id, fecha y metadata. |
 
-Las entidades relacionadas por JPA utilizan claves foráneas. Turno referencia una Franja, pero la relación no es única: un horario cancelado puede reutilizarse conservando los turnos anteriores. Los IDs históricos de franja en TurnoEvento son valores escalares, no relaciones JPA. No hay relación persistida específica que represente la gestión pendiente de un turno afectado por un cierre.
+Las entidades relacionadas por JPA utilizan claves foráneas. Turno referencia una Franja, pero la relación no es única: un horario cancelado puede reutilizarse conservando los turnos anteriores. Los IDs históricos de franja en TurnoEvento son valores escalares, no relaciones JPA. Los pendientes se derivan de turnos activos que solapan un CIERRE y de cancelados con origen CONSULTORIO. No hay una cola en memoria ni una tabla duplicada; al mover el turno se recalcula su pertenencia.
 
 ## Relaciones principales
 
@@ -44,12 +44,12 @@ ConfiguracionAgenda es una fila independiente. El actor de TurnoEvento es una re
 ## Restricciones e índices
 
 - DNI de paciente, email de usuario y matrícula profesional son únicos.
-- Franja tiene unicidad `(profesional_id, inicio)` y versión optimista; la reserva usa además bloqueo pesimista.
-- Turno se indexa por profesional/inicio, paciente y estado; no tiene campo `@Version`.
+- Franja tiene unicidad `(profesional_id, inicio)` y versión optimista. Las mutaciones se coordinan con bloqueo pesimista del profesional y validación de intervalos.
+- Turno se indexa por profesional/inicio, paciente y estado; no tiene `@Version`, pero sus modificaciones usan PESSIMISTIC_WRITE. Las franjas de reprogramación se bloquean en orden ascendente de ID.
 - Plantilla y excepción se indexan por profesional/vigencia y profesional/fecha respectivamente.
 - Eventos se indexan por turno/fecha; auditoría por entidad/ID/fecha; pacientes por DNI y apellido.
 
-La unicidad de inicio no impide que 09:00–09:40 y 09:20–10:00 coexistan. Tampoco existe una restricción SQL que por sí sola limite los turnos activos a uno por franja; la garantía actual depende de la transacción y su bloqueo.
+La unicidad SQL no protege intervalos completos: la garantía de no superposición depende del bloqueo común del profesional, consultas por intervalo y transacciones READ_COMMITTED. Las franjas antiguas de otra duración no admiten nuevas reservas. Sólo se eliminan durante generación si están libres, futuras y sin referencias de turnos/eventos.
 
 ## Estados
 
@@ -60,7 +60,7 @@ La unicidad de inicio no impide que 09:00–09:40 y 09:20–10:00 coexistan. Tam
 | Franja | BLOQUEADA | Cerrada para nuevas reservas |
 | Turno | RESERVADO | Activo, cancelable o reprogramable |
 | Turno | CONFIRMADO | Activo; no hay operación específica de confirmación |
-| Turno | CANCELADO | Historial conservado; no se reactiva por flujo normal |
+| Turno | CANCELADO | Historial conservado; sólo origen CONSULTORIO permite reprogramar a RESERVADO |
 | Turno | ATENDIDO | Final, sólo desde inicio |
 | Turno | AUSENTE | Final, sólo desde inicio |
 
@@ -82,19 +82,22 @@ stateDiagram-v2
     CONFIRMADO --> ATENDIDO: Registrar desde el inicio
     RESERVADO --> AUSENTE: Registrar desde el inicio
     CONFIRMADO --> AUSENTE: Registrar desde el inicio
-    CANCELADO --> [*]
+    CANCELADO --> RESERVADO: Reprogramar sólo si origen CONSULTORIO
+    CANCELADO --> [*]: Sin reprogramación
     ATENDIDO --> [*]
     AUSENTE --> [*]
 ```
 
-No se dibuja una transición de reserva a confirmado porque no existe operación de confirmación expuesta. Reprogramar conserva el estado y la identidad; no agrega un estado REPROGRAMADO.
+No se dibuja una transición de reserva a confirmado porque no existe operación de confirmación expuesta. Reprogramar conserva identidad y estado activo; si estaba cancelado por el consultorio vuelve a RESERVADO; no agrega un estado REPROGRAMADO.
 
 ## Duración e historia
 
-Configuración, plantilla y franja expresan conceptos distintos. La configuración vigente orienta nuevas reglas; una plantilla guarda su duración; la franja materializa inicio/fin; el turno copia el compromiso. Cambiar 40 a 30 en configuración no reescribe esos datos históricos. Cualquier adecuación de franjas libres debe analizar solapamientos y preservar compromisos antes de aplicar una migración.
+Los turnos nuevos duran exactamente 40 minutos por decisión del responsable. ConfiguracionAgenda expone la constante y rechaza cambios; la columna previa permanece por compatibilidad, sin autorizar otras duraciones. La plantilla conserva horarios/vigencia y puede contener duración histórica; la generación usa 40. El turno copia su compromiso y no se reescribe automáticamente.
 
-El esquema usa fecha/hora local sin offset. Alinear zona de JVM/BD/cliente y documentar conversión si se incorporan otras zonas. Las anotaciones de Jackson/JDBC no corrigen por sí mismas la zona de `now()`.
+El esquema usa fecha/hora local sin offset. Alinear zona de JVM/BD/cliente. Las anotaciones de Jackson/JDBC no corrigen por sí mismas la zona de now().
 
 ## Evolución del esquema
 
-Actualmente se usa `ddl-auto=update` para desarrollo y create-drop en test. Antes de producción incorporar migraciones revisadas, respaldo/restauración y una prueba de actualización desde una base anterior. No ejecutar SQL de corrección masiva sobre datos reales sin una migración y validación específicas.
+No se requiere la migración mensual: se retiraron vigente, inicio_vigente y el reemplazo de índices propuestos para cambios de duración. Si se llegó a aplicar ese script anterior sin regenerar meses, sus columnas adicionales pueden permanecer; la aplicación no las utiliza.
+
+Actualmente se usa `ddl-auto=update` para desarrollo y create-drop en test. Este cambio agrega dos columnas nullable; el [SQL aditivo](../backend/sql/2026-10-17-origen-cancelacion.sql) sirve para esquemas previos con DDL manual y sólo si las columnas faltan. No se migran motivos/orígenes por conjetura: cancelaciones anteriores permanecen sin origen conocido. Antes de producción incorporar migraciones revisadas, respaldo/restauración y una prueba de actualización desde una base anterior. No ejecutar SQL de corrección masiva sobre datos reales sin una migración y validación específicas.

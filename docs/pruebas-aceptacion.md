@@ -1,6 +1,6 @@
 # Pruebas y aceptación
 
-Esta guía separa pruebas existentes, comprobaciones realizadas y casos que faltan. Base documental `96fc37a`. Una funcionalidad no se considera aprobada sólo por existir en código ni por haber compilado.
+Esta guía separa pruebas existentes, comprobaciones realizadas y casos que faltan. Actualizado con colores y reprogramaciones el 17 de octubre de 2026. Una funcionalidad no se considera aprobada sólo por existir en código ni por haber compilado.
 
 ## Ejecutar las comprobaciones disponibles
 
@@ -13,14 +13,15 @@ npm run build
 
 No hay runner de pruebas frontend ni lint configurado. La compilación comprueba tipos y bundle, no interacción, permisos ni persistencia.
 
-Backend, con Java 21, Maven, Docker y una clave JWT válida de prueba:
+Backend, con Java 21, Maven y Docker:
 
 ```powershell
-$env:JWT_SECRET = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
 mvn -B test
 ```
 
-Testcontainers inicia `mysql:8.4` y configura create-drop dentro del contenedor, sin requerir usar la BD operativa. Confirmar Docker disponible y no apuntar los tests manualmente a datos reales. La clase no suministra JWT propio y CI tampoco lo define: completar esa configuración de test para que la suite sea autocontenida.
+Testcontainers inicia `mysql:8.4` y configura create-drop dentro del contenedor, sin requerir usar la BD operativa. Confirmar Docker disponible y no apuntar los tests manualmente a datos reales. La clase suministra una clave JWT exclusiva de test. En el Docker 29 de esta máquina fue necesario `mvn -B -Dapi.version=1.44 test` para compatibilidad con el cliente de Testcontainers; no cambia los puertos del sistema. La ejecución local también necesitó acceso al almacén de certificados de Windows para resolver dependencias de Maven. Estas opciones son del entorno, no requisitos de producción.
+
+Pruebas unitarias sin Docker: `mvn -B "-Dtest=DisponibilidadServiceTest,AgendaConsultaServiceTest" test`.
 
 ## Automatización existente
 
@@ -32,9 +33,18 @@ Clase `backend/src/test/java/ar/com/agendamedica/TurnoAgendaIntegrationTest.java
 | cancelarLiberaLaFranjaYRegistraEvento | Cancelación normal, liberación y evento |
 | reprogramarLiberaAnteriorYOcupaNueva | Identidad, origen/destino y evento |
 | noPermiteMarcarAtendidoAntesDelHorario | Rechazo de atención anticipada |
-| cierreBloqueaLibresPeroConservaTurnosActivos | Cierre conserva compromisos e informa IDs |
+| cierreBloqueaLibresPeroConservaTurnosActivos | Recupera contacto tras cierre y resuelve moviendo el turno sin reabrir origen |
+| cancelacionDelConsultorioConservaContactoYPermiteReprogramar | Persiste origen, recupera pendiente y conserva identidad/eventos al resolver |
+| pacienteQueCancelaEnDiaSuspendidoNoEntraEnPendientesNiReabreHorario | Excluye paciente cancelado, mantiene cierre y no ofrece ese horario |
+| noReprogramaCancelacionSolicitadaPorPaciente | Rechaza reactivación y conserva destino libre |
+| dosReprogramacionesConcurrentesDelMismoTurnoNoDejanFranjasHuerfanas | Serializa cambios del mismo turno y deja sólo su destino final ocupado |
+| generaCuarentaAunqueLaPlantillaSeaAntiguaYLimpiaSoloLibresSinHistoria | Genera 18 horarios de 40, limpia legado libre sin historial y repite sin duplicar |
+| duracionFijaRechazaCambiosYPermiteGuardarSoloHorizonte | Rechaza 30 en configuración, plantilla y apertura; permite guardar sólo horizonte |
+| noBorraNiModificaTurnoAntiguoCuandoImpideGenerarCuarenta | Mantiene cita antigua e intervalo original ante conflicto, sin cambios parciales |
+| reservasDeCuarentaEnFranjasDiferentesSuperpuestasSeSerializan | Un éxito y un conflicto entre dos IDs con intervalos superpuestos |
+| generacionMensualEsFinitaCercaDeMedianocheYNoAceptaDosMeses | Límite de medianoche y rechazo de generación de varios meses |
 
-Son llamadas a servicios, no pruebas de autorización HTTP. El test de cierre no cancela después el turno afectado y por eso no cubre el defecto de liberación dentro del cierre. No hay medición de cobertura porcentual.
+Son llamadas a servicios, no pruebas de autorización HTTP. DisponibilidadServiceTest agrega seis pruebas sobre liberación, cierre parcial y destino cerrado. AgendaConsultaServiceTest agrega tres sobre contactos, cierres duplicados, cancelación individual y rango inválido. No hay medición de cobertura porcentual.
 
 ## Evidencia de esta revisión
 
@@ -45,11 +55,12 @@ Son llamadas a servicios, no pruebas de autorización HTTP. El test de cierre no
 | Acceso real ADMIN al calendario | Login local y siete GET de semana 12–18/10 respondieron 200 al incluir profesionalId; no se modificaron datos |
 | Petición incompleta | GET sin profesionalId devolvió 403; con profesionalId devolvió 200 |
 | Compilación Java de auditoría inicial | Correcta para fuentes revisadas entonces; no sustituye compilar cada nueva versión |
-| Cinco escenarios de integración | No ejecutados en la última tentativa: Testcontainers falló al iniciar Docker con respuesta 400 |
-| Generación cerca de medianoche | Condición LocalTime reproducida de manera acotada; defecto pendiente |
+| Suite actual de backend | 23/23 aprobadas: catorce de integración en MySQL 8.4 descartable y nueve unitarias, sin omisiones. Reportes Surefire locales en backend/target/surefire-reports (ignorados por Git). |
+| Frontend actual | npm run build aprobado; diez comprobaciones temporales con Node sobre origen/colores y límites de cierre aprobadas; pantalla Reprogramaciones comprobada con API simulada (contactos, filtros, permiso vigente y guardado sin depender de la agenda diaria). GeneracionMensual comprobada con API simulada: mes, rango y bloqueo de doble envío; no envía duración. No son validación visual ni suite versionada. |
+| Generación cerca de medianoche | Iteración reemplazada por LocalDateTime y límite; prueba mensual cerca de medianoche aprobada |
 | Pruebas E2E, carga, navegadores y restauración | Sin acta aprobada |
 
-No se repitieron compilaciones ni se modificó la aplicación por la actualización documental. El resultado del CI remoto no fue consultado.
+La nueva evidencia corresponde al árbol de trabajo con colores/reprogramaciones del 17/10/2026, posterior a 8fc8bc2. No se modificó ni reinició la BD operativa; sólo se crearon datos ficticios en contenedores. El resultado del CI remoto no fue consultado.
 
 ## Casos de aceptación por completar
 
@@ -58,7 +69,7 @@ Usar una base descartable con un profesional activo y pacientes ficticios. Las f
 | Caso | Procedimiento y resultado exigido |
 |---|---|
 | CA-01 | Arrancar desde clon limpio, crear ADMIN y consultar profesional/configuración según guía |
-| CA-02 | Guardar configuración 40/90, recargar y recuperar esos valores; cambiar duración y verificar persistencia |
+| CA-02 | Verificar duración fija 40 y horizonte 90; guardar otro horizonte, recargar y comprobar; rechazar duración 30 |
 | CA-03 | Marcar lunes–viernes 08:00–20:00, guardar y habilitar una semana: 18 franjas por día sin cierres, ninguna de fin de semana |
 | CA-04 | Con API simulada fallar el tercer día: conservar pendientes y reintentar sin duplicar los dos éxitos previos |
 | CA-05 | Registrar paciente, buscar por DNI/apellido, editar, desactivar y verificar historial preservado |
@@ -72,8 +83,9 @@ Usar una base descartable con un profesional activo y pacientes ficticios. Las f
 | CA-13 | Consultar disponibilidad desde fecha elegida, varias alternativas y rango; excluir pasado/cierres/ocupación |
 | CA-14 | Generar cerca de medianoche y repetir generación: terminar sin horarios fuera del intervalo ni duplicados |
 | CA-15 | Restaurar respaldo en base separada y contrastar pacientes, franjas, turnos, eventos y auditoría |
+| CA-19 | Verificar rojo consultorio, naranja paciente, verde disponible, azul ocupado, gris sin horarios y domingo rojizo; conservar etiquetas y distinguir cancelaciones antiguas sin origen |
 | CA-16 | En 360 px y navegadores acordados, completar reserva y navegar fechas con teclado; Hoy sólo en fecha actual |
-| CA-17 | Cambiar duración: preservar turnos previos, aplicar estándar a nuevas plantillas/aperturas y analizar franjas antiguas |
+| CA-17 | Generar 40 aun con plantillas antiguas de 30; limpiar sólo libres sin historial, conservar citas previas, rechazar reservas nuevas en franjas de otra duración y repetir sin duplicar. |
 | CA-18 | Dos cambios simultáneos del mismo turno no dejan destinos ocupados sin compromiso ni eventos incompatibles |
 
 ## Pruebas de carga y salida

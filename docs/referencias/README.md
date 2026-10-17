@@ -14,7 +14,7 @@ El responsable transcribió un correo de Consultora IdS S.A. al doctor: centrali
 
 También comunicó respuesta afirmativa a duración estándar y conservación de compromisos cuando se suspende atención; agregó reprogramación manual con lista de pacientes/datos de contacto. Finalmente precisó: **lunes a viernes de 08:00 a 20:00 y turnos de 40 minutos**. Se registra como confirmación transmitida por el responsable en esta conversación, no como una nueva respuesta directa obtenida del doctor por el sistema.
 
-La duración es configurable: el responsable aclaró que editarla en frontend y guardarla debe cambiar la persistencia. Por eso 40 se documenta como estándar inicial del consultorio, no como constante inmutable ni como sustituto de un valor ya guardado.
+Decisión final del responsable, 17 de octubre de 2026: **duración fija de 40 minutos**. Reemplaza su aclaración anterior sobre duración configurable y descarta la regeneración por cambios de duración. Sólo la anticipación máxima sigue siendo editable; no se modifica el DOCX original.
 
 La lista asistida, Fase 2 en el DOCX, se incorpora al alcance necesario según la confirmación actual. No autoriza mensajería automática, llamadas automáticas ni optimización de reprogramaciones.
 

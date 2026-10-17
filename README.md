@@ -1,6 +1,6 @@
 # Agenda Médica
 
-Aplicación web para centralizar pacientes, disponibilidad y turnos del consultorio del Dr. Salvador Amado. Esta edición documenta el código del commit **96fc37a**, revisado el **17 de octubre de 2026**.
+Aplicación web para centralizar pacientes, disponibilidad y turnos del consultorio del Dr. Salvador Amado. Documentación actualizada con colores y reprogramaciones el **17 de octubre de 2026**.
 
 El sistema permite reservar, cancelar y reprogramar turnos, consultar agenda diaria y semanal, gestionar horarios y registrar atención o ausencia. El núcleo está implementado; la aceptación integral y los pendientes indicados abajo todavía deben cerrarse.
 
@@ -28,9 +28,9 @@ La documentación vigente se versiona en este repositorio junto al código. El R
 
 ## Alcance confirmado
 
-Un profesional, de lunes a viernes de **08:00 a 20:00**, con **40 minutos como duración estándar inicial**. La duración sigue siendo configurable: el valor persistido vigente prevalece sobre el inicializador del código. Horarios y plantillas se deben cargar; esta decisión de negocio no implica que la BD ya tenga todas las franjas.
+Un profesional, de lunes a viernes de **08:00 a 20:00**, con **40 minutos de duración fija**. No se puede cambiar la duración desde el frontend ni la API. Horarios y plantillas se deben cargar; esta decisión de negocio no implica que la BD ya tenga todas las franjas.
 
-Se incluyen pacientes, disponibilidad, turnos, cancelación, reprogramación manual, cierres/aperturas, atención/ausencia y auditoría básica. Se requiere completar el listado de pacientes afectados por un cierre con datos de contacto. No se incluyen historia clínica, recetas, pagos, facturación, autogestión, recordatorios automáticos ni reprogramación automática.
+Se incluyen pacientes, disponibilidad, turnos, cancelación, reprogramación manual, cierres/aperturas, atención/ausencia y auditoría básica. Reprogramaciones muestra los pacientes afectados por suspensiones del consultorio con sus datos de contacto, y permite asignarles otro horario manualmente. No se incluyen historia clínica, recetas, pagos, facturación, autogestión, recordatorios automáticos ni reprogramación automática.
 
 ## Stack y acceso local
 
@@ -48,9 +48,9 @@ Seguir [instalación](docs/instalacion-configuracion.md) para alinear los puerto
 
 ## Estado y límites
 
-Se verificó compilación del frontend y se comprobó con API local el acceso ADMIN al calendario. Existe una clase con cinco pruebas de integración, incluida concurrencia de reserva; su última ejecución en esta revisión quedó detenida por inicialización de Testcontainers/Docker. No hay una aceptación completa registrada ni pruebas de carga.
+Se verificó la compilación del frontend y se ejecutaron nueve pruebas unitarias y catorce de integración del backend con MySQL descartable, incluidas reserva y reprogramación concurrentes. La validación visual en navegador, la aceptación integral y las pruebas de carga siguen pendientes.
 
-Continúan abiertos: lista operativa de afectados, liberación incorrecta dentro de cierres, superposiciones entre franjas, generación próxima a medianoche y coherencia de duración en aperturas. **No existe un modo demo activo**. Detalle y prioridades en [pendientes](docs/pendientes-riesgos.md).
+Se habilitan horarios por mes con duración fija de 40 minutos, validación de intervalos y conservación de citas/historia. Se retiraron el cambio de duración y la migración mensual asociada. Continúa pendiente la definición funcional de permisos y la aceptación integral. Los permisos existentes se mantienen hasta esa definición. **No existe un modo demo activo**. Detalle y prioridades en [pendientes](docs/pendientes-riesgos.md).
 
 El [índice de documentación](docs/README.md) reúne las guías por audiencia y los diagramas Mermaid se mantienen como texto en sus documentos.
 
