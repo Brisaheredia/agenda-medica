@@ -5,6 +5,7 @@ import { etiquetas, fechaLarga, Franja, hora, hoy, moverDia } from "../types";
 type Props = {
   profesionalId: number | undefined;
   api: <T>(path: string, options?: RequestInit) => Promise<T>;
+  revision?: number;
 };
 
 const dias = [
@@ -23,7 +24,7 @@ function lunesDe(fecha: string) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-export function CalendarioSemanalDisponibilidad({ profesionalId, api }: Props) {
+export function CalendarioSemanalDisponibilidad({ profesionalId, api, revision = 0 }: Props) {
   const [inicioSemana, setInicioSemana] = useState(() => lunesDe(hoy()));
   const [franjasSemana, setFranjasSemana] = useState<Franja[]>([]);
   const [cargando, setCargando] = useState(false);
@@ -39,7 +40,9 @@ export function CalendarioSemanalDisponibilidad({ profesionalId, api }: Props) {
     setError("");
     Promise.all(
       Array.from({ length: 7 }, (_, indice) =>
-        api<Franja[]>(`/api/agenda?fecha=${moverDia(inicioSemana, indice)}`),
+        api<Franja[]>(
+          `/api/agenda?profesionalId=${profesionalId}&fecha=${moverDia(inicioSemana, indice)}`,
+        ),
       ),
     )
       .then((diasConsultados) => {
@@ -54,7 +57,7 @@ export function CalendarioSemanalDisponibilidad({ profesionalId, api }: Props) {
     return () => {
       vigente = false;
     };
-  }, [api, inicioSemana, profesionalId]);
+  }, [api, inicioSemana, profesionalId, revision]);
 
   const fechas = Array.from({ length: 7 }, (_, indice) =>
     moverDia(inicioSemana, indice),

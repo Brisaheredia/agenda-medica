@@ -1484,6 +1484,41 @@ a.nav-item {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
+.availability-day-selection {
+  display: grid;
+  gap: 12px;
+}
+.availability-field-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.availability-day-presets,
+.availability-day-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.availability-day-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dbe5ec;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.availability-day-option:has(input:checked) {
+  background: #eaf7fa;
+  border-color: #107087;
+  color: #105e70;
+}
+.availability-day-option input {
+  width: 17px;
+  min-height: 17px;
+  margin: 0;
+  accent-color: #107087;
+}
 .availability-form .booking-note {
   margin: 0;
 }
