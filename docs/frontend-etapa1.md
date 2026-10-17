@@ -27,10 +27,6 @@ Las secciones independientes de Pacientes, Disponibilidad, Bloqueos y excepcione
 
 La Agenda muestra bloqueos existentes; crear/deshacer bloqueos y generar disponibilidad pertenecen a etapas posteriores. No se añadieron historia clínica, sala de espera, recordatorios, sincronización con feriados, pagos, reportes avanzados ni reprogramación automática.
 
-## Respaldo del frontend anterior
-
-Antes de editar se copió el frontend existente a frontend-anterior, conservando sus fuentes, configuración y archivos locales.
-
 ## Modo interactivo de demostración
 
 Desde el acceso, elegir **Probar con datos de ejemplo**, No requiere cuenta, servidor ni base de datos. Al ingresar se muestran los horarios de mañana para que siempre haya franjas futuras reservables.
