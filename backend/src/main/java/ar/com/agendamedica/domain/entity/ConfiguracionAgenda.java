@@ -14,7 +14,7 @@ public class ConfiguracionAgenda {
     private Long id = ID_UNICA;
 
     @Column(name = "duracion_estandar_min", nullable = false)
-    private Integer duracionEstandarMin = 30;
+    private Integer duracionEstandarMin = 40;
 
     @Column(name = "horizonte_reserva_dias", nullable = false)
     private Integer horizonteReservaDias = 90;
