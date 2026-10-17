@@ -9,6 +9,7 @@ import { DisponibilidadPage } from "./pages/Disponibilidad";
 import { PacientesPage } from "./pages/Pacientes";
 import { BloqueosPage } from "./pages/Bloqueos";
 import { AuditoriaPage } from "./pages/Auditoria";
+import { ReprogramacionesPage } from "./pages/Reprogramaciones";
 import { LoginPage } from "./pages/Login";
 import { useAgenda } from "./hooks/useAgenda";
 import { usePathname } from "./hooks/usePathname";
@@ -62,6 +63,7 @@ export default function App() {
     setFecha,
     franjas,
     turnos,
+    excepciones,
     setRevision,
     cargando,
     errorAgenda,
@@ -179,6 +181,7 @@ export default function App() {
   const pacientesPage = ruta === "/pacientes";
   const bloqueosPage = ruta === "/bloqueos";
   const auditoriaPage = ruta === "/auditoria";
+  const reprogramacionesPage = ruta === "/reprogramaciones";
   const menu: {
     icon: string;
     label: string;
@@ -210,8 +213,11 @@ export default function App() {
       href: "/auditoria",
       active: auditoriaPage,
     },
+    { icon: "calendar", label: "Reprogramaciones", href: "/reprogramaciones", active: reprogramacionesPage },
   ];
-  const pageContent = bloqueosPage ? (
+  const pageContent = reprogramacionesPage ? (
+    <ReprogramacionesPage api={api} profesionalId={profesional?.id} puedeGestionar={gestionar} />
+  ) : bloqueosPage ? (
     <BloqueosPage
       api={api}
       profesionalId={profesional?.id}
@@ -250,6 +256,7 @@ export default function App() {
       setIntentoProfesional={setIntentoProfesional}
       franjas={franjas}
       turnos={turnos}
+      excepciones={excepciones}
       ready={ready}
       filtro={filtro}
       setFiltro={setFiltro}

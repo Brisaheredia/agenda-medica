@@ -1,4 +1,4 @@
-import type { Filtro, Franja, Paciente, Profesional, Turno } from "../types";
+import type { ExcepcionAgenda, Filtro, Franja, Paciente, Profesional, Turno } from "../types";
 import { activo, reservable } from "../types";
 import { Agenda } from "../components/ListaTurnos";
 import { BookingPanel } from "../components/BookingPanel";
@@ -6,6 +6,8 @@ import { Icon } from "../components/Icon";
 import type { Accion } from "../components/TurnoDialog";
 import { CalendarioSemanalAgenda } from "../components/CalendarioSemanalAgenda";
 import { useState } from "react";
+import { LeyendaAgenda } from "../components/LeyendaAgenda";
+import { cierreDelHorario } from "../lib/agendaVisual";
 
 type Props = {
   busy: boolean;
@@ -27,6 +29,7 @@ type Props = {
   setIntentoProfesional: (value: (n: number) => number) => void;
   franjas: Franja[];
   turnos: Turno[];
+  excepciones: ExcepcionAgenda[];
   ready: boolean;
   filtro: Filtro;
   setFiltro: (value: Filtro) => void;
@@ -58,6 +61,7 @@ export function AgendaPage(props: Props) {
     setIntentoProfesional,
     franjas,
     turnos,
+    excepciones,
     ready,
     filtro,
     setFiltro,
@@ -199,7 +203,7 @@ export function AgendaPage(props: Props) {
           },
           {
             label: "Disponibles",
-            value: franjas.filter(reservable).length,
+            value: franjas.filter((f) => reservable(f) && !cierreDelHorario(f.inicio, f.fin, excepciones)).length,
             caption: "Horarios que podés reservar",
             icon: "clock",
           },
@@ -246,6 +250,8 @@ export function AgendaPage(props: Props) {
               </button>
             ))}
           </div>
+          <LeyendaAgenda />
+          {ready && excepciones.some((e) => e.tipo === "CIERRE") && <div className="alert closure-banner" role="status">Atención suspendida total o parcialmente por el consultorio. Los turnos se conservan. <a href="/reprogramaciones">Ver pacientes para reprogramar</a></div>}
           {!ready && !errorAgenda && (
             <div className="card loading" role="status">
               Cargando horarios y turnos…
@@ -255,6 +261,7 @@ export function AgendaPage(props: Props) {
             <Agenda
               franjas={franjas}
               turnos={turnos}
+              excepciones={excepciones}
               filtro={filtro}
               selected={selected?.id}
               gestionar={gestionar}
@@ -268,7 +275,7 @@ export function AgendaPage(props: Props) {
         {gestionar && (
           <BookingPanel
             api={api}
-            franjas={ready ? franjas : []}
+            franjas={ready ? franjas.filter((f) => !cierreDelHorario(f.inicio, f.fin, excepciones)) : []}
             selected={selected}
             select={setSelected}
             profesionalId={profesionalId}

@@ -40,6 +40,24 @@ export type Turno = {
   fin: string;
   estado: "RESERVADO" | "CONFIRMADO" | "CANCELADO" | "ATENDIDO" | "AUSENTE";
   motivoConsulta?: string;
+  origenCancelacion?: "PACIENTE" | "CONSULTORIO" | null;
+  motivoCancelacion?: string | null;
+};
+export type ExcepcionAgenda = {
+  id: number;
+  profesionalId: number;
+  fecha: string;
+  horaInicio: string | null;
+  horaFin: string | null;
+  tipo: "CIERRE" | "APERTURA";
+  motivo: string | null;
+};
+export type TurnoAfectado = {
+  turno: Turno;
+  dni: string;
+  telefono: string | null;
+  email: string | null;
+  motivo: string | null;
 };
 export type Filtro =
   | "TODOS"
@@ -52,7 +70,8 @@ export type Filtro =
 export const activo = (turno: Turno) =>
   turno.estado === "RESERVADO" || turno.estado === "CONFIRMADO";
 export const reservable = (franja: Franja) =>
-  franja.estado === "LIBRE" && new Date(franja.inicio).getTime() > Date.now();
+  franja.estado === "LIBRE" && new Date(franja.inicio).getTime() > Date.now()
+  && new Date(franja.fin).getTime() - new Date(franja.inicio).getTime() === 40 * 60_000;
 export function hoy() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;

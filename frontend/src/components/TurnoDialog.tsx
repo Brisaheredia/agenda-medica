@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
 import type { Franja, Turno } from "../types";
-import { fechaLarga, hora, reservable } from "../types";
+import { fechaLarga, hora, hoy, reservable } from "../types";
 import { Modal } from "./Modal";
 export type Accion = "cancelar" | "reprogramar" | "atencion" | "ausencia";
 export function TurnoDialog({
@@ -20,7 +20,8 @@ export function TurnoDialog({
   close: () => void;
   submit: (path: string, body?: object) => Promise<boolean>;
 }) {
-  const [fecha, setFecha] = useState(turno.inicio.slice(0, 10));
+  const [fecha, setFecha] = useState(turno.inicio.slice(0, 10) < hoy() ? hoy() : turno.inicio.slice(0, 10));
+  const [origen, setOrigen] = useState<"PACIENTE" | "CONSULTORIO">("PACIENTE");
   const [motivo, setMotivo] = useState("");
   const [destino, setDestino] = useState("");
   const [franjas, setFranjas] = useState<Franja[]>([]);
@@ -35,7 +36,7 @@ export function TurnoDialog({
     setCargando(true);
     setError("");
     api<Franja[]>(
-      `/api/agenda?profesionalId=${turno.profesionalId}&fecha=${fecha}`,
+      `/api/agenda/disponibles?profesionalId=${turno.profesionalId}&desde=${fecha}T00:00:00`,
       { signal: controller.signal },
     )
       .then((data) => setFranjas(data.filter(reservable)))
@@ -68,7 +69,7 @@ export function TurnoDialog({
           }[tipo];
           const body =
             tipo === "cancelar"
-              ? { motivo: motivo.trim() }
+              ? { motivo: motivo.trim(), origen }
               : tipo === "reprogramar"
                 ? { franjaId: Number(destino), motivo: motivo.trim() }
                 : undefined;
@@ -76,7 +77,7 @@ export function TurnoDialog({
             close();
           else {
             setError(
-              "No se guardó el cambio. Revisá el mensaje de la agenda e intentá nuevamente.",
+              "No se guardó el cambio. Revisá los datos y el mensaje de error e intentá nuevamente.",
             );
             if (tipo === "reprogramar") setRetry((n) => n + 1);
           }
@@ -94,9 +95,10 @@ export function TurnoDialog({
           {tipo === "reprogramar" && (
             <>
               <label>
-                Nueva fecha
+                Buscar horarios desde
                 <input
                   type="date"
+                  min={hoy()}
                   required
                   value={fecha}
                   onChange={(e) => {
@@ -121,14 +123,14 @@ export function TurnoDialog({
                   </option>
                   {franjas.map((f) => (
                     <option key={f.id} value={f.id}>
-                      {hora(f.inicio)} – {hora(f.fin)}
+                      {fechaLarga(f.inicio.slice(0, 10))} · {hora(f.inicio)} – {hora(f.fin)}
                     </option>
                   ))}
                 </select>
               </label>
               {!cargando && !franjas.length && (
                 <p className="muted">
-                  No hay horarios disponibles para esta fecha.
+                  No hay horarios disponibles desde esta fecha dentro del período habilitado.
                 </p>
               )}
               <p className="muted">
@@ -153,8 +155,19 @@ export function TurnoDialog({
             </label>
           )}
           {tipo === "cancelar" && (
+            <label>
+              ¿Quién solicitó la cancelación?
+              <select value={origen} onChange={(event) => setOrigen(event.target.value as typeof origen)}>
+                <option value="PACIENTE">El paciente llamó y canceló</option>
+                <option value="CONSULTORIO">El médico o el consultorio suspendió la atención</option>
+              </select>
+            </label>
+          )}
+          {tipo === "cancelar" && (
             <p className="muted">
-              Se liberará el horario y se conservará el registro de cancelación.
+              {origen === "PACIENTE"
+                ? "El horario se liberará si no está cerrado por el consultorio. Se conservará el registro de cancelación."
+                : "El horario quedará cerrado y el paciente aparecerá en Reprogramaciones para coordinar otro turno."}
             </p>
           )}
           {(tipo === "atencion" || tipo === "ausencia") && (

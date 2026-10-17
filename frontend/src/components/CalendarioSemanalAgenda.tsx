@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
-import type { Franja, Turno } from "../types";
-import { etiquetas, fechaLarga, hora, hoy, moverDia } from "../types";
+import type { ExcepcionAgenda, Franja, Turno } from "../types";
+import { fechaLarga, hora, hoy, moverDia } from "../types";
+import { estadoVisual } from "../lib/agendaVisual";
+import { LeyendaAgenda } from "./LeyendaAgenda";
 
 type DiaAgenda = { franjas: Franja[]; turnos: Turno[] };
 
@@ -26,15 +28,18 @@ export function CalendarioSemanalAgenda({
   profesionalId,
   api,
   irAlDia,
+  revision = 0,
 }: {
   profesionalId: number | undefined;
   api: Api;
-  irAlDia: (fecha: string) => void;
+  irAlDia?: (fecha: string) => void;
+  revision?: number;
 }) {
   const [inicioSemana, setInicioSemana] = useState(() => lunesDe(hoy()));
   const [agenda, setAgenda] = useState<Record<string, DiaAgenda>>({});
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
+  const [excepciones, setExcepciones] = useState<ExcepcionAgenda[]>([]);
   const fechas = Array.from({ length: 7 }, (_, index) =>
     moverDia(inicioSemana, index),
   );
@@ -44,25 +49,35 @@ export function CalendarioSemanalAgenda({
     const controller = new AbortController();
     setCargando(true);
     setError("");
-    Promise.all(
-      fechas.map(async (fecha) => {
-        const query = `profesionalId=${profesionalId}&fecha=${fecha}`;
-        const [franjas, turnos] = await Promise.all([
-          api<Franja[]>(`/api/agenda?${query}`, { signal: controller.signal }),
-          api<Turno[]>(`/api/turnos?${query}`, { signal: controller.signal }),
-        ]);
-        return [fecha, { franjas, turnos }] as const;
-      }),
-    )
-      .then((dias) => setAgenda(Object.fromEntries(dias)))
+    Promise.all([
+      api<ExcepcionAgenda[]>(`/api/agenda/excepciones?profesionalId=${profesionalId}&desde=${fechas[0]}&hasta=${fechas[6]}`, { signal: controller.signal }),
+      Promise.all(
+        fechas.map(async (fecha) => {
+          const query = `profesionalId=${profesionalId}&fecha=${fecha}`;
+          const [franjas, turnos] = await Promise.all([
+            api<Franja[]>(`/api/agenda?${query}`, { signal: controller.signal }),
+            api<Turno[]>(`/api/turnos?${query}`, { signal: controller.signal }),
+          ]);
+          return [fecha, { franjas, turnos }] as const;
+        }),
+      ),
+    ])
+      .then(([cierres, dias]) => {
+        setAgenda(Object.fromEntries(dias));
+        setExcepciones(cierres);
+      })
       .catch((e) => {
-        if (!abortado(e)) setError(detalleError(e));
+        if (!abortado(e)) {
+          setError(detalleError(e));
+          setAgenda({});
+          setExcepciones([]);
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setCargando(false);
       });
     return () => controller.abort();
-  }, [api, profesionalId, inicioSemana]);
+  }, [api, profesionalId, inicioSemana, revision]);
 
   const titulo = `${fechaLarga(fechas[0])} – ${fechaLarga(fechas[6])}`;
   return (
@@ -75,8 +90,8 @@ export function CalendarioSemanalAgenda({
         <div>
           <h2>Agenda semanal</h2>
           <p className="muted">
-            Turnos y disponibilidad de toda la semana. Elegí un día para
-            gestionarlo en detalle.
+            Turnos y disponibilidad de toda la semana.
+            {irAlDia && " Elegí un día para gestionarlo en detalle."}
           </p>
         </div>
         <div className="availability-week-controls">
@@ -108,6 +123,7 @@ export function CalendarioSemanalAgenda({
           {error}
         </div>
       )}
+      <LeyendaAgenda />
       <div className="availability-week-grid">
         {fechas.map((fecha, index) => {
           const dia = agenda[fecha];
@@ -129,14 +145,20 @@ export function CalendarioSemanalAgenda({
                 !dia?.franjas.some((franja) => franja.id === turno.franjaId),
             )
             .forEach((turno) => filas.push({ turno }));
+          const cierres = excepciones.filter((e) => e.fecha === fecha && e.tipo === "CIERRE");
+          const estados = filas.map(({ franja, turno }) => estadoVisual(franja, turno, excepciones).clase);
+          const colorDia = cierres.length || estados.includes("consultorio") ? "consultorio"
+            : estados.includes("libre") ? "libre" : estados.includes("paciente") ? "paciente"
+            : estados.includes("ocupado") ? "ocupado" : "neutro";
           return (
             <section
-              className={`availability-day ${fecha === hoy() ? "is-today" : ""}`}
+              className={`availability-day day-${colorDia} ${index === 6 ? "is-sunday" : ""} ${fecha === hoy() ? "is-today" : ""}`}
               key={fecha}
             >
               <button
                 className="agenda-week-day"
-                onClick={() => irAlDia(fecha)}
+                onClick={() => irAlDia?.(fecha)}
+                disabled={!irAlDia}
               >
                 <span>{nombresDias[index]}</span>
                 <strong>
@@ -145,6 +167,11 @@ export function CalendarioSemanalAgenda({
                   )}
                 </strong>
               </button>
+              {!cargando && cierres.map((cierre) => <p className="closure-note" key={cierre.id}>
+                {cierre.horaInicio ? `Cierre ${cierre.horaInicio.slice(0, 5)}–${cierre.horaFin?.slice(0, 5) ?? "fin del día"}` : "Día cerrado"}
+                {cierre.motivo && <span>{cierre.motivo}</span>}
+              </p>)}
+              {!cargando && colorDia === "consultorio" && <a className="reprogram-link" href="/reprogramaciones">Ver reprogramaciones</a>}
               {cargando ? (
                 <p className="availability-empty">Cargando…</p>
               ) : !filas.length ? (
@@ -158,12 +185,12 @@ export function CalendarioSemanalAgenda({
                       ),
                     )
                     .map(({ franja, turno }, slotIndex) => {
-                      const estado = turno?.estado ?? franja?.estado ?? "LIBRE";
+                      const visual = estadoVisual(franja, turno, excepciones);
                       const inicio = turno?.inicio ?? franja?.inicio ?? "";
                       const fin = turno?.fin ?? franja?.fin;
                       return (
                         <li
-                          className={`agenda-week-slot slot-${estado.toLowerCase()}`}
+                          className={`agenda-week-slot status-${visual.clase}`}
                           key={
                             turno
                               ? `t-${turno.id}`
@@ -175,8 +202,9 @@ export function CalendarioSemanalAgenda({
                             {fin ? `–${hora(fin)}` : ""}
                           </strong>
                           <span>
-                            {turno?.paciente ?? etiquetas[estado] ?? estado}
+                            {turno?.paciente ?? visual.etiqueta}
                           </span>
+                          {turno && <small>{visual.etiqueta}</small>}
                         </li>
                       );
                     })}

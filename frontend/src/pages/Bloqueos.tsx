@@ -21,7 +21,6 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
   const [motivo, setMotivo] = useState("");
   const [esApertura, setEsApertura] = useState(false);
   const [esFeriado, setEsFeriado] = useState(false);
-  const [duracionMin, setDuracionMin] = useState(30);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -44,7 +43,7 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
         ? "/api/agenda/excepciones"
         : "/api/agenda/bloqueos";
       const payload = esApertura
-        ? { ...body, tipo: "APERTURA", duracionMin }
+        ? { ...body, tipo: "APERTURA" }
         : body;
       const response = await api<Resultado>(path, {
         method: "POST",
@@ -103,7 +102,7 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
           {resultado.turnosAfectados.length > 0 && (
             <span>
               {" "}
-              Turnos activos afectados: {resultado.turnosAfectados.join(", ")}.
+              {resultado.turnosAfectados.length} turnos necesitan reprogramación. <a href="/reprogramaciones">Ver pacientes y datos de contacto</a>.
             </span>
           )}
         </div>
@@ -162,8 +161,8 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
             </div>
             <p className="muted block-help">
               {esApertura
-                ? "La apertura crea franjas adicionales para esta fecha, con la duración de turno indicada."
-                : "El bloqueo cierra la fecha completa o solo el rango horario elegido. Los turnos reservados se informan para que puedas gestionarlos."}
+                ? "La apertura crea franjas adicionales para esta fecha, con turnos de 40 minutos."
+                : "El bloqueo cierra la fecha completa o solo el rango horario elegido. Conservamos los turnos y sus pacientes aparecen en Reprogramaciones para coordinar otro horario."}
             </p>
             <div className="availability-fields">
               <label>
@@ -227,14 +226,11 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
                 </label>
                 {esApertura && (
                   <label>
-                    Duración de cada turno (minutos)
+                    Duración fija (minutos)
                     <input
                       type="number"
-                      min="5"
-                      step="5"
-                      required
-                      value={duracionMin}
-                      onChange={(e) => setDuracionMin(Number(e.target.value))}
+                      readOnly
+                      value={40}
                     />
                   </label>
                 )}
@@ -242,8 +238,7 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
             )}
             {esApertura && !horaInicio && (
               <p className="alert error">
-                Para una apertura extraordinaria, indicá el horario y la
-                duración.
+                Para una apertura extraordinaria, indicá el horario.
               </p>
             )}
             <button

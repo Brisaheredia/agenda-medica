@@ -1740,3 +1740,40 @@ a.nav-item {
     flex-wrap: wrap;
   }
 }
+
+/* Estados compartidos por la agenda diaria y los calendarios. */
+.status-consultorio { --status-bg: #fff0f0; --status-ink: #a5212b; --status-border: #df6570; }
+.status-paciente { --status-bg: #fff4e8; --status-ink: #92500a; --status-border: #df9b44; }
+.status-libre { --status-bg: #eaf8f0; --status-ink: #16613e; --status-border: #51a97b; }
+.status-ocupado { --status-bg: #edf3fc; --status-ink: #31588a; --status-border: #7396c6; }
+.status-neutro { --status-bg: #f2f4f7; --status-ink: #596575; --status-border: #bdc5cf; }
+.appointment[class*="status-"], .agenda-week-slot[class*="status-"] {
+  background: var(--status-bg); border-color: var(--status-border); border-left: 4px solid var(--status-border);
+}
+.badge[class*="status-"] { background: var(--status-bg); color: var(--status-ink); border: 1px solid var(--status-border); }
+.agenda-week-slot[class*="status-"] { color: var(--status-ink); }
+.availability-legend { flex-wrap: wrap; gap: 10px 16px; margin: 16px 0; }
+.availability-dot.consultorio { background: #cf4352; }
+.availability-dot.paciente { background: #d28b30; }
+.availability-dot.ocupado { background: #6286b8; }
+.availability-dot.neutro { background: #bdc5cf; }
+.availability-day.day-neutro { background: #f5f6f8; }
+.availability-day.day-consultorio { background: #fff7f7; }
+.availability-day.day-consultorio > .agenda-week-day { background: #ffe2e5; color: #a5212b; }
+.availability-day.day-paciente > .agenda-week-day { background: #fff0db; color: #92500a; }
+.availability-day.day-libre > .agenda-week-day { background: #eaf8f0; color: #16613e; }
+.availability-day.day-ocupado > .agenda-week-day { background: #edf3fc; color: #31588a; }
+.availability-day.is-sunday { background: #fff5f5; }
+.availability-day.is-sunday > .agenda-week-day { background: #ffe7e9; color: #a5212b; }
+.agenda-week-day:disabled { opacity: 1; cursor: default; }
+.availability-day.is-today > .agenda-week-day strong { background: var(--primary); color: #fff; }
+.closure-note { color: #a5212b; background: #fff0f0; padding: 8px; margin: 6px; font-size: 12px; }
+.closure-note span, .pending-table td > span, .pending-table td > a { display: block; margin-top: 5px; }
+.reprogram-link { display: block; margin: 8px; font-size: 12px; color: #a5212b; }
+.closure-banner { background: #fff0f0; border: 1px solid #df6570; color: #a5212b; flex-wrap: wrap; }
+.pending-card { padding: 24px; }
+.table-scroll { overflow-x: auto; }
+.pending-table { width: 100%; border-collapse: collapse; text-align: left; }
+.pending-table th, .pending-table td { padding: 16px 12px; border-bottom: 1px solid #e3e9f0; vertical-align: top; }
+.pending-table th { background: #f5f7fa; font-size: 13px; }
+.pending-table td { font-size: 14px; }

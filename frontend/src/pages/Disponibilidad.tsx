@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { detalleError } from "../api";
-import { hoy, moverDia } from "../types";
+import { hoy } from "../types";
 import { CalendarioSemanalDisponibilidad } from "../components/CalendarioSemanalDisponibilidad";
 import { Icon } from "../components/Icon";
+import { GeneracionMensual } from "../components/GeneracionMensual";
 
 type Props = {
   profesionalId: number | undefined;
@@ -36,14 +37,11 @@ export function DisponibilidadPage({
   const [diasSeleccionados, setDiasSeleccionados] = useState(diasLaborables);
   const [horaInicio, setHoraInicio] = useState("08:00");
   const [horaFin, setHoraFin] = useState("20:00");
-  const [duracionMin, setDuracionMin] = useState<number | null>(null);
   const [configuracion, setConfiguracion] = useState<ConfiguracionAgenda | null>(null);
   const [horizonteDias, setHorizonteDias] = useState(90);
   const [guardandoConfiguracion, setGuardandoConfiguracion] = useState(false);
   const [vigenciaDesde, setVigenciaDesde] = useState(hoy());
   const [vigenciaHasta, setVigenciaHasta] = useState("");
-  const [desde, setDesde] = useState(hoy());
-  const [hasta, setHasta] = useState(moverDia(hoy(), 30));
   const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
   const [generando, setGenerando] = useState(false);
   const [revisionCalendario, setRevisionCalendario] = useState(0);
@@ -58,9 +56,7 @@ export function DisponibilidadPage({
     )
       .then((config) => {
         setConfiguracion(config);
-        setDuracionMin(config.duracionEstandarMin);
         setHorizonteDias(config.horizonteReservaDias);
-        setHasta(moverDia(hoy(), Math.min(30, config.horizonteReservaDias)));
       })
       .catch((e) => {
         if (e instanceof Error && e.name !== "AbortError")
@@ -71,7 +67,7 @@ export function DisponibilidadPage({
 
   async function guardarConfiguracion(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!esAdmin || operando || duracionMin === null) return;
+    if (!esAdmin || operando || !configuracion) return;
     setGuardandoConfiguracion(true);
     setError("");
     setMensaje("");
@@ -79,12 +75,10 @@ export function DisponibilidadPage({
       const guardada = await api<ConfiguracionAgenda>("/api/configuracion/agenda", {
         method: "PUT",
         body: JSON.stringify({
-          duracionEstandarMin: duracionMin,
           horizonteReservaDias: horizonteDias,
         }),
       });
       setConfiguracion(guardada);
-      setDuracionMin(guardada.duracionEstandarMin);
       setHorizonteDias(guardada.horizonteReservaDias);
       setMensaje("Configuración de agenda guardada.");
     } catch (e) {
@@ -114,7 +108,6 @@ export function DisponibilidadPage({
             diaSemana,
             horaInicio,
             horaFin,
-            duracionMin: configuracion.duracionEstandarMin,
             vigenciaDesde,
             vigenciaHasta: vigenciaHasta || null,
           }),
@@ -135,31 +128,6 @@ export function DisponibilidadPage({
     }
   }
 
-  async function generarFranjas(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!esAdmin || !profesionalId || operando || !configuracion) return;
-    setGenerando(true);
-    setMensaje("");
-    setError("");
-    try {
-      const resultado = await api<{
-        creadas: number;
-        existentes: number;
-        omitidasPorCierre: number;
-      }>("/api/agenda/generar-franjas", {
-        method: "POST",
-        body: JSON.stringify({ profesionalId, desde, hasta }),
-      });
-      setMensaje(
-        `Franjas generadas: ${resultado.creadas} nuevas, ${resultado.existentes} ya existentes y ${resultado.omitidasPorCierre} omitidas por cierres.`,
-      );
-      setRevisionCalendario((revision) => revision + 1);
-    } catch (e) {
-      setError(detalleError(e));
-    } finally {
-      setGenerando(false);
-    }
-  }
 
   return (
     <section aria-labelledby="availability-title">
@@ -208,26 +176,14 @@ export function DisponibilidadPage({
           <div>
             <h2>Configuración de agenda</h2>
             <p>
-              Valores iniciales para nuevas plantillas y el período máximo de
-              reserva.
+              Definí con cuánta anticipación se pueden reservar turnos.
             </p>
           </div>
           <Icon name="clock" />
         </div>
         <fieldset disabled={!esAdmin || operando || !configuracion}>
           <div className="availability-fields">
-            <label>
-              Duración estándar de turno (minutos)
-              <input
-                type="number"
-                min="5"
-                max="240"
-                step="5"
-                required
-                value={duracionMin ?? ""}
-                onChange={(e) => setDuracionMin(e.target.value ? Number(e.target.value) : null)}
-              />
-            </label>
+            <p className="booking-note">Todos los turnos duran 40 minutos. La duración es fija.</p>
             <label>
               Anticipación máxima para reservar (días)
               <input
@@ -312,7 +268,7 @@ export function DisponibilidadPage({
             </div>
             <p className="booking-note">
               {configuracion
-                ? `Cada turno durará ${configuracion.duracionEstandarMin} minutos, según la configuración guardada. Para cambiar la duración, guardá primero la configuración de agenda.`
+                ? "Cada turno dura 40 minutos. Esta duración no se puede modificar."
                 : "Cargando la duración de los turnos…"}
             </p>
             <div className="availability-fields">
@@ -341,49 +297,15 @@ export function DisponibilidadPage({
           </fieldset>
         </form>
 
-        <form className="card availability-form" onSubmit={generarFranjas}>
-          <div className="panel-heading">
-            <div>
-              <h2>2. Habilitar horarios para reservar</h2>
-              <p>
-                Después de guardar los días y horarios, elegí en qué fechas se podrán reservar turnos.
-              </p>
-            </div>
-            <Icon name="calendar" />
-          </div>
-          <fieldset disabled={!esAdmin || operando || !profesionalId || !configuracion}>
-            <div className="availability-fields">
-              <label>
-                Desde
-                <input
-                  type="date"
-                  max={moverDia(hoy(), configuracion?.horizonteReservaDias ?? 0)}
-                  required
-                  value={desde}
-                  onChange={(e) => setDesde(e.target.value)}
-                />
-              </label>
-              <label>
-                Hasta
-                <input
-                  type="date"
-                  min={desde}
-                  max={moverDia(hoy(), configuracion?.horizonteReservaDias ?? 0)}
-                  required
-                  value={hasta}
-                  onChange={(e) => setHasta(e.target.value)}
-                />
-              </label>
-            </div>
-            <p className="booking-note">
-              Las franjas existentes se conservan. Los cierres configurados en
-              la agenda se respetan al generar el calendario.
-            </p>
-            <button className="primary" disabled={!profesionalId}>
-              {generando ? "Habilitando…" : "Habilitar horarios"}
-            </button>
-          </fieldset>
-        </form>
+        {configuracion && <GeneracionMensual
+          key={`${configuracion.duracionEstandarMin}/${configuracion.horizonteReservaDias}/${profesionalId}`}
+          api={api}
+          profesionalId={profesionalId}
+          horizonteDias={configuracion.horizonteReservaDias}
+          habilitada={esAdmin && !!profesionalId && !busy && !guardandoConfiguracion && !guardandoPlantilla}
+          onBusyChange={setGenerando}
+          onConfirmado={() => setRevisionCalendario((revision) => revision + 1)}
+        />}
       </div>
     </section>
   );

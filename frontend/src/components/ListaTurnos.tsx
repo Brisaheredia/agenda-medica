@@ -1,9 +1,11 @@
-import type { Filtro, Franja, Turno } from "../types";
-import { activo, etiquetas, hora, reservable } from "../types";
+import type { ExcepcionAgenda, Filtro, Franja, Turno } from "../types";
+import { activo, hora, reservable } from "../types";
+import { cierreDelHorario, estadoVisual } from "../lib/agendaVisual";
 import { Icon } from "./Icon";
 export function Agenda({
   franjas,
   turnos,
+  excepciones,
   filtro,
   selected,
   gestionar,
@@ -14,6 +16,7 @@ export function Agenda({
 }: {
   franjas: Franja[];
   turnos: Turno[];
+  excepciones: ExcepcionAgenda[];
   filtro: Filtro;
   selected: number | undefined;
   gestionar: boolean;
@@ -85,10 +88,12 @@ export function Agenda({
           </p>
         </div>
       )}
-      {visibles.map(({ key, inicio, fin, estado, franja, turno }) => (
+      {visibles.map(({ key, inicio, fin, estado, franja, turno }) => {
+        const visual = estadoVisual(franja, turno, excepciones);
+        return (
         <article
           key={key}
-          className={`appointment state-${estado.toLowerCase()} ${franja && selected === franja.id && !turno ? "is-selected" : ""}`}
+          className={`appointment status-${visual.clase} ${franja && selected === franja.id && !turno ? "is-selected" : ""}`}
         >
           <div className="time-box">
             <strong>{hora(inicio)}</strong>
@@ -98,26 +103,32 @@ export function Agenda({
             <div className="appointment-title">
               <h3>
                 {turno?.paciente ??
-                  (estado === "LIBRE"
+                  (visual.clase === "consultorio"
+                    ? "Horario cerrado por el consultorio"
+                    : estado === "LIBRE"
                     ? "Franja libre disponible"
                     : estado === "BLOQUEADA"
                       ? "Horario bloqueado"
                       : "Horario ocupado")}
               </h3>
-              <span className={`badge badge-${estado.toLowerCase()}`}>
-                {etiquetas[estado]}
+              <span className={`badge status-${visual.clase}`}>
+                {visual.etiqueta}
               </span>
             </div>
             <p>
               {turno?.motivoConsulta ||
-                (estado === "LIBRE"
+                (visual.clase === "consultorio"
+                  ? "No disponible para asignar turnos."
+                  : estado === "LIBRE"
                   ? franja && reservable(franja)
                     ? "Seleccioná este horario para asignar un turno."
-                    : "Este horario ya pasó."
+                    : visual.etiqueta
                   : estado === "BLOQUEADA"
                     ? "No disponible para asignar turnos."
                     : "Sin motivo informado.")}
             </p>
+            {turno?.motivoCancelacion && <p>Motivo de cancelación: {turno.motivoCancelacion}</p>}
+            {turno?.estado === "CANCELADO" && turno.origenCancelacion === "CONSULTORIO" && gestionar && <button className="text-button" disabled={busy} onClick={() => action(turno, "reprogramar")}>Reprogramar</button>}
             {turno && activo(turno) && (
               <div className="appointment-actions">
                 {gestionar && (
@@ -159,7 +170,7 @@ export function Agenda({
               </div>
             )}
           </div>
-          {gestionar && !turno && franja && reservable(franja) && (
+          {gestionar && !turno && franja && reservable(franja) && !cierreDelHorario(inicio, fin, excepciones) && (
             <button
               className={
                 selected === franja.id ? "primary small" : "secondary small"
@@ -175,7 +186,7 @@ export function Agenda({
             </button>
           )}
         </article>
-      ))}
+      ); })}
     </div>
   );
 }

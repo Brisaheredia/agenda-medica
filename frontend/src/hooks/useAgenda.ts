@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
-import type { Filtro, Franja, Profesional, Turno } from "../types";
+import type { ExcepcionAgenda, Filtro, Franja, Profesional, Turno } from "../types";
 import { hoy } from "../types";
 
 export function useAgenda({
@@ -18,6 +18,7 @@ export function useAgenda({
   const [fecha, setFecha] = useState(() => hoy());
   const [franjas, setFranjas] = useState<Franja[]>([]);
   const [turnos, setTurnos] = useState<Turno[]>([]);
+  const [excepciones, setExcepciones] = useState<ExcepcionAgenda[]>([]);
   const [revision, setRevision] = useState(0);
   const [loadedKey, setLoadedKey] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -44,10 +45,12 @@ export function useAgenda({
     Promise.all([
       api<Franja[]>(`/api/agenda?${query}`, { signal: controller.signal }),
       api<Turno[]>(`/api/turnos?${query}`, { signal: controller.signal }),
+      api<ExcepcionAgenda[]>(`/api/agenda/excepciones?profesionalId=${profesional.id}&desde=${fecha}&hasta=${fecha}`, { signal: controller.signal }),
     ])
-      .then(([franjasDelDia, turnosDelDia]) => {
+      .then(([franjasDelDia, turnosDelDia, excepcionesDelDia]) => {
         setFranjas(franjasDelDia);
         setTurnos(turnosDelDia);
+        setExcepciones(excepcionesDelDia);
         if (pendingFranjaId.current !== null) {
           const seleccionada = franjasDelDia.find(
             (franja) => franja.id === pendingFranjaId.current,
@@ -62,6 +65,7 @@ export function useAgenda({
           setErrorAgenda(detalleError(error));
           setFranjas([]);
           setTurnos([]);
+          setExcepciones([]);
         }
       })
       .finally(() => {
@@ -86,6 +90,7 @@ export function useAgenda({
     setFecha,
     franjas,
     turnos,
+    excepciones,
     revision,
     setRevision,
     cargando,
