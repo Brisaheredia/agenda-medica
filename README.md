@@ -1,90 +1,60 @@
 # Agenda Médica
 
-Sistema web para la gestión de agenda y turnos médicos.
+Aplicación web para centralizar pacientes, disponibilidad y turnos del consultorio del Dr. Salvador Amado. Esta edición documenta el código del commit **96fc37a**, revisado el **17 de octubre de 2026**.
 
-## Stack
+El sistema permite reservar, cancelar y reprogramar turnos, consultar agenda diaria y semanal, gestionar horarios y registrar atención o ausencia. El núcleo está implementado; la aceptación integral y los pendientes indicados abajo todavía deben cerrarse.
 
-- Frontend: React + Vite + TypeScript
-- Backend: Spring Boot 3 + Java 21
-- Persistencia: Spring Data JPA / Hibernate
-- Base de datos: MySQL 8
-- Seguridad: Spring Security (JWT pendiente)
-- API: REST + OpenAPI/Swagger
+## Organización y lectura
 
-## Estado actual
+La documentación vigente se versiona en este repositorio junto al código. El README general orienta la lectura; `frontend/README.md` y `backend/README.md` describen cada módulo; `docs/` reúne requisitos, manual y documentación técnica. Ejecutar los comandos desde la raíz de un clon local, salvo indicación de otra carpeta.
 
-El backend ya cubre prácticamente todo el núcleo operativo del MVP:
+| Necesidad | Documento vigente |
+|---|---|
+| Aprender a operar el sistema | [Manual de usuario](docs/manual-usuario.md) |
+| Instalar y configurar desde cero | [Instalación](docs/instalacion-configuracion.md) |
+| Trabajar en la interfaz | [README del frontend](frontend/README.md) |
+| Trabajar en API y persistencia | [README del backend](backend/README.md) |
+| Entender alcance y reglas | [Requisitos](docs/requisitos.md) |
+| Entender componentes y dependencias | [Arquitectura](docs/arquitectura.md) |
+| Entender entidades y estados | [Modelo de datos](docs/modelo-datos.md) |
+| Consumir endpoints | [API](docs/api.md) |
+| Verificar comportamiento | [Pruebas y aceptación](docs/pruebas-aceptacion.md) |
+| Relacionar necesidad, código y evidencia | [Trazabilidad](docs/trazabilidad.md) |
+| Respaldar y operar | [Operación y respaldo](docs/operacion-respaldo.md) |
+| Colaborar y mantener bajo el acoplamiento | [Mantenimiento](docs/mantenimiento-contribucion.md) |
+| Revisar lo que falta | [Pendientes y riesgos](docs/pendientes-riesgos.md) |
+| Consultar cambios recientes | [Cambios](CHANGELOG.md) |
+| Ver origen y decisiones de alcance | [Referencias](docs/referencias/README.md) |
+| Consultar versiones anteriores | [Histórico](docs/historico/README.md) |
 
-- CRUD y búsqueda de pacientes con baja lógica.
-- Agenda diaria por profesional.
-- Plantillas semanales de disponibilidad.
-- Generación/materialización idempotente de franjas.
-- Excepciones de agenda: aperturas y cierres.
-- Bloqueos de franjas libres sin borrar turnos existentes.
-- Identificación de turnos afectados por un cierre.
-- Creación transaccional de turnos.
-- Prevención de doble reserva con bloqueo pesimista.
-- Cancelación con liberación de franja.
-- Reprogramación con trazabilidad de franja anterior y nueva.
-- Estados ATENDIDO y AUSENTE sólo desde el horario del turno.
-- Registro de eventos del turno.
-- Auditoría mínima de operaciones críticas.
-- Seed de desarrollo mediante perfil `dev`.
-- CI para compilar backend y frontend.
+## Alcance confirmado
 
-## Endpoints principales
+Un profesional, de lunes a viernes de **08:00 a 20:00**, con **40 minutos como duración estándar inicial**. La duración sigue siendo configurable: el valor persistido vigente prevalece sobre el inicializador del código. Horarios y plantillas se deben cargar; esta decisión de negocio no implica que la BD ya tenga todas las franjas.
 
-```text
-GET    /api/pacientes?query=
-GET    /api/pacientes/{id}
-POST   /api/pacientes
-PUT    /api/pacientes/{id}
-DELETE /api/pacientes/{id}
+Se incluyen pacientes, disponibilidad, turnos, cancelación, reprogramación manual, cierres/aperturas, atención/ausencia y auditoría básica. Se requiere completar el listado de pacientes afectados por un cierre con datos de contacto. No se incluyen historia clínica, recetas, pagos, facturación, autogestión, recordatorios automáticos ni reprogramación automática.
 
-GET  /api/agenda?profesionalId=1&fecha=YYYY-MM-DD
-POST /api/agenda/plantillas
-POST /api/agenda/generar-franjas
-POST /api/agenda/excepciones
-POST /api/agenda/bloqueos
+## Stack y acceso local
 
-POST /api/turnos
-GET  /api/turnos/{id}
-POST /api/turnos/{id}/cancelacion
-POST /api/turnos/{id}/reprogramacion
-POST /api/turnos/{id}/atencion
-POST /api/turnos/{id}/ausencia
+React, TypeScript y Vite; Spring Boot 3.5.6 con Java 21; MySQL 8; Spring Security con JWT y BCrypt; OpenAPI/Swagger. La versión declarada de ambos módulos es `0.0.1`; no se infiere una liberación productiva a partir de ese número.
 
-GET /api/auditoria
-```
+| Servicio | Valor por defecto del proyecto |
+|---|---|
+| Frontend | Puerto inicial 5173, si está libre |
+| Backend | `http://localhost:8080` |
+| MySQL | Puerto 3306 |
 
-Swagger queda disponible en `/swagger-ui.html` al levantar el backend.
+Los puertos se pueden configurar por entorno; no son requisitos inmutables. Cada instalación define sus propias variables; las configuraciones personales no se publican ni se consideran valores generales.
 
-## Desarrollo local
+Seguir [instalación](docs/instalacion-configuracion.md) para alinear los puertos, definir JWT y crear el primer administrador. No se publica una contraseña de acceso en la documentación.
 
-La conexión por defecto espera MySQL en:
+## Estado y límites
 
-```text
-jdbc:mysql://localhost:3306/agenda_medica
-usuario: root
-password: root
-```
+Se verificó compilación del frontend y se comprobó con API local el acceso ADMIN al calendario. Existe una clase con cinco pruebas de integración, incluida concurrencia de reserva; su última ejecución en esta revisión quedó detenida por inicialización de Testcontainers/Docker. No hay una aceptación completa registrada ni pruebas de carga.
 
-Se puede modificar con `DB_URL`, `DB_USER` y `DB_PASSWORD`.
+Continúan abiertos: lista operativa de afectados, liberación incorrecta dentro de cierres, superposiciones entre franjas, generación próxima a medianoche y coherencia de duración en aperturas. El modo demo mencionado por documentación anterior **no existe en las fuentes activas de esta revisión**. Detalle y prioridades en [pendientes](docs/pendientes-riesgos.md).
 
-Para cargar datos mínimos:
+El [índice de documentación](docs/README.md) reúne las guías por audiencia y los diagramas Mermaid se mantienen como texto en sus documentos.
 
-```bash
-SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
-```
+## Control documental
 
-## Pendiente para cerrar el MVP
-
-- Login JWT y autorización por roles ADMIN, RECEPCION y MEDICO.
-- Integración real del frontend React con la API.
-- Tests de integración y concurrencia.
-
-> Durante el desarrollo los endpoints permanecen temporalmente abiertos. No es una configuración de producción.
-
-## Alcance
-
-El MVP se concentra en pacientes, disponibilidad, agenda, asignación/cancelación/reprogramación de turnos, excepciones y auditoría mínima. No incluye historia clínica, facturación, WhatsApp ni multi-profesional operativo.
+Mantener esta edición junto con el código: toda modificación funcional debe revisar el manual, contrato API, requisitos y pruebas afectados. La fecha y el commit identifican la base revisada; no certifican conformidad con una norma ni sustituyen aceptación del cliente. El equipo debe designar responsables de aprobación funcional y operación.

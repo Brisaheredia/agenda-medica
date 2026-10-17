@@ -1,3 +1,5 @@
+> Documento histórico. Consultar la [documentación vigente](../README.md) antes de utilizar estas instrucciones.
+
 # Etapa final del frontend
 
 El frontend actual de Agenda Médica queda definido como la interfaz final del proyecto de ingeniería, luego de probar el nuevo diseño y decidir conservarlo para la entrega y presentación. Esta etapa consolida la agenda diaria y las pantallas de gestión dentro de una misma aplicación.

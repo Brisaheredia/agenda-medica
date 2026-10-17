@@ -1,3 +1,5 @@
+> Documento histórico. Consultar la [documentación vigente](../README.md) antes de utilizar estas instrucciones.
+
 # Primera etapa del frontend
 
 Se implementó la Agenda diaria, utilizando su estructura, paleta de colores y logo, y adaptándola al alcance del proyecto. No se modificaron los controladores ni las reglas de negocio del backend.
