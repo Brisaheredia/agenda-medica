@@ -25,7 +25,6 @@ La documentación vigente se versiona en este repositorio junto al código. El R
 | Revisar lo que falta | [Pendientes y riesgos](docs/pendientes-riesgos.md) |
 | Consultar cambios recientes | [Cambios](CHANGELOG.md) |
 | Ver origen y decisiones de alcance | [Referencias](docs/referencias/README.md) |
-| Consultar versiones anteriores | [Histórico](docs/historico/README.md) |
 
 ## Alcance confirmado
 
@@ -51,7 +50,7 @@ Seguir [instalación](docs/instalacion-configuracion.md) para alinear los puerto
 
 Se verificó compilación del frontend y se comprobó con API local el acceso ADMIN al calendario. Existe una clase con cinco pruebas de integración, incluida concurrencia de reserva; su última ejecución en esta revisión quedó detenida por inicialización de Testcontainers/Docker. No hay una aceptación completa registrada ni pruebas de carga.
 
-Continúan abiertos: lista operativa de afectados, liberación incorrecta dentro de cierres, superposiciones entre franjas, generación próxima a medianoche y coherencia de duración en aperturas. El modo demo mencionado por documentación anterior **no existe en las fuentes activas de esta revisión**. Detalle y prioridades en [pendientes](docs/pendientes-riesgos.md).
+Continúan abiertos: lista operativa de afectados, liberación incorrecta dentro de cierres, superposiciones entre franjas, generación próxima a medianoche y coherencia de duración en aperturas. **No existe un modo demo activo**. Detalle y prioridades en [pendientes](docs/pendientes-riesgos.md).
 
 El [índice de documentación](docs/README.md) reúne las guías por audiencia y los diagramas Mermaid se mantienen como texto en sus documentos.
 

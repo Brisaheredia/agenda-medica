@@ -28,11 +28,11 @@ Separar commits por propósito y módulo cuando los cambios lo permitan. Revisar
 
 ## Documentación y definición de terminado
 
-Actualizar en el repositorio los documentos que cambian con la implementación: API si cambia contrato, manual si cambia interacción, requisitos/trazabilidad si cambia alcance y pruebas si cambia evidencia. Actualizar README y CHANGELOG con commit/fecha. Mantener históricos fuera del recorrido de uso actual.
+Actualizar en el repositorio los documentos que cambian con la implementación: API si cambia contrato, manual si cambia interacción, requisitos/trazabilidad si cambia alcance y pruebas si cambia evidencia. Actualizar README y CHANGELOG con commit/fecha. Eliminar documentos obsoletos y corregir los enlaces afectados, sin conservar copias de etapas anteriores en el árbol de trabajo.
 
 Una tarea termina cuando el comportamiento acordado está implementado y revisado, los controles aplicables pasan, la aceptación puede demostrarse y la documentación coincide. Una aprobación visual no sustituye persistencia, permisos o concurrencia.
 
-La documentación se guarda en Git junto al código. Incluir los cambios documentales en la misma entrega funcional o en un commit documental claramente relacionado. Registrar el commit de código revisado y quién aprueba cambios de alcance. El historial de Git conserva versiones anteriores; los documentos de etapas previas se rotulan y agrupan en `docs/historico`. Los gráficos se mantienen en bloques Mermaid editables, sin imágenes generadas que dupliquen el diagrama.
+La documentación se guarda en Git junto al código. Incluir los cambios documentales en la misma entrega funcional o en un commit documental claramente relacionado. Registrar el commit de código revisado y quién aprueba cambios de alcance. El historial de Git conserva versiones anteriores y permite consultarlas sin duplicarlas en carpetas del repositorio. La especificación original se conserva exclusivamente como fuente de requisitos. Los gráficos se mantienen en bloques Mermaid editables, sin imágenes generadas que dupliquen el diagrama.
 
 ## Gestión de dependencias y deuda
 

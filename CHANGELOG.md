@@ -12,6 +12,6 @@ Registro de cambios relevantes inspeccionados, no historial exhaustivo de cada c
 
 Se incorpora documentación versionada con README general, frontend/backend, manual, instalación, requisitos, arquitectura/datos/API, pruebas, trazabilidad, operación y mantenimiento. Base de código revisada: `96fc37a`. Se reorganizan los documentos de etapas anteriores en `docs/historico` y se incluye la especificación original como referencia. Los ejemplos generales usan API 8080/MySQL 3306, configurables por entorno. Los diagramas de arquitectura, reserva, entidades y estados se mantienen en Mermaid.
 
-## Antecedentes
+## Limpieza de documentación obsoleta
 
-La documentación de etapa inicial/final permanece en [histórico](docs/historico/README.md). Allí se describían un modo demo y valores de duración que no coinciden con esta base activa; se conservan como evidencia de evolución y no como guía de uso vigente.
+Después de la reorganización se elimina la carpeta `docs/historico`, incluidos los documentos de primera etapa y etapa final del frontend. Se actualizan índices, enlaces y reglas de mantenimiento para conservar sólo documentación vigente en el árbol de trabajo. Las versiones anteriores siguen disponibles en Git. La especificación original se mantiene únicamente como fuente de requisitos.

@@ -20,4 +20,4 @@ La lista asistida, Fase 2 en el DOCX, se incorpora al alcance necesario según l
 
 ## Procedencia y versión
 
-[Procedencia de la fuente](origen.json) registra el nombre del documento recibido, fecha, base de código revisada y hash SHA-256 de la copia. Los históricos conservan su contenido; los documentos vigentes corrigen las contradicciones sin alterar el archivo recibido. La reproducción de layout del DOCX no formó parte de este trabajo de documentación Markdown.
+[Procedencia de la fuente](origen.json) registra el nombre del documento recibido, fecha, base de código revisada y hash SHA-256 de la copia. El DOCX se conserva exclusivamente como fuente de requisitos, no como guía de uso actual. Los documentos vigentes incorporan las confirmaciones posteriores sin alterar esa fuente. Las versiones anteriores de la documentación se consultan en Git.

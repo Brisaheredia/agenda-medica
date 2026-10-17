@@ -89,7 +89,7 @@ Las fechas de negocio son LocalDate/LocalTime/LocalDateTime sin offset en JSON. 
 | ADR-03 | Mantener duración configurable, inicial 40 | Implementado en configuración; conservar valores históricos y cerrar coherencia pendiente |
 | ADR-04 | Un profesional operativo | Implementado; se usa el primero activo, sin selector multi-profesional |
 | ADR-05 | Selección múltiple mediante contrato existente | Implementado; guardado por día no atómico, UI conserva pendientes ante fallo |
-| ADR-06 | Documentación versionada junto al código | Decisión actual del responsable; README por módulo, documentos técnicos en docs e históricos separados |
+| ADR-06 | Documentación versionada junto al código | README por módulo y documentos técnicos vigentes en docs; versiones anteriores consultables en Git |
 
 ## Mantenibilidad y evolución
 

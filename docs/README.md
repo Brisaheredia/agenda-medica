@@ -18,7 +18,7 @@ Documentación vigente del código revisado en `96fc37a`, actualizada el 17 de o
 | Colaboración y fan-out | [Mantenimiento](mantenimiento-contribucion.md) |
 | Diferencias pendientes | [Defectos y riesgos](pendientes-riesgos.md) |
 | Cambios recientes | [CHANGELOG](../CHANGELOG.md) |
-| Origen y antecedentes | [Referencias](referencias/README.md) e [histórico](historico/README.md) |
+| Origen de los requisitos | [Referencias](referencias/README.md) |
 | Controles de esta documentación | [Validación documental](validacion.md) |
 
-Los requisitos expresan acuerdos y objetivos; el manual describe la interfaz actual; los pendientes explican diferencias conocidas. Una prueba planificada no equivale a aceptación aprobada. Los históricos no son guías activas y los diagramas se editan directamente en bloques Mermaid.
+Los requisitos expresan acuerdos y objetivos; el manual describe la interfaz actual; los pendientes explican diferencias conocidas. Una prueba planificada no equivale a aceptación aprobada. Las versiones anteriores se consultan en Git y los diagramas se editan directamente en bloques Mermaid.
