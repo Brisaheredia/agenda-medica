@@ -1,6 +1,7 @@
 package ar.com.agendamedica.service;
 
 import ar.com.agendamedica.domain.entity.ExcepcionAgenda;
+import ar.com.agendamedica.domain.entity.ConfiguracionAgenda;
 import ar.com.agendamedica.domain.entity.Franja;
 import ar.com.agendamedica.domain.entity.PlantillaDisponibilidad;
 import ar.com.agendamedica.domain.entity.Profesional;
@@ -10,6 +11,7 @@ import ar.com.agendamedica.domain.enums.EstadoTurno;
 import ar.com.agendamedica.domain.enums.TipoExcepcionAgenda;
 import ar.com.agendamedica.dto.*;
 import ar.com.agendamedica.exception.BadRequestException;
+import ar.com.agendamedica.exception.ConflictException;
 import ar.com.agendamedica.exception.ResourceNotFoundException;
 import ar.com.agendamedica.repository.ExcepcionAgendaRepository;
 import ar.com.agendamedica.repository.FranjaRepository;
@@ -18,11 +20,11 @@ import ar.com.agendamedica.repository.ProfesionalRepository;
 import ar.com.agendamedica.repository.TurnoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,24 +71,35 @@ public class AgendaService {
     public List<FranjaResponse> disponibles(Long profesionalId, LocalDateTime desde) {
         obtenerProfesional(profesionalId);
 
-        LocalDateTime inicioBusqueda = desde == null ? LocalDateTime.now() : desde;
+        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime inicioBusqueda = desde == null || desde.isBefore(ahora) ? ahora : desde;
 
-        LocalDateTime limite = LocalDateTime.now()
+        LocalDateTime limite = ahora
                 .plusDays(configuracionService.obtener().getHorizonteReservaDias());
+        if (inicioBusqueda.isAfter(limite)) return List.of();
+        var cierres = excepcionRepository.findByProfesionalIdAndFechaBetweenOrderByFechaAsc(
+                profesionalId, inicioBusqueda.toLocalDate(), limite.toLocalDate());
+        var compromisos = turnoRepository.findByProfesionalIdAndEstadoInAndInicioLessThanAndFinGreaterThan(
+                profesionalId, ESTADOS_ACTIVOS, limite, inicioBusqueda);
         return franjaRepository
                 .findByProfesionalIdAndEstadoAndInicioGreaterThanEqualOrderByInicioAsc(
                         profesionalId,
                         EstadoFranja.LIBRE,
                         inicioBusqueda)
                 .stream()
+                .filter(this::duracionCorrecta)
                 .filter(franja -> !franja.getInicio().isAfter(limite))
+                .filter(franja -> cierres.stream().noneMatch(cierre -> cierre.afecta(franja.getInicio(), franja.getFin())))
+                .filter(franja -> compromisos.stream().noneMatch(t -> franja.getInicio().isBefore(t.getFin())
+                        && franja.getFin().isAfter(t.getInicio())))
                 .map(FranjaResponse::from)
                 .toList();
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public PlantillaDisponibilidadResponse crearPlantilla(PlantillaDisponibilidadRequest request) {
-        Profesional profesional = obtenerProfesional(request.profesionalId());
+        validarDuracion(request.duracionMin());
+        Profesional profesional = bloquearProfesional(request.profesionalId());
 
         if (!request.horaFin().isAfter(request.horaInicio())) {
             throw new BadRequestException("La hora de fin debe ser posterior a la hora de inicio");
@@ -100,7 +113,7 @@ public class AgendaService {
         plantilla.setDiaSemana(request.diaSemana());
         plantilla.setHoraInicio(request.horaInicio());
         plantilla.setHoraFin(request.horaFin());
-        plantilla.setDuracionMin(request.duracionMin());
+        plantilla.setDuracionMin(configuracionService.obtener().getDuracionEstandarMin());
         plantilla.setVigenciaDesde(request.vigenciaDesde());
         plantilla.setVigenciaHasta(request.vigenciaHasta());
 
@@ -115,80 +128,68 @@ public class AgendaService {
         return PlantillaDisponibilidadResponse.from(plantilla);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public GenerarFranjasResponse generarFranjas(GenerarFranjasRequest request) {
-        Profesional profesional = obtenerProfesional(request.profesionalId());
-
-        if (request.hasta().isBefore(request.desde())) {
-            throw new BadRequestException("La fecha hasta no puede ser anterior a desde");
+        Profesional profesional = bloquearProfesional(request.profesionalId());
+        if (request.hasta().isBefore(request.desde())) throw new BadRequestException("La fecha hasta no puede ser anterior a desde");
+        if (!java.time.YearMonth.from(request.desde()).equals(java.time.YearMonth.from(request.hasta()))) {
+            throw new BadRequestException("Habilitá un mes por vez");
         }
-        int horizonteDias = configuracionService.obtener().getHorizonteReservaDias();
-        if (ChronoUnit.DAYS.between(LocalDate.now(), request.hasta()) > horizonteDias) {
-            throw new BadRequestException("El período supera el horizonte de agenda configurado (" + horizonteDias + " días)");
+        if (request.hasta().isAfter(LocalDate.now().plusDays(configuracionService.obtener().getHorizonteReservaDias()))) {
+            throw new BadRequestException("El período supera la anticipación máxima configurada");
         }
-
-        List<PlantillaDisponibilidad> plantillas =
-                plantillaRepository.findByProfesionalIdAndVigenciaDesdeLessThanEqual(
-                        profesional.getId(), request.hasta());
-
-        List<ExcepcionAgenda> excepciones =
-                excepcionRepository.findByProfesionalIdAndFechaBetweenOrderByFechaAsc(
-                        profesional.getId(), request.desde(), request.hasta());
-
-        int creadas = 0;
-        int existentes = 0;
-        int omitidasPorCierre = 0;
-
+        var reglas = plantillaRepository.findByProfesionalIdAndVigenciaDesdeLessThanEqual(profesional.getId(), request.hasta());
+        var cierres = excepcionRepository.findByProfesionalIdAndFechaBetweenOrderByFechaAsc(profesional.getId(), request.desde(), request.hasta());
+        if (reglas.stream().noneMatch(p -> !p.getVigenciaDesde().isAfter(request.hasta())
+                && (p.getVigenciaHasta() == null || !p.getVigenciaHasta().isBefore(request.desde())))) {
+            throw new BadRequestException("Guardá primero los días y horarios de atención para ese período");
+        }
+        var obsoletas = franjaRepository.findLibresSinHistorial(profesional.getId(), request.desde().atStartOfDay(),
+                        request.hasta().plusDays(1).atStartOfDay().minusNanos(1)).stream()
+                .filter(f -> f.getInicio().isAfter(LocalDateTime.now()) && !duracionCorrecta(f)).toList();
+        franjaRepository.deleteAll(obsoletas);
+        franjaRepository.flush();
+        int creadas = 0, existentes = 0, omitidas = 0;
         for (LocalDate fecha = request.desde(); !fecha.isAfter(request.hasta()); fecha = fecha.plusDays(1)) {
-            final LocalDate fechaActual = fecha;
-
-            for (PlantillaDisponibilidad plantilla : plantillas) {
-                if (plantilla.getDiaSemana() != fechaActual.getDayOfWeek()) {
-                    continue;
-                }
-                if (fechaActual.isBefore(plantilla.getVigenciaDesde())) {
-                    continue;
-                }
-                if (plantilla.getVigenciaHasta() != null && fechaActual.isAfter(plantilla.getVigenciaHasta())) {
-                    continue;
-                }
-
-                LocalTime hora = plantilla.getHoraInicio();
-                while (!hora.plusMinutes(plantilla.getDuracionMin()).isAfter(plantilla.getHoraFin())) {
-                    LocalDateTime inicio = LocalDateTime.of(fechaActual, hora);
-                    LocalDateTime fin = inicio.plusMinutes(plantilla.getDuracionMin());
-
-                    if (estaCerrada(excepciones, fechaActual, hora, fin.toLocalTime())) {
-                        omitidasPorCierre++;
-                    } else if (franjaRepository.existsByProfesionalIdAndInicio(profesional.getId(), inicio)) {
-                        existentes++;
-                    } else {
-                        Franja franja = new Franja();
-                        franja.setProfesional(profesional);
-                        franja.setInicio(inicio);
-                        franja.setFin(fin);
-                        franja.setEstado(EstadoFranja.LIBRE);
-                        franja.setOrigen("PLANTILLA");
-                        franjaRepository.save(franja);
-                        creadas++;
-                    }
-
-                    hora = hora.plusMinutes(plantilla.getDuracionMin());
+            final var dia = fecha;
+            var regla = reglas.stream().filter(p -> p.getDiaSemana() == dia.getDayOfWeek()
+                            && !dia.isBefore(p.getVigenciaDesde())
+                            && (p.getVigenciaHasta() == null || !dia.isAfter(p.getVigenciaHasta())))
+                    .max(java.util.Comparator.comparing(PlantillaDisponibilidad::getVigenciaDesde)
+                            .thenComparing(PlantillaDisponibilidad::getId)).orElse(null);
+            if (regla == null) continue;
+            var limite = fecha.atTime(regla.getHoraFin());
+            for (var inicio = fecha.atTime(regla.getHoraInicio());
+                 !inicio.plusMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN).isAfter(limite);
+                 inicio = inicio.plusMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN)) {
+                var fin = inicio.plusMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN);
+                if (!inicio.isAfter(LocalDateTime.now())) continue;
+                final var inicioFranja = inicio;
+                var iguales = franjasDelDia(profesional.getId(), fecha).stream()
+                        .anyMatch(f -> f.getInicio().equals(inicioFranja) && f.getFin().equals(fin));
+                if (estaCerrada(cierres, fecha, inicio.toLocalTime(), fin.toLocalTime())) {
+                    omitidas++;
+                } else if (iguales) {
+                    existentes++;
+                } else if (franjaRepository.existsByProfesionalIdAndInicioLessThanAndFinGreaterThan(profesional.getId(), fin, inicio)) {
+                    throw new ConflictException("Hay horarios incompatibles con turnos o historial. Se conservaron todos los datos; gestioná esos horarios antes de habilitar el mes");
+                } else {
+                    Franja franja = new Franja();
+                    franja.setProfesional(profesional);
+                    franja.setInicio(inicio);
+                    franja.setFin(fin);
+                    franjaRepository.save(franja);
+                    creadas++;
                 }
             }
         }
-
-        auditoriaService.registrar(
-                "GENERAR_FRANJAS",
-                "Profesional",
-                profesional.getId(),
+        auditoriaService.registrar("GENERAR_FRANJAS", "Profesional", profesional.getId(),
                 "desde=" + request.desde() + ", hasta=" + request.hasta() + ", creadas=" + creadas
-        );
-
-        return new GenerarFranjasResponse(creadas, existentes, omitidasPorCierre);
+                        + ", obsoletasSinHistorial=" + obsoletas.size());
+        return new GenerarFranjasResponse(creadas, existentes, omitidas);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ExcepcionAgendaResponse crearBloqueo(BloqueoAgendaRequest request) {
         return crearExcepcion(new ExcepcionAgendaRequest(
                 request.profesionalId(),
@@ -201,9 +202,10 @@ public class AgendaService {
         ));
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ExcepcionAgendaResponse crearExcepcion(ExcepcionAgendaRequest request) {
-        Profesional profesional = obtenerProfesional(request.profesionalId());
+        validarDuracion(request.duracionMin());
+        Profesional profesional = bloquearProfesional(request.profesionalId());
 
         if (request.fecha().isBefore(LocalDate.now())) {
             throw new BadRequestException("No se pueden crear excepciones en fechas pasadas");
@@ -252,41 +254,28 @@ public class AgendaService {
                     .map(Turno::getId)
                     .toList();
         } else {
-            if (request.horaInicio() == null || request.horaFin() == null || request.duracionMin() == null) {
+            if (request.horaInicio() == null || request.horaFin() == null) {
                 throw new BadRequestException(
-                        "Una apertura requiere horaInicio, horaFin y duracionMin");
+                        "Una apertura requiere horaInicio y horaFin");
             }
 
-            LocalTime hora = request.horaInicio();
-            while (!hora.plusMinutes(request.duracionMin()).isAfter(request.horaFin())) {
-                LocalDateTime inicio = LocalDateTime.of(request.fecha(), hora);
-                LocalDateTime fin = inicio.plusMinutes(request.duracionMin());
-
-                if (!inicio.isBefore(LocalDateTime.now())) {
-                    Franja existente = franjasDelDia(profesional.getId(), request.fecha())
-                            .stream()
-                            .filter(f -> f.getInicio().equals(inicio))
-                            .findFirst()
-                            .orElse(null);
-
-                    if (existente == null) {
-                        Franja franja = new Franja();
-                        franja.setProfesional(profesional);
-                        franja.setInicio(inicio);
-                        franja.setFin(fin);
-                        franja.setEstado(EstadoFranja.LIBRE);
-                        franja.setOrigen("EXCEPCION_APERTURA");
-                        franjaRepository.save(franja);
-                        franjasCreadas++;
-                    } else if (existente.getEstado() == EstadoFranja.BLOQUEADA) {
-                        existente.setEstado(EstadoFranja.LIBRE);
-                        existente.setOrigen("EXCEPCION_APERTURA");
-                        franjaRepository.save(existente);
-                        franjasCreadas++;
-                    }
+            int duracion = configuracionService.obtener().getDuracionEstandarMin();
+            LocalDateTime limite = request.fecha().atTime(request.horaFin());
+            for (LocalDateTime inicio = request.fecha().atTime(request.horaInicio());
+                 !inicio.plusMinutes(duracion).isAfter(limite); inicio = inicio.plusMinutes(duracion)) {
+                LocalDateTime fin = inicio.plusMinutes(duracion);
+                if (!inicio.isAfter(LocalDateTime.now())) continue;
+                if (franjaRepository.existsByProfesionalIdAndInicioLessThanAndFinGreaterThan(
+                        profesional.getId(), fin, inicio)) {
+                    throw new ConflictException("La apertura se superpone con horarios existentes. Elegí un intervalo que no se superponga");
                 }
-
-                hora = hora.plusMinutes(request.duracionMin());
+                Franja franja = new Franja();
+                franja.setProfesional(profesional);
+                franja.setInicio(inicio);
+                franja.setFin(fin);
+                franja.setOrigen("EXCEPCION_APERTURA");
+                franjaRepository.save(franja);
+                franjasCreadas++;
             }
         }
 
@@ -305,6 +294,17 @@ public class AgendaService {
                 franjasBloqueadas,
                 turnosAfectados
         );
+    }
+
+    private boolean duracionCorrecta(Franja franja) {
+        return java.time.Duration.between(franja.getInicio(), franja.getFin())
+                .equals(java.time.Duration.ofMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN));
+    }
+
+    private void validarDuracion(Integer duracion) {
+        if (duracion != null && duracion != ConfiguracionAgenda.DURACION_TURNO_MIN) {
+            throw new BadRequestException("La duración de los turnos es fija: 40 minutos");
+        }
     }
 
     private void validarRangoExcepcion(ExcepcionAgendaRequest request) {
@@ -343,6 +343,11 @@ public class AgendaService {
                 profesionalId,
                 fecha.atStartOfDay(),
                 fecha.plusDays(1).atStartOfDay().minusNanos(1));
+    }
+
+    private Profesional bloquearProfesional(Long id) {
+        return profesionalRepository.findByIdForUpdate(id).filter(Profesional::isActivo)
+                .orElseThrow(() -> new ResourceNotFoundException("Profesional activo no encontrado: " + id));
     }
 
     private Profesional obtenerProfesional(Long id) {

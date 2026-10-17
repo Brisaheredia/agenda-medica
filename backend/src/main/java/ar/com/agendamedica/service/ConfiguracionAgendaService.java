@@ -3,6 +3,7 @@ package ar.com.agendamedica.service;
 import ar.com.agendamedica.domain.entity.ConfiguracionAgenda;
 import ar.com.agendamedica.dto.ConfiguracionAgendaRequest;
 import ar.com.agendamedica.dto.ConfiguracionAgendaResponse;
+import ar.com.agendamedica.exception.BadRequestException;
 import ar.com.agendamedica.repository.ConfiguracionAgendaRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -28,10 +29,13 @@ public class ConfiguracionAgendaService {
 
     @Transactional
     public ConfiguracionAgendaResponse actualizar(ConfiguracionAgendaRequest request) {
+        if (request.duracionEstandarMin() != null && request.duracionEstandarMin() != ConfiguracionAgenda.DURACION_TURNO_MIN) {
+            throw new BadRequestException("La duración de los turnos es fija: 40 minutos");
+        }
         ConfiguracionAgenda config = repository.findById(ConfiguracionAgenda.ID_UNICA).orElse(null);
         boolean nueva = config == null;
         if (nueva) config = new ConfiguracionAgenda();
-        config.setDuracionEstandarMin(request.duracionEstandarMin());
+        config.setDuracionEstandarMin(ConfiguracionAgenda.DURACION_TURNO_MIN);
         config.setHorizonteReservaDias(request.horizonteReservaDias());
         if (nueva) entityManager.persist(config);
         else config = repository.save(config);

@@ -1,6 +1,7 @@
 package ar.com.agendamedica.domain.entity;
 
 import ar.com.agendamedica.domain.enums.EstadoTurno;
+import ar.com.agendamedica.domain.enums.OrigenCancelacion;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -19,6 +20,8 @@ public class Turno {
     @Column(nullable = false) private LocalDateTime fin;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private EstadoTurno estado = EstadoTurno.RESERVADO;
     @Column(name = "motivo_consulta", length = 500) private String motivoConsulta;
+    @Enumerated(EnumType.STRING) @Column(name = "origen_cancelacion", length = 20) private OrigenCancelacion origenCancelacion;
+    @Column(name = "motivo_cancelacion", length = 500) private String motivoCancelacion;
     @Column(name = "created_at", nullable = false, updatable = false) private LocalDateTime createdAt;
     @Column(name = "updated_at", nullable = false) private LocalDateTime updatedAt;
 
@@ -33,5 +36,7 @@ public class Turno {
     public LocalDateTime getFin(){return fin;} public void setFin(LocalDateTime fin){this.fin=fin;}
     public EstadoTurno getEstado(){return estado;} public void setEstado(EstadoTurno estado){this.estado=estado;}
     public String getMotivoConsulta(){return motivoConsulta;} public void setMotivoConsulta(String motivoConsulta){this.motivoConsulta=motivoConsulta;}
+    public OrigenCancelacion getOrigenCancelacion(){return origenCancelacion;} public void setOrigenCancelacion(OrigenCancelacion origen){this.origenCancelacion=origen;}
+    public String getMotivoCancelacion(){return motivoCancelacion;} public void setMotivoCancelacion(String motivo){this.motivoCancelacion=motivo;}
     public LocalDateTime getCreatedAt(){return createdAt;} public LocalDateTime getUpdatedAt(){return updatedAt;}
 }

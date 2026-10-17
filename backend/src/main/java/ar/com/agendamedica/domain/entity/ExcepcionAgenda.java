@@ -4,6 +4,7 @@ import ar.com.agendamedica.domain.enums.TipoExcepcionAgenda;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "excepciones_agenda", indexes = @Index(name = "idx_excepcion_profesional_fecha", columnList = "profesional_id,fecha"))
@@ -23,4 +24,11 @@ public class ExcepcionAgenda {
     public LocalTime getHoraFin(){return horaFin;} public void setHoraFin(LocalTime horaFin){this.horaFin=horaFin;}
     public TipoExcepcionAgenda getTipo(){return tipo;} public void setTipo(TipoExcepcionAgenda tipo){this.tipo=tipo;}
     public String getMotivo(){return motivo;} public void setMotivo(String motivo){this.motivo=motivo;}
+
+    public boolean afecta(LocalDateTime inicio, LocalDateTime fin) {
+        if (tipo != TipoExcepcionAgenda.CIERRE) return false;
+        LocalDateTime desde = horaInicio == null ? fecha.atStartOfDay() : fecha.atTime(horaInicio);
+        LocalDateTime hasta = horaFin == null ? fecha.plusDays(1).atStartOfDay() : fecha.atTime(horaFin);
+        return inicio.isBefore(hasta) && fin.isAfter(desde);
+    }
 }

@@ -2,6 +2,7 @@ package ar.com.agendamedica.dto;
 
 import ar.com.agendamedica.domain.entity.Turno;
 import ar.com.agendamedica.domain.enums.EstadoTurno;
+import ar.com.agendamedica.domain.enums.OrigenCancelacion;
 import java.time.LocalDateTime;
 
 public record TurnoResponse(
@@ -14,7 +15,9 @@ public record TurnoResponse(
         LocalDateTime fin,
         EstadoTurno estado,
         String motivoConsulta,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        OrigenCancelacion origenCancelacion,
+        String motivoCancelacion
 ) {
     public static TurnoResponse from(Turno turno) {
         return new TurnoResponse(
@@ -27,7 +30,9 @@ public record TurnoResponse(
                 turno.getFin(),
                 turno.getEstado(),
                 turno.getMotivoConsulta(),
-                turno.getCreatedAt()
+                turno.getCreatedAt(),
+                turno.getOrigenCancelacion(),
+                turno.getMotivoCancelacion()
         );
     }
 }

@@ -1,6 +1,7 @@
 package ar.com.agendamedica.dto;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.DayOfWeek;
@@ -12,7 +13,7 @@ public record PlantillaDisponibilidadRequest(
         @NotNull DayOfWeek diaSemana,
         @NotNull LocalTime horaInicio,
         @NotNull LocalTime horaFin,
-        @NotNull @Min(5) Integer duracionMin,
+        @Min(40) @Max(40) Integer duracionMin,
         @NotNull LocalDate vigenciaDesde,
         LocalDate vigenciaHasta
 ) {}

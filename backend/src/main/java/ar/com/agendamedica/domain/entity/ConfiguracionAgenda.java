@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 @Table(name = "configuracion_agenda")
 public class ConfiguracionAgenda {
     public static final long ID_UNICA = 1L;
+    public static final int DURACION_TURNO_MIN = 40;
 
     @Id
     private Long id = ID_UNICA;
@@ -20,8 +21,14 @@ public class ConfiguracionAgenda {
     private Integer horizonteReservaDias = 90;
 
     public Long getId() { return id; }
-    public Integer getDuracionEstandarMin() { return duracionEstandarMin; }
-    public void setDuracionEstandarMin(Integer value) { this.duracionEstandarMin = value; }
+    public Integer getDuracionEstandarMin() { return DURACION_TURNO_MIN; }
+    public void setDuracionEstandarMin(Integer value) {
+        if (value == null || value != DURACION_TURNO_MIN) throw new IllegalArgumentException("Los turnos duran 40 minutos");
+        this.duracionEstandarMin = DURACION_TURNO_MIN;
+    }
+    @jakarta.persistence.PrePersist
+    @jakarta.persistence.PreUpdate
+    void fijarDuracion() { duracionEstandarMin = DURACION_TURNO_MIN; }
     public Integer getHorizonteReservaDias() { return horizonteReservaDias; }
     public void setHorizonteReservaDias(Integer value) { this.horizonteReservaDias = value; }
 }

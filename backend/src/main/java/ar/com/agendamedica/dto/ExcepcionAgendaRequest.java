@@ -2,6 +2,7 @@ package ar.com.agendamedica.dto;
 
 import ar.com.agendamedica.domain.enums.TipoExcepcionAgenda;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -14,6 +15,6 @@ public record ExcepcionAgendaRequest(
         LocalTime horaInicio,
         LocalTime horaFin,
         @NotNull TipoExcepcionAgenda tipo,
-        @Min(5) Integer duracionMin,
+        @Min(40) @Max(40) Integer duracionMin,
         @Size(max = 255) String motivo
 ) {}
