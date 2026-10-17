@@ -71,6 +71,15 @@ export function AgendaPage(props: Props) {
     irAFranja,
   } = props;
   const [vista, setVista] = useState<"dia" | "semana">("dia");
+  const esHoy = fecha === hoy();
+  const diaAnterior = moverDia(fecha, -1);
+  const diaSiguiente = moverDia(fecha, 1);
+  const fechaCorta = (dia: string) =>
+    new Intl.DateTimeFormat("es-AR", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }).format(new Date(`${dia}T12:00:00`));
   const filters: { id: Filtro; label: string }[] = [
     { id: "TODOS", label: "Todos" },
     { id: "LIBRE", label: "Disponibles" },
@@ -115,33 +124,35 @@ export function AgendaPage(props: Props) {
       {vista === "dia" && <section className="date-toolbar card" aria-label="Navegación por fecha">
         <div className="date-controls">
           <button
-            className="icon-button"
-            aria-label="Día anterior"
+            className="secondary date-step"
+            aria-label={`Día anterior: ${fechaLarga(diaAnterior)}`}
             disabled={busy}
-            onClick={() => cambiarFecha(moverDia(fecha, -1))}
+            onClick={() => cambiarFecha(diaAnterior)}
           >
-            <Icon name="left" />
+            <Icon name="left" size={18} />
+            <time dateTime={diaAnterior}>{fechaCorta(diaAnterior)}</time>
           </button>
+          <div className="date-title" aria-live="polite">
+            <time dateTime={fecha} title={fechaLarga(fecha)} aria-current={esHoy ? "date" : undefined}>
+              <strong>{esHoy ? "Hoy" : fechaCorta(fecha)}</strong>
+              {esHoy && <span>{fechaCorta(fecha)}</span>}
+            </time>
+          </div>
           <button
-            className="secondary"
+            className="secondary date-step"
+            aria-label={`Día siguiente: ${fechaLarga(diaSiguiente)}`}
             disabled={busy}
-            onClick={() => cambiarFecha(hoy())}
+            onClick={() => cambiarFecha(diaSiguiente)}
           >
-            Hoy
-          </button>
-          <button
-            className="icon-button"
-            aria-label="Día siguiente"
-            disabled={busy}
-            onClick={() => cambiarFecha(moverDia(fecha, 1))}
-          >
-            <Icon name="right" />
+            <time dateTime={diaSiguiente}>{fechaCorta(diaSiguiente)}</time>
+            <Icon name="right" size={18} />
           </button>
         </div>
-        <div className="date-title">
-          <Icon name="calendar" />
-          <strong>{fechaLarga(fecha)}</strong>
-        </div>
+        {!esHoy && (
+          <button className="text-button" disabled={busy} onClick={() => cambiarFecha(hoy())}>
+            Volver a hoy
+          </button>
+        )}
         <input
           type="date"
           aria-label="Fecha de la agenda"

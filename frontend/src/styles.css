@@ -426,16 +426,30 @@ a.nav-item {
 }
 .date-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 15px;
   padding: 15px 17px;
   margin-bottom: 20px;
 }
 .date-controls {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(95px, 1.2fr) minmax(0, 1fr);
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  flex: 1 1 440px;
+  min-width: 0;
+}
+.date-step {
+  min-width: 0;
+  padding: 10px 8px;
+  font-size: 12px;
+}
+.date-step svg {
   flex-shrink: 0;
+}
+.date-step time {
+  text-transform: capitalize;
 }
 .date-title {
   display: flex;
@@ -450,6 +464,20 @@ a.nav-item {
   text-transform: capitalize;
   font-size: 14px;
   line-height: 1.6;
+}
+.date-controls .date-title {
+  justify-content: center;
+  text-align: center;
+  flex-basis: auto;
+  order: 0;
+}
+.date-title time {
+  display: grid;
+  gap: 2px;
+}
+.date-title time > span {
+  font-size: 11px;
+  text-transform: capitalize;
 }
 .date-toolbar input {
   font-size: 11px;
