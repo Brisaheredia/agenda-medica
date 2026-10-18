@@ -22,7 +22,7 @@ mvn -B test
 
 Testcontainers inicia `mysql:8.4` y configura create-drop dentro del contenedor, sin requerir usar la BD operativa. Confirmar Docker disponible y no apuntar los tests manualmente a datos reales. La clase suministra una clave JWT exclusiva de test. En el Docker 29 de esta máquina fue necesario `mvn -B -Dapi.version=1.44 test` para compatibilidad con el cliente de Testcontainers; no cambia los puertos del sistema. La ejecución local también necesitó acceso al almacén de certificados de Windows para resolver dependencias de Maven. Estas opciones son del entorno, no requisitos de producción.
 
-Pruebas unitarias sin Docker: `mvn -B "-Dtest=DisponibilidadServiceTest,AgendaConsultaServiceTest" test`.
+Pruebas unitarias sin Docker: `mvn -B "-Dtest=DisponibilidadServiceTest,AgendaConsultaServiceTest,TiempoAgendaTest,DevUsuariosSeederTest" test`.
 
 ## Automatización existente
 
@@ -48,6 +48,8 @@ Clase `backend/src/test/java/ar/com/agendamedica/TurnoAgendaIntegrationTest.java
 
 Estos escenarios llaman servicios. `AutorizacionHttpTest` agrega pruebas de autorización con filtros/controladores y JWT reales para los cuatro roles, servicios simulados y sin acceso a datos del consultorio. Ver [roles y permisos](roles-permisos.md). DisponibilidadServiceTest agrega seis pruebas sobre liberación, cierre parcial y destino cerrado. AgendaConsultaServiceTest agrega tres sobre contactos, cierres duplicados, cancelación individual y rango inválido. No hay medición de cobertura porcentual.
 
+`DevUsuariosSeederTest` verifica creación de los cuatro roles, conservación de cuentas existentes, reinicios sin duplicados, validación previa a inserciones, activación exclusiva en `dev`, deshabilitación y variables de configuración. `DevUsuariosIntegrationTest` arranca la aplicación con una BD MySQL nueva descartable y comprueba inicio de sesión con las cuatro cuentas y repetición de la inicialización sin cambiar hashes.
+
 ## Evidencia de esta revisión
 
 | Comprobación | Resultado y límite |
@@ -57,7 +59,7 @@ Estos escenarios llaman servicios. `AutorizacionHttpTest` agrega pruebas de auto
 | Acceso real ADMIN al calendario | Login local y siete GET de semana 12–18/10 respondieron 200 al incluir profesionalId; no se modificaron datos |
 | Petición incompleta | GET sin profesionalId devolvió 403; con profesionalId devolvió 200 |
 | Compilación Java de auditoría inicial | Correcta para fuentes revisadas entonces; no sustituye compilar cada nueva versión |
-| Suite actual de backend | 190/190 aprobadas: 162 HTTP, dieciséis de integración en MySQL 8.4 descartable, nueve unitarias de agenda y tres de zona horaria, sin omisiones. Reportes Surefire locales en backend/target/surefire-reports (ignorados por Git). |
+| Suite actual de backend | 197/197 aprobadas: 162 HTTP, diecisiete de integración en MySQL 8.4 descartable, nueve unitarias de agenda, tres de zona horaria y seis de inicialización de cuentas, sin omisiones. Reportes Surefire locales en backend/target/surefire-reports (ignorados por Git). |
 | Interfaz | 15/15 pruebas aprobadas con `npm test`, tanto con TZ=UTC como TZ=Asia/Tokyo: acciones por rol, ocultamiento de franjas vacías, medianoche en Buenos Aires, interpretación de horarios, selectores en español, límite mensual, procedencia de reprogramación y nueva distribución de Disponibilidad y contador de pendientes (con y sin aviso). Build TypeScript/Vite aprobado. Sin inspección visual en navegador. |
 | Cuentas de la instalación local | Ingreso comprobado con los cuatro roles; 76 comprobaciones de permisos contra la API local, con lecturas y cuerpos inválidos/IDs inexistentes para no alterar datos operativos. Contraseñas entregadas fuera del repositorio. |
 | Frontend actual | npm run build aprobado; diez comprobaciones temporales con Node sobre origen/colores y límites de cierre aprobadas; pantalla Reprogramaciones comprobada con API simulada (contactos, filtros, permiso vigente y guardado sin depender de la agenda diaria). GeneracionMensual comprobada con API simulada: mes, rango y bloqueo de doble envío; no envía duración. No son validación visual ni suite versionada. |
@@ -73,7 +75,7 @@ Usar una base descartable con un profesional activo y pacientes ficticios. Las f
 | Caso | Procedimiento y resultado exigido |
 |---|---|
 | CA-01 | Arrancar desde clon limpio, crear ADMIN y consultar profesional/configuración según guía |
-| CA-02 | Verificar duración fija 40 y horizonte 90; guardar otro horizonte, recargar y comprobar; rechazar duración 30 |
+| CA-02 | Verificar duración fija 40 y horizonte inicial 45; guardar otro horizonte, recargar y comprobar; rechazar duración 30 |
 | CA-03 | Marcar lunes–viernes 08:00–20:00, guardar y habilitar una semana: 18 franjas por día sin cierres, ninguna de fin de semana |
 | CA-04 | Con API simulada fallar el tercer día: conservar pendientes y reintentar sin duplicar los dos éxitos previos |
 | CA-05 | Registrar paciente, buscar por DNI/apellido, editar, desactivar y verificar historial preservado |

@@ -2,6 +2,10 @@
 
 Registro de cambios relevantes inspeccionados, no historial exhaustivo de cada commit ni acta de liberación productiva.
 
+## Cuentas de desarrollo en instalaciones independientes
+
+Con perfil `dev`, cada backend crea en su propia BD las cuentas de prueba faltantes para los cuatro roles. Las credenciales pueden configurarse por entorno y las cuentas existentes conservan contraseña, rol y estado. La inicialización puede deshabilitarse y no se activa fuera de `dev`. Se documentan pasos y claves públicas de prueba para el equipo. Validación: 197 pruebas backend aprobadas, incluida la creación e ingreso de los cuatro roles en MySQL nuevo descartable.
+
 ## Fechas, disponibilidad y seguimiento de reprogramaciones
 
 Fecha y hora de negocio explícitas en Buenos Aires, controles de fecha en español y horario inicial 08:00 en Bloqueos y excepciones. Disponibilidad organiza los días a la izquierda, la configuración y generación a la derecha y el calendario debajo; oculta horarios antiguos vacíos y quita avisos repetidos de duración. La anticipación inicial es de 45 días y sigue siendo configurable. La procedencia de reprogramación del consultorio se conserva en BD y se muestra con una etiqueta; el menú avisa con un contador titilante si hay pendientes. Validación: 190 pruebas backend y 15 frontend aprobadas; build de frontend correcto.

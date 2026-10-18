@@ -31,13 +31,11 @@ $env:SERVER_PORT = '8080'
 $env:JWT_SECRET = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
 $env:JWT_EXPIRATION_MINUTES = '480'
 $env:DDL_AUTO = 'update'
-$env:APP_BOOTSTRAP_ADMIN_EMAIL = 'admin@agenda.local'
-$env:APP_BOOTSTRAP_ADMIN_PASSWORD = Read-Host 'Contraseña inicial del administrador' -MaskInput
 $env:SPRING_PROFILES_ACTIVE = 'dev'
 mvn spring-boot:run
 ```
 
-El usuario MySQL del ejemplo debe existir previamente. Elegir una contraseña administrativa suficientemente larga; la creación posterior por API exige al menos 8 caracteres y hasta 72 bytes UTF-8. La generación aleatoria de JWT sirve para preparar una sesión de desarrollo: conservar la misma clave mientras se necesiten validar tokens previos. Cambiarla invalida esos tokens. En producción usar un secreto estable administrado por el entorno, no regenerarlo en cada arranque.
+El usuario MySQL del ejemplo debe existir previamente. Con `dev`, se crean las cuentas de prueba indicadas abajo en la BD de cada integrante. La creación de cuentas por API exige al menos 8 caracteres y hasta 72 bytes UTF-8. La generación aleatoria de JWT sirve para preparar una sesión de desarrollo: conservar la misma clave mientras se necesiten validar tokens previos. Cambiarla invalida esos tokens. En producción usar un secreto estable administrado por el entorno, no regenerarlo en cada arranque.
 
 | Variable | Uso y valor inicial del código |
 |---|---|
@@ -47,17 +45,39 @@ El usuario MySQL del ejemplo debe existir previamente. Elegir una contraseña ad
 | `JWT_SECRET` | Obligatoria; material de clave de al menos 32 bytes UTF-8 para HMAC |
 | `JWT_EXPIRATION_MINUTES` | 480 minutos |
 | `DDL_AUTO` | update; modifica esquema automáticamente en desarrollo |
-| `SPRING_PROFILES_ACTIVE` | dev habilita datos de ejemplo; no usar ese seed en datos reales |
+| `SPRING_PROFILES_ACTIVE` | dev habilita datos y cuatro cuentas de prueba; no usar ese seed en datos reales |
 | `APP_BOOTSTRAP_ADMIN_EMAIL`, `APP_BOOTSTRAP_ADMIN_PASSWORD` | Crear el primer ADMIN cuando la tabla de usuarios está vacía |
+| `APP_DEV_USERS_ENABLED` | true sólo con perfil dev; false deshabilita las cuatro cuentas de prueba |
 | `VITE_API_URL` | Sólo frontend; por defecto http://localhost:8080 |
 
 El backend no carga automáticamente un `.env` por incluirlo en su carpeta. Proveer variables de proceso, configuración de ejecución del IDE o archivos Spring explícitos. La duración y el horizonte funcionales se guardan en la tabla de configuración; no hay variables de entorno implementadas para reemplazarlos.
+
+## Cuentas de prueba para cada integrante
+
+Cada integrante ejecuta su backend contra su propia BD. Después de actualizar el código, activar el perfil **dev** en IntelliJ (campo **Active profiles**) o definir `SPRING_PROFILES_ACTIVE=dev` y arrancar. `application-dev.properties` viaja con Git y prepara estas cuentas en cada instalación:
+
+| Rol | Email | Contraseña inicial de prueba |
+|---|---|---|
+| ADMIN | `admin@agenda.local` | `admin123` |
+| MEDICO | `medico@agenda.local` | `medico123` |
+| RECEPCION | `recepcion@agenda.local` | `recepcion123` |
+| OBRAS_SOCIALES | `obras.sociales@agenda.local` | `obras123` |
+
+No necesitan compartir backend, BD ni copiar hashes o cuentas desde otro equipo. Cada backend guarda los hashes BCrypt en su propia BD. Las cuentas se crean sólo si falta su email; los reinicios conservan contraseña, rol y estado de cuentas existentes, incluso si se editaron desde Usuarios. Si una cuenta ya existía, utilizar su contraseña actual; la tabla anterior no la restablece.
+
+Se pueden reemplazar email y contraseña inicial mediante `APP_DEV_ADMIN_EMAIL`/`APP_DEV_ADMIN_PASSWORD`, `APP_DEV_MEDICO_EMAIL`/`APP_DEV_MEDICO_PASSWORD`, `APP_DEV_RECEPCION_EMAIL`/`APP_DEV_RECEPCION_PASSWORD` y `APP_DEV_OBRAS_SOCIALES_EMAIL`/`APP_DEV_OBRAS_SOCIALES_PASSWORD`. Definirlos en las variables de ejecución locales antes de crear las cuentas. Si se definieron las variables `APP_BOOTSTRAP_ADMIN_*`, se usan también como valores iniciales de ADMIN salvo que existan variables `APP_DEV_ADMIN_*` específicas.
+
+Sin perfil `dev`, las cuentas de prueba no se crean. `APP_DEV_USERS_ENABLED=false` permite deshabilitar su creación también dentro de dev. La inicialización sólo informa cuántas cuentas creó o conservó; no imprime contraseñas ni hashes.
+
+### Primer administrador fuera del perfil dev
+
+Con la tabla de usuarios vacía, definir `APP_BOOTSTRAP_ADMIN_EMAIL` y `APP_BOOTSTRAP_ADMIN_PASSWORD` antes de iniciar el backend. Después se crean las demás cuentas desde **Usuarios**. Este bootstrap no reemplaza usuarios ni contraseñas existentes y se ejecuta antes del seed de desarrollo si ambos están configurados.
 
 ## Configuración por entorno
 
 Los valores por defecto son API 8080 y MySQL 3306. Si una instalación utiliza otros puertos, ajustar DB_URL, SERVER_PORT y VITE_API_URL de forma coherente. Ningún puerto particular de un equipo es requisito del proyecto.
 
-No se versionan `.env.local`, contraseñas ni claves JWT. Spring puede cargar archivos de configuración locales según directorio de trabajo o mediante una ubicación explícita. Si el equipo utiliza `config/` junto al módulo backend, puede indicarla desde `backend` así:
+No se versionan `.env.local`, contraseñas personalizadas ni claves JWT. Las claves públicas de prueba se definen exclusivamente en `application-dev.properties`. Spring puede cargar archivos de configuración locales según directorio de trabajo o mediante una ubicación explícita. Si el equipo utiliza `config/` junto al módulo backend, puede indicarla desde `backend` así:
 
 ```powershell
 mvn spring-boot:run '-Dspring-boot.run.arguments=--spring.config.additional-location=optional:file:../config/'
@@ -78,7 +98,7 @@ npm ci
 npm run dev
 ```
 
-Crear `.env.local` con la línea correspondiente y reiniciar Vite si se modifica. Abrir su URL informada. Ingresar con el usuario creado mediante bootstrap, no con una contraseña supuesta. Si ya existían usuarios, el bootstrap no reemplaza sus credenciales. Administración puede crear las otras cuentas y restablecer contraseñas desde **Usuarios**; no hay contraseñas universales para los cuatro roles. Ver [roles y permisos](roles-permisos.md).
+Crear `.env.local` con la línea correspondiente y reiniciar Vite si se modifica. Abrir su URL informada. En dev, ingresar con las cuentas iniciales de prueba de esta guía; fuera de dev, usar las creadas por Administración o bootstrap. Si ya existían usuarios, el arranque no reemplaza sus credenciales. Administración puede crear otras cuentas y restablecer contraseñas desde **Usuarios**. Ver [roles y permisos](roles-permisos.md).
 
 ## Duración fija
 
@@ -92,7 +112,7 @@ Esta versión no requiere la migración mensual propuesta para cambios de duraci
 4. Se cargan días/horario y se habilitan fechas según el [manual](manual-usuario.md).
 5. Se reserva un turno de prueba, se recarga y se comprueba persistencia.
 
-El perfil dev ayuda a disponer de un profesional, pero crea franjas de ejemplo de 30 minutos; no sustituye la configuración del consultorio. Sin dev, la provisión del profesional debe realizarla soporte sobre la BD o una futura herramienta administrativa: actualmente no hay endpoint de alta de profesional.
+El perfil dev prepara cuatro cuentas, un profesional y dos pacientes de ejemplo; no genera franjas automáticamente ni sustituye la configuración del consultorio. Sin dev, la provisión del profesional debe realizarla soporte sobre la BD o una futura herramienta administrativa: actualmente no hay endpoint de alta de profesional.
 
 ## Diagnóstico
 

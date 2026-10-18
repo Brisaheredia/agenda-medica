@@ -45,7 +45,7 @@ React, TypeScript y Vite; Spring Boot 3.5.6 con Java 21; MySQL 8; Spring Securit
 
 Los puertos se pueden configurar por entorno; no son requisitos inmutables. Cada instalación define sus propias variables; las configuraciones personales no se publican ni se consideran valores generales.
 
-Seguir [instalación](docs/instalacion-configuracion.md) para alinear los puertos, definir JWT y crear el primer administrador. No se publica una contraseña de acceso en la documentación.
+Seguir [instalación](docs/instalacion-configuracion.md) para alinear los puertos, definir JWT y configurar el acceso. Con perfil `dev`, cada integrante obtiene cuatro cuentas de prueba en su propia BD, con las contraseñas iniciales documentadas en esa guía. Las claves personalizadas de una instalación no se versionan.
 
 ## Estado y límites
 
