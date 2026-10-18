@@ -6,7 +6,7 @@ Actualización con colores y reprogramaciones, 17 de octubre de 2026. Se revisar
 
 - Estructura con README general, frontend/backend y navegación temática por audiencia.
 - Enlaces relativos internos comprobados por el generador; cercos de código Markdown balanceados y ejemplos JSON parseables.
-- Tabla API con los 28 endpoints declarados por los nueve controladores; verificación automática de coincidencia de método/ruta.
+- Tabla API con los 31 endpoints declarados por los nueve controladores; verificación automática de coincidencia de método/ruta.
 - Catálogo de los 24 RF y matriz de los 20 RNF, diferenciando plan de aceptación de evidencia ejecutada.
 - Especificación de referencia copiada sin cambios y verificada por SHA-256; documentos de etapas anteriores eliminados del árbol de trabajo y enlaces actualizados.
 - Ausencia de claves locales reales en los documentos vigentes. Los ejemplos de secretos son placeholders o entrada interactiva.
@@ -16,6 +16,6 @@ Actualización con colores y reprogramaciones, 17 de octubre de 2026. Se revisar
 
 ## Límites
 
-No se ejecutó una nueva aceptación E2E ni restauración de BD; tampoco pruebas de carga, accesibilidad formal o despliegue. No hay conformidad certificada con una norma. La compilación frontend y las 23 pruebas backend aprobadas se describen con su alcance en [pruebas](pruebas-aceptacion.md), sin transformarlas en resultados nuevos.
+No se ejecutó una nueva aceptación E2E ni restauración de BD; tampoco pruebas de carga, accesibilidad formal o despliegue. No hay conformidad certificada con una norma. La compilación, las 186 pruebas backend, las 5 pruebas de interfaz y las comprobaciones de cuentas locales se describen con su alcance en [pruebas](pruebas-aceptacion.md).
 
 El árbol de trabajo conserva las guías vigentes y la fuente de requisitos; los documentos obsoletos se consultan únicamente en el historial de Git. Al cambiar código, revisar enlaces, API, manual, alcance y evidencias junto con el commit de referencia.

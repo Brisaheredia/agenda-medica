@@ -11,6 +11,7 @@ La documentación vigente se versiona en este repositorio junto al código. El R
 | Necesidad | Documento vigente |
 |---|---|
 | Aprender a operar el sistema | [Manual de usuario](docs/manual-usuario.md) |
+| Consultar permisos y gestionar cuentas | [Roles y permisos](docs/roles-permisos.md) |
 | Instalar y configurar desde cero | [Instalación](docs/instalacion-configuracion.md) |
 | Trabajar en la interfaz | [README del frontend](frontend/README.md) |
 | Trabajar en API y persistencia | [README del backend](backend/README.md) |

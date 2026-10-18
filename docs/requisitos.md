@@ -15,7 +15,7 @@ Problema: agenda distribuida/manual, horarios liberados que no se reutilizan y c
 
 ## Actores y glosario
 
-Administración configura y mantiene; recepción gestiona pacientes/reservas; médico consulta y registra resultados con los permisos actuales. El paciente es destinatario de la cita, sin cuenta pública. La matriz técnica se documenta en [API](api.md); sus diferencias con los casos de uso iniciales requieren validación del equipo.
+Administración configura, mantiene y opera; Recepción gestiona pacientes, turnos y resultados; Médico consulta, modifica horarios, bloquea atención y registra resultados; Obras sociales consulta agenda/disponibilidad y gestiona turnos de pacientes existentes con datos mínimos. El paciente es destinatario de la cita, sin cuenta pública. Se implementa la [matriz de roles](roles-permisos.md) solicitada posteriormente al documento inicial.
 
 Una **plantilla** es una regla semanal con vigencia. Una **franja** es un intervalo concreto persistido. Un **turno** es el compromiso del paciente sobre una franja. Una **excepción** cierra o abre una fecha. **Horizonte** es la anticipación máxima de reserva.
 
@@ -36,7 +36,7 @@ Se conservan los IDs del documento de origen. La prioridad refleja el acuerdo ac
 | RF-09 | Bloquear período futuro | MVP; cierre por fecha/horas implementado, límites pendientes |
 | RF-10 | Mostrar afectados antes de confirmar | Fase 2 original; previsualización pendiente, contactos disponibles tras suspensión |
 | RF-11 | Consultar por día, semana y rango | MVP; día/semana presentes, rango arbitrario pendiente |
-| RF-12 | Registrar atendido/ausente | MVP; implementado; revisar roles acordados |
+| RF-12 | Registrar atendido/ausente | MVP; implementado para Administración, Médico y Recepción |
 | RF-13 | Mostrar historial de un turno | Fase 2; eventos almacenados sin consulta específica |
 | RF-14 | Sugerir próximos libres desde fecha | MVP; diálogo de reprogramación lista alternativas desde fecha; búsqueda rápida de reserva muestra la primera |
 | RF-15 | Registrar aperturas y cierres | MVP; duración fija 40 y rechazo de superposiciones; cierre prevalece |
@@ -74,7 +74,7 @@ La última decisión del responsable fija los turnos en 40 minutos y descarta el
 
 Rojo para suspensión del consultorio, naranja para cancelación del paciente, verde para horarios disponibles, azul para ocupados y gris claro para fechas sin horarios/pasados o cancelaciones históricas sin origen. Domingo con fondo rojizo. La etiqueta textual aclara el estado; la prioridad de un encabezado mixto se describe en el manual.
 
-Los permisos de suspensión de médico/recepción quedan pendientes por pedido del responsable hasta revisar los requisitos funcionales; no se modifican en esta entrega.
+La suspensión de días corresponde a Administración y Médico según la [matriz solicitada](roles-permisos.md). Recepción coordina pacientes y reprogramaciones, pero no modifica horarios ni bloquea días.
 
 ## Calidad y aceptación
 

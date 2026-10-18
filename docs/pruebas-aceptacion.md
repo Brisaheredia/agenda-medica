@@ -8,10 +8,11 @@ Frontend, desde su carpeta:
 
 ```powershell
 npm ci
+npm test
 npm run build
 ```
 
-No hay runner de pruebas frontend ni lint configurado. La compilación comprueba tipos y bundle, no interacción, permisos ni persistencia.
+`npm test` usa Node, Vite y render de React para verificar menús, rutas y botones por rol; no hay lint configurado. La compilación comprueba tipos y bundle, no interacción, permisos ni persistencia.
 
 Backend, con Java 21, Maven y Docker:
 
@@ -43,8 +44,9 @@ Clase `backend/src/test/java/ar/com/agendamedica/TurnoAgendaIntegrationTest.java
 | noBorraNiModificaTurnoAntiguoCuandoImpideGenerarCuarenta | Mantiene cita antigua e intervalo original ante conflicto, sin cambios parciales |
 | reservasDeCuarentaEnFranjasDiferentesSuperpuestasSeSerializan | Un éxito y un conflicto entre dos IDs con intervalos superpuestos |
 | generacionMensualEsFinitaCercaDeMedianocheYNoAceptaDosMeses | Límite de medianoche y rechazo de generación de varios meses |
+| usuariosPersistenCuartoRolYRevocanSesionAlCambiarCredenciales | Persiste OBRAS_SOCIALES, BCrypt, cambios de contraseña/rol, invalida JWT y protege último administrador |
 
-Son llamadas a servicios, no pruebas de autorización HTTP. DisponibilidadServiceTest agrega seis pruebas sobre liberación, cierre parcial y destino cerrado. AgendaConsultaServiceTest agrega tres sobre contactos, cierres duplicados, cancelación individual y rango inválido. No hay medición de cobertura porcentual.
+Estos escenarios llaman servicios. `AutorizacionHttpTest` agrega pruebas de autorización con filtros/controladores y JWT reales para los cuatro roles, servicios simulados y sin acceso a datos del consultorio. Ver [roles y permisos](roles-permisos.md). DisponibilidadServiceTest agrega seis pruebas sobre liberación, cierre parcial y destino cerrado. AgendaConsultaServiceTest agrega tres sobre contactos, cierres duplicados, cancelación individual y rango inválido. No hay medición de cobertura porcentual.
 
 ## Evidencia de esta revisión
 
@@ -55,12 +57,14 @@ Son llamadas a servicios, no pruebas de autorización HTTP. DisponibilidadServic
 | Acceso real ADMIN al calendario | Login local y siete GET de semana 12–18/10 respondieron 200 al incluir profesionalId; no se modificaron datos |
 | Petición incompleta | GET sin profesionalId devolvió 403; con profesionalId devolvió 200 |
 | Compilación Java de auditoría inicial | Correcta para fuentes revisadas entonces; no sustituye compilar cada nueva versión |
-| Suite actual de backend | 23/23 aprobadas: catorce de integración en MySQL 8.4 descartable y nueve unitarias, sin omisiones. Reportes Surefire locales en backend/target/surefire-reports (ignorados por Git). |
+| Suite actual de backend | 186/186 aprobadas: 162 HTTP, quince de integración en MySQL 8.4 descartable y nueve unitarias, sin omisiones. Reportes Surefire locales en backend/target/surefire-reports (ignorados por Git). |
+| Permisos de interfaz | 5/5 pruebas de render aprobadas con `npm test`: menú, acceso directo a rutas, formularios, reserva, cancelación y resultados según cada rol; build TypeScript/Vite aprobado. Sin inspección visual en navegador. |
+| Cuentas de la instalación local | Ingreso comprobado con los cuatro roles; 76 comprobaciones de permisos contra la API local, con lecturas y cuerpos inválidos/IDs inexistentes para no alterar datos operativos. Contraseñas entregadas fuera del repositorio. |
 | Frontend actual | npm run build aprobado; diez comprobaciones temporales con Node sobre origen/colores y límites de cierre aprobadas; pantalla Reprogramaciones comprobada con API simulada (contactos, filtros, permiso vigente y guardado sin depender de la agenda diaria). GeneracionMensual comprobada con API simulada: mes, rango y bloqueo de doble envío; no envía duración. No son validación visual ni suite versionada. |
 | Generación cerca de medianoche | Iteración reemplazada por LocalDateTime y límite; prueba mensual cerca de medianoche aprobada |
 | Pruebas E2E, carga, navegadores y restauración | Sin acta aprobada |
 
-La nueva evidencia corresponde al árbol de trabajo con colores/reprogramaciones del 17/10/2026, posterior a 8fc8bc2. No se modificó ni reinició la BD operativa; sólo se crearon datos ficticios en contenedores. El resultado del CI remoto no fue consultado.
+La nueva evidencia corresponde al árbol de trabajo con colores/reprogramaciones del 17/10/2026, posterior a 8fc8bc2. Las pruebas de negocio y permisos se ejecutan con servicios simulados o datos ficticios en contenedores; la configuración de cuentas solicitada se aplica por separado a la instalación local y no modifica pacientes ni turnos. El resultado del CI remoto no fue consultado.
 
 ## Casos de aceptación por completar
 

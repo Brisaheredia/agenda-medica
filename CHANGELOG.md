@@ -2,6 +2,15 @@
 
 Registro de cambios relevantes inspeccionados, no historial exhaustivo de cada commit ni acta de liberación productiva.
 
+## Roles, permisos y administración de cuentas
+
+Cuatro roles según matriz acordada: autorización HTTP, permisos de interfaz, datos mínimos para Obras sociales y pantalla de usuarios para Administración. Cambio de rol/contraseña invalida sesiones anteriores y se protege al último administrador activo. Pruebas HTTP y de render por rol, y persistencia en MySQL de prueba. Las contraseñas de la instalación se entregan por separado.
+
+| Commit | Cambio y efecto |
+|---|---|
+| `6f235f9` | Backend(feat): permisos para los cuatro roles, gestión de credenciales y pruebas de autorización/persistencia. |
+| `c354c45` | Frontend(feat): menús y acciones según rol, pantalla de usuarios y pruebas de interfaz. |
+
 ## 17 de octubre de 2026
 
 | Commit | Cambio y efecto |

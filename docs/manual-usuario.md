@@ -1,27 +1,20 @@
 # Manual de uso de Agenda Médica
 
-Guía para administración, recepción y médico. Actualizado con colores y reprogramaciones el 17 de octubre de 2026. Para instalar la aplicación, utilizar [instalación](instalacion-configuracion.md).
+Guía para Administración, Médico, Recepción y Obras sociales. Para instalar la aplicación, utilizar [instalación](instalacion-configuracion.md).
 
 El horario acordado es lunes a viernes de **08:00 a 20:00**, con turnos de **40 minutos fijos**. La duración no se edita. La anticipación máxima para reservar sigue siendo configurable.
 
 ## Acceso y permisos
 
-Abrir la dirección entregada por soporte, ingresar email y contraseña y pulsar **Ingresar**. La cabecera muestra cuenta y rol. El icono de salida permite cerrar sesión. No hay recuperación de contraseña ni administración de usuarios desde una pantalla específica; solicitar esa gestión al administrador.
+Abrir la dirección entregada por soporte, ingresar email y contraseña y pulsar **Ingresar**. La cabecera muestra cuenta y rol. El icono de salida permite cerrar sesión. Si se olvidó la contraseña, Administración puede restablecerla desde **Usuarios**.
 
-| Operación | Administración | Recepción | Médico |
-|---|---|---|---|
-| Consultar agenda y pacientes | Sí | Sí | Sí |
-| Alta, edición y desactivación de pacientes | Sí | Sí | No |
-| Reservar, cancelar y reprogramar | Sí | Sí | No |
-| Marcar atendido o ausente | Sí | No | Sí |
-| Configurar horarios, cierres y aperturas | Sí | No | No |
-| Consultar auditoría | Sí | No | No |
+La [matriz de roles y permisos](roles-permisos.md) detalla cada operación. Todos consultan agenda y disponibilidad. Administración y Recepción gestionan pacientes; también asignan, cancelan y reprograman, al igual que Obras sociales. Médico y Administración modifican horarios y bloquean atención. Administración, Médico y Recepción registran atendido/ausente. Sólo Administración gestiona usuarios, auditoría y configuración general.
 
-Estos son los permisos actuales. El responsable dejó pendiente su revisión hasta aportar los requisitos funcionales; esta entrega no los modifica. La participación de recepción y médico en configuración/asistencia debe confirmarse contra la matriz de actores del documento inicial. Si la sesión vence, volver a ingresar. Un mensaje de permisos debe informarse con la pantalla y operación realizadas, sin compartir contraseña ni token.
+Los menús y botones se adaptan al rol. Obras sociales selecciona pacientes existentes con datos mínimos, sin alta ni edición, y reprograma desde la agenda; no consulta contactos ni motivos de consulta. Si la sesión vence o Administración cambia el rol o contraseña, volver a ingresar.
 
 ## Preparar la agenda por primera vez
 
-Entrar en **Disponibilidad** con Administración. La pantalla tiene calendario, configuración y dos pasos para habilitar la atención.
+Entrar en **Disponibilidad** con Administración o Médico para definir días y generar horarios. Todos los roles pueden consultar el calendario. Sólo Administración ve y modifica la configuración de anticipación máxima.
 
 ### Guardar configuración
 
@@ -97,11 +90,11 @@ Si otra persona ocupó la franja, el sistema informa conflicto y actualiza la ag
 
 **Reprogramar:** abrir la acción del turno, elegir **Buscar horarios desde**, seleccionar entre las alternativas futuras dentro del horizonte y confirmar. El motivo es opcional en el formulario actual. Se mantiene el mismo turno y se registra el cambio. Si el nuevo horario no puede reservarse, la operación debe conservar el compromiso original y mostrar el error.
 
-**Atendido o ausente:** Administración/Médico pueden registrar el resultado una vez alcanzado el inicio del turno. Confirmar la acción en el diálogo. No se permite mover un turno ya ATENDIDO/AUSENTE por el flujo normal.
+**Atendido o ausente:** Administración, Médico y Recepción pueden registrar el resultado una vez alcanzado el inicio del turno. Confirmar la acción en el diálogo. No se permite mover un turno ya ATENDIDO/AUSENTE por el flujo normal.
 
 ## Suspender atención o abrir una fecha extraordinaria
 
-En **Bloqueos y excepciones**, Administración elige:
+En **Bloqueos y excepciones**, Administración o Médico elige:
 
 - **Bloquear horarios:** fecha completa o intervalo con motivo opcional.
 - **Feriado / día no laborable:** cierre manual de la fecha; no descarga feriados automáticamente.
@@ -117,7 +110,7 @@ Un cierre conserva los turnos y muestra un enlace a **Reprogramaciones** con la 
 4. Pulsar **Reprogramar**, buscar desde una fecha y seleccionar una alternativa disponible.
 5. Confirmar: se conserva la identidad e historial y el turno desaparece de pendientes cuando queda fuera del cierre.
 
-La lista se recupera de la BD al volver a entrar; incluye turnos activos afectados por cierres y cancelaciones individuales con origen CONSULTORIO. Excluye cancelaciones del paciente y registros históricos cuyo origen no consta. No envía avisos ni reprograma automáticamente. Consultan los tres roles; reprograman Administración/Recepción según los permisos actuales, pendientes de validación funcional.
+La lista se recupera de la BD al volver a entrar; incluye turnos activos afectados por cierres y cancelaciones individuales con origen CONSULTORIO. Excluye cancelaciones del paciente y registros históricos cuyo origen no consta. No envía avisos ni reprograma automáticamente. Consultan Administración, Médico y Recepción; reprograman Administración y Recepción desde esta lista. Obras sociales reprograma desde la agenda sin acceso a los contactos de esta lista.
 
 ## Auditoría y ayuda
 

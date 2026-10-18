@@ -19,11 +19,12 @@ npm run dev
 Abrir la URL informada por Vite; si 5173 está ocupado puede usar otro puerto. La API por defecto del código es `http://localhost:8080`. Si otro entorno cambia el puerto, ajustar `.env.local` a ese backend; no asumir un puerto particular de otra máquina. Reiniciar Vite al cambiar variables de entorno. Sólo `VITE_API_URL` es configuración del cliente: nunca colocar secretos JWT o credenciales de BD en variables `VITE_*`.
 
 ```powershell
+npm test
 npm run build
 npm run preview
 ```
 
-`build` ejecuta TypeScript y genera `dist/`; `preview` sirve ese resultado para revisión local. No hay scripts de lint ni de pruebas de frontend en el manifiesto actual.
+`build` ejecuta TypeScript y genera `dist/`; `preview` sirve ese resultado para revisión local. `npm test` verifica menús, rutas y botones por rol con Node y render de React. No hay lint configurado ni prueba visual automatizada.
 
 ## Rutas y responsabilidades
 
@@ -35,6 +36,7 @@ npm run preview
 | `/bloqueos` | Bloqueos y excepciones | Cierre, apertura y día no laborable manual |
 | `/reprogramaciones` | Reprogramaciones | Pacientes afectados, contacto y cambio de horario manual |
 | `/auditoria` | Auditoría | Últimos eventos; sólo ADMIN |
+| `/usuarios` | Usuarios y roles | Alta, rol, estado y contraseña; sólo ADMIN |
 
 El login se muestra al no existir sesión, sin ruta `/login` independiente. La navegación usa History API mediante `usePathname`; el hosting debe devolver `index.html` al recargar rutas de la SPA.
 
@@ -43,7 +45,7 @@ El login se muestra al no existir sesión, sin ruta `/login` independiente. La n
 ## Reglas de interfaz importantes
 
 - Sesión almacenada en `localStorage` bajo `agendaSesion`. El rol mostrado no reemplaza la autorización del backend.
-- HTTP 401 cierra sesión; HTTP 403 muestra falta de permisos. El backend todavía puede devolver 403 ante ciertos errores que no son de permisos.
+- HTTP 401 cierra sesión; HTTP 403 muestra falta de permisos. `permisos.ts` concentra la matriz de la interfaz; la API vuelve a autorizar cada operación. Ver [roles y permisos](../docs/roles-permisos.md).
 - “Hoy” aparece en el centro sólo para la fecha actual; los controles laterales muestran fechas adyacentes. En otros días aparece “Volver a hoy”.
 - Disponibilidad ofrece casillas por día, “Lunes a viernes”, “Toda la semana” y “Limpiar”. Se propone 08:00–20:00 como formulario nuevo, no como lectura de plantillas existentes.
 - La duración es fija en 40 minutos: no hay campo editable ni se envía una duración desde el cliente. Sólo se guarda el horizonte de reserva.

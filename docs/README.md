@@ -6,6 +6,7 @@ Documentación vigente del código con colores y reprogramaciones, actualizada e
 |---|---|
 | Visión del proyecto | [README general](../README.md) |
 | Operadores del consultorio | [Manual de usuario](manual-usuario.md) |
+| Acceso y administración de cuentas | [Roles y permisos](roles-permisos.md) |
 | Instalación y variables | [Instalación y configuración](instalacion-configuracion.md) |
 | Desarrollo de interfaz | [Frontend](../frontend/README.md) |
 | Desarrollo de API | [Backend](../backend/README.md) |

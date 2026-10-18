@@ -37,7 +37,7 @@ $env:SPRING_PROFILES_ACTIVE = 'dev'
 mvn spring-boot:run
 ```
 
-El usuario MySQL del ejemplo debe existir previamente. Elegir una contraseña administrativa suficientemente larga; la creación posterior por API exige 8–100 caracteres. La generación aleatoria de JWT sirve para preparar una sesión de desarrollo: conservar la misma clave mientras se necesiten validar tokens previos. Cambiarla invalida esos tokens. En producción usar un secreto estable administrado por el entorno, no regenerarlo en cada arranque.
+El usuario MySQL del ejemplo debe existir previamente. Elegir una contraseña administrativa suficientemente larga; la creación posterior por API exige al menos 8 caracteres y hasta 72 bytes UTF-8. La generación aleatoria de JWT sirve para preparar una sesión de desarrollo: conservar la misma clave mientras se necesiten validar tokens previos. Cambiarla invalida esos tokens. En producción usar un secreto estable administrado por el entorno, no regenerarlo en cada arranque.
 
 | Variable | Uso y valor inicial del código |
 |---|---|
@@ -78,7 +78,7 @@ npm ci
 npm run dev
 ```
 
-Crear `.env.local` con la línea correspondiente y reiniciar Vite si se modifica. Abrir su URL informada. Ingresar con el usuario creado mediante bootstrap, no con una contraseña supuesta. Si ya existían usuarios, el bootstrap no reemplaza sus credenciales.
+Crear `.env.local` con la línea correspondiente y reiniciar Vite si se modifica. Abrir su URL informada. Ingresar con el usuario creado mediante bootstrap, no con una contraseña supuesta. Si ya existían usuarios, el bootstrap no reemplaza sus credenciales. Administración puede crear las otras cuentas y restablecer contraseñas desde **Usuarios**; no hay contraseñas universales para los cuatro roles. Ver [roles y permisos](roles-permisos.md).
 
 ## Duración fija
 

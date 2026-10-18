@@ -15,7 +15,7 @@ Content-Type: application/json
 
 Respuesta 200: `{token, tokenType, expiresInMinutes, email, rol}`; tokenType es Bearer y expiración inicial 480 minutos. Enviar `Authorization: Bearer <token>` en las demás operaciones. Email/clave son ejemplos, no una cuenta preexistente. Credenciales incorrectas devuelven actualmente **400** desde AuthService, no 401. No hay refresh ni endpoint de logout; el frontend elimina su sesión local.
 
-Roles: **A**=ADMIN, **R**=RECEPCION, **M**=MEDICO, **T**=cualquiera autenticado. Fechas `YYYY-MM-DD`, horas `HH:mm` y fecha/hora local `YYYY-MM-DDTHH:mm:ss`. Enviar todos los parámetros obligatorios; no hay un profesional predeterminado para las consultas.
+Roles: **A**=ADMIN, **R**=RECEPCION, **M**=MEDICO, **O**=OBRAS_SOCIALES, **T**=cualquiera de esos cuatro roles. Ver [matriz y límites de datos](roles-permisos.md). Fechas `YYYY-MM-DD`, horas `HH:mm` y fecha/hora local `YYYY-MM-DDTHH:mm:ss`. Enviar todos los parámetros obligatorios; no hay un profesional predeterminado para las consultas.
 
 ## Endpoints existentes
 
@@ -23,32 +23,35 @@ Roles: **A**=ADMIN, **R**=RECEPCION, **M**=MEDICO, **T**=cualquiera autenticado.
 |---|---|---|---|
 | POST | `/auth/login` | Público | 200 LoginResponse |
 | GET | `/profesionales` | T | 200 ProfesionalResponse[] activos |
-| GET | `/pacientes?query=` | T | 200 PacienteResponse[] |
-| GET | `/pacientes/{id}` | T | 200 PacienteResponse |
+| GET | `/pacientes?query=` | A,M,R | 200 PacienteResponse[] |
+| GET | `/pacientes/{id}` | A,M,R | 200 PacienteResponse |
+| GET | `/pacientes/seleccion?query=Apellido` | T | 200 PacienteSeleccionResponse[], mínimo tres caracteres |
 | POST | `/pacientes` | A,R | 201 PacienteResponse |
 | PUT | `/pacientes/{id}` | A,R | 200 PacienteResponse |
 | DELETE | `/pacientes/{id}` | A,R | 204, baja lógica |
 | GET | `/agenda?profesionalId=1&fecha=2026-10-19` | T | 200 FranjaResponse[] |
 | GET | `/agenda/disponibles?profesionalId=1&desde=2026-10-19T08:00:00` | T | 200 FranjaResponse[] |
 | GET | `/agenda/excepciones?profesionalId=1&desde=2026-10-19&hasta=2026-10-25` | T | 200 ExcepcionAgendaResumen[] |
-| GET | `/agenda/reprogramaciones-pendientes?profesionalId=1` | T | 200 TurnoAfectadoResponse[] |
-| POST | `/agenda/plantillas` | A | 201 PlantillaDisponibilidadResponse |
-| POST | `/agenda/generar-franjas` | A | 200 GenerarFranjasResponse, aditiva y limitada a un mes |
-| POST | `/agenda/excepciones` | A | 201 ExcepcionAgendaResponse |
-| POST | `/agenda/bloqueos` | A | 201 ExcepcionAgendaResponse |
+| GET | `/agenda/reprogramaciones-pendientes?profesionalId=1` | A,M,R | 200 TurnoAfectadoResponse[] |
+| POST | `/agenda/plantillas` | A,M | 201 PlantillaDisponibilidadResponse |
+| POST | `/agenda/generar-franjas` | A,M | 200 GenerarFranjasResponse, aditiva y limitada a un mes |
+| POST | `/agenda/excepciones` | A,M | 201 ExcepcionAgendaResponse |
+| POST | `/agenda/bloqueos` | A,M | 201 ExcepcionAgendaResponse |
 | GET | `/configuracion/agenda` | T | 200 ConfiguracionAgendaResponse |
 | PUT | `/configuracion/agenda` | A | 200 ConfiguracionAgendaResponse |
 | GET | `/turnos?profesionalId=1&fecha=2026-10-19` | T | 200 TurnoResponse[] |
 | GET | `/turnos/{id}` | T | 200 TurnoResponse |
-| POST | `/turnos` | A,R | 201 TurnoResponse |
-| POST | `/turnos/{id}/cancelacion` | A,R | 200 TurnoResponse |
-| POST | `/turnos/{id}/reprogramacion` | A,R | 200 TurnoResponse |
-| POST | `/turnos/{id}/atencion` | A,M | 200 TurnoResponse, sin cuerpo de entrada |
-| POST | `/turnos/{id}/ausencia` | A,M | 200 TurnoResponse, sin cuerpo de entrada |
+| POST | `/turnos` | A,R,O | 201 TurnoResponse |
+| POST | `/turnos/{id}/cancelacion` | A,R,O | 200 TurnoResponse |
+| POST | `/turnos/{id}/reprogramacion` | A,R,O | 200 TurnoResponse |
+| POST | `/turnos/{id}/atencion` | A,M,R | 200 TurnoResponse, sin cuerpo de entrada |
+| POST | `/turnos/{id}/ausencia` | A,M,R | 200 TurnoResponse, sin cuerpo de entrada |
 | GET | `/auditoria` | A | 200 AuditoriaResponse[], últimos 100 |
 | GET | `/usuarios` | A | 200 UsuarioResponse[] |
 | POST | `/usuarios` | A | 201 UsuarioResponse |
 | PATCH | `/usuarios/{id}/activo?activo=false` | A | 200 UsuarioResponse |
+| PUT | `/usuarios/{id}/rol` | A | 200 UsuarioResponse |
+| PUT | `/usuarios/{id}/password` | A | 204 |
 
 Para `/agenda/disponibles`, desde es opcional y profesionalId obligatorio. Para las consultas diarias ambos parámetros son obligatorios. Los ejemplos de fechas/IDs deben adaptarse a una base de pruebas; no asumen filas existentes ni siguen siendo futuros indefinidamente.
 
@@ -138,13 +141,14 @@ Destino obligatorio y distinto del actual; motivo opcional máximo 500; requiere
 {"email":"recepcion@example.test","password":"CONTRASENA_SEGURA_DE_PRUEBA","rol":"RECEPCION"}
 ```
 
-Email obligatorio válido y único; password 8–100; rol ADMIN/RECEPCION/MEDICO obligatorio. El alta activa al usuario y guarda BCrypt. PATCH activo usa parámetro de consulta, no un JSON. No hay cambio de contraseña ni de rol expuesto.
+Email obligatorio válido y único; password de al menos 8 caracteres y hasta 72 bytes UTF-8; rol ADMIN/MEDICO/RECEPCION/OBRAS_SOCIALES obligatorio. El alta activa al usuario y guarda BCrypt. PATCH activo usa parámetro de consulta. PUT rol acepta `{ "rol": "OBRAS_SOCIALES" }`; PUT password acepta `{ "password": "NUEVA_CLAVE_SEGURA" }` y no devuelve la clave. No se puede desactivar o degradar al último administrador activo (409). Cambiar rol o contraseña invalida los tokens anteriores; desactivar también impide usarlos.
 
 ## Esquemas de respuesta
 
 | DTO | Campos |
 |---|---|
 | PacienteResponse | id, dni, nombre, apellido, telefono, email, activo |
+| PacienteSeleccionResponse | id, dni, nombre, apellido, activo; sin teléfono/email |
 | ProfesionalResponse | id, nombre, apellido, matricula, activo |
 | FranjaResponse | id, profesionalId, inicio, fin, estado, origen |
 | TurnoResponse | id, pacienteId, paciente (apellido/nombre), profesionalId, franjaId, inicio, fin, estado, motivoConsulta, createdAt, origenCancelacion, motivoCancelacion |
@@ -162,8 +166,8 @@ Los horarios libres están limitados por el horizonte y se ordenan por inicio. N
 
 El advice de negocio devuelve `{timestamp,status,error,message,path,validationErrors}`. 400 para validación/regla inválida y credenciales incorrectas; 404 para recursos no encontrados; 409 para conflictos explícitos. validationErrors puede ser null o un objeto por campo.
 
-No todos los errores técnicos ni de Spring Security pasan por ese advice. Se comprobó que omitir profesionalId podía terminar en **403** por el tratamiento de errores, aunque el usuario fuese ADMIN. No asumir que todo 403 significa un rol incorrecto ni que todos los cuerpos serán JSON homogéneo. El frontend ya incluye profesionalId en el calendario; falta uniformar el contrato del servidor.
+Spring Security responde JSON `{message}` con 401 ante sesión ausente/inválida/inactiva o credenciales/rol cambiados, y 403 ante operación no autorizada. Los despachos de error se permiten para que omitir profesionalId conserve el 400 correspondiente. No todos los errores técnicos pasan por el advice de negocio.
 
-La consulta de excepciones requiere profesionalId, desde y hasta (inclusive); rechaza hasta anterior a desde. Pendientes devuelve activos afectados por cierres y cancelados con origen CONSULTORIO, ordenados por inicio y sin duplicar por cierres solapados. Incluye fechas pasadas aún sin resolver y excluye cancelados por paciente o sin origen. No necesita una consulta por paciente. Los roles actuales no se modifican.
+La consulta de excepciones requiere profesionalId, desde y hasta (inclusive); rechaza hasta anterior a desde. Pendientes devuelve activos afectados por cierres y cancelados con origen CONSULTORIO, ordenados por inicio y sin duplicar por cierres solapados. Incluye fechas pasadas aún sin resolver y excluye cancelados por paciente o sin origen. No necesita una consulta por paciente. La lista con contactos sólo está disponible para A,M,R. O puede reprogramar desde la agenda; no recibe motivos de consulta/cancelación en TurnoResponse y al crear se ignora motivoConsulta. O sólo puede cancelar con origen PACIENTE (o null, que equivale a PACIENTE); CONSULTORIO devuelve 403.
 
 No existen GET de plantillas/conflictos, historial de eventos por turno, agenda arbitraria por rango, búsqueda de usuarios por email, alta de profesional, confirmación explícita, notificaciones ni portal público. Distinguirlos de operaciones previstas por el SRS. El [registro de pendientes](pendientes-riesgos.md) indica diferencias y prioridades.

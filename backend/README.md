@@ -45,8 +45,10 @@ mvn -B test
 mvn -B package
 ```
 
-La integración requiere MySQL por Docker y define su propia clave JWT exclusiva de test. Hay catorce escenarios de integración y nueve pruebas unitarias; no usar opciones que omitan tests como evidencia de aprobación. Ver [pruebas](../docs/pruebas-aceptacion.md). No se incluyen Flyway/Liquibase ni endpoints de administración de profesionales. Para bases previas con DDL deshabilitado, revisar el [SQL aditivo](sql/2026-10-17-origen-cancelacion.sql); no ejecutarlo si ddl-auto=update ya creó las columnas. No se asigna un origen inventado a cancelaciones históricas.
+La integración requiere MySQL por Docker y define su propia clave JWT exclusiva de test. Hay quince escenarios de integración, nueve pruebas unitarias de agenda y pruebas HTTP de autorización para los cuatro roles; no usar opciones que omitan tests como evidencia de aprobación. Ver [pruebas](../docs/pruebas-aceptacion.md). No se incluyen Flyway/Liquibase ni endpoints de administración de profesionales. Para bases previas con DDL deshabilitado, revisar el [SQL aditivo](sql/2026-10-17-origen-cancelacion.sql); no ejecutarlo si ddl-auto=update ya creó las columnas. No se asigna un origen inventado a cancelaciones históricas.
 
 **Duración fija:** no hace falta la migración mensual propuesta anteriormente. El circuito de cambio de duración y su SQL fueron retirados. La generación limpia sólo franjas futuras libres de otra duración sin turnos/eventos asociados y revierte todo ante conflictos con datos que deban conservarse.
+
+Los permisos se definen en `SecurityConfig` con denegación por defecto. ADMIN, MEDICO, RECEPCION y OBRAS_SOCIALES siguen la [matriz acordada](../docs/roles-permisos.md). Sólo ADMIN administra cuentas; los cambios de contraseña o rol invalidan tokens anteriores y no se permite quitar al último administrador activo. En desarrollo `ddl-auto=update` actualiza la columna de rol; con DDL manual, el esquema debe admitir OBRAS_SOCIALES antes de crear esas cuentas.
 
 Contrato completo, códigos y ejemplos: [API](../docs/api.md). Antes de publicar: [operación](../docs/operacion-respaldo.md) y [pendientes](../docs/pendientes-riesgos.md).

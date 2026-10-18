@@ -12,7 +12,7 @@ Registro actualizado el 17 de octubre de 2026. P1 indica impedimento para dar po
 | INC-06 | Corregido en código, integración mensual | Duración fija de 40 en backend y frontend; rechaza otros valores. El seed ya no genera franjas. Las citas antiguas conservan su tiempo, pero franjas de otra duración no admiten nuevas reservas; CA-17. |
 | INC-07 | P2, inspección | Búsqueda de Pacientes depende de query y recarga lista sin filtro al escribir. Definir búsqueda explícita o con demora y validar CA-05. |
 | INC-08 | P2, inspección | No hay edición/listado/reemplazo integral de reglas; la planificación mensual selecciona la última regla vigente por día, pero no hay pantalla de edición/listado de reglas. Completar administración sin destruir compromisos. |
-| INC-09 | P2, inspección y 403 reproducido | Errores de parámetros/seguridad no uniformes; sesión inválida y errores técnicos pueden confundirse con permisos. Homogeneizar 400/401/403 y CA-12. |
+| INC-09 | Corregido en permisos y parámetros HTTP, prueba automatizada | 401 JSON para sesión inválida, 403 para permiso insuficiente y despacho de errores permitido. Parámetro obligatorio omitido conserva 400. No se homogeneizan todos los errores técnicos. |
 | INC-10 | P2, inspección | TurnoEvento no asigna usuario aunque exista campo; motivo de reprogramación opcional. Resolver RN-09 y prueba de actor; CA-09. |
 | INC-11 | Parcial, inspección y smoke de lógica | Disponibles limita pasado a ahora y excluye cierres. Reprogramación lista alternativas desde fecha; reserva rápida muestra primera. No hay hasta ni agenda arbitraria por rango; CA-13. |
 | INC-12 | P2, inspección | Reprogramar permite turno original pasado si sigue activo. Definir y aplicar excepción administrativa del SRS. |
@@ -30,8 +30,8 @@ La corrección del parámetro evita el 403 observado en ese calendario; no corri
 
 ## Decisiones de alcance pendientes
 
-El responsable pidió dejar pendiente la definición de permisos hasta traer los requisitos funcionales. Se conservan ADMIN para suspender días, ADMIN/RECEPCION para reprogramar y consulta para los tres roles. Validar esa matriz frente al SRS, momento de previsualización de afectados y obligatoriedad del motivo de reprogramación. Definir responsable técnico, respaldo, retención y recuperación. No expandir automáticamente a recordatorios, sincronización de feriados, reportes o portal paciente: requieren acuerdo específico.
+Se implementó la [matriz de cuatro roles solicitada](roles-permisos.md), con autorización HTTP y controles de interfaz. Quedan por definir el momento de previsualización de afectados y la obligatoriedad del motivo de reprogramación. Definir responsable técnico, respaldo, retención y recuperación. No expandir automáticamente a recordatorios, sincronización de feriados, reportes o portal paciente: requieren acuerdo específico.
 
 ## Orden de implementación
 
-Validar visualmente INC-01/02/03/04, la generación con 40 fijos y la conservación del legado; después cerrar permisos y aceptación reproducible. Mantener mejoras de uso pequeñas cuando no comprometan esas reglas. Los cambios de esquema requieren un plan de datos previo. Relacionar cada cierre con el caso de [aceptación](pruebas-aceptacion.md), código y evidencia, y actualizar este registro.
+Validar visualmente INC-01/02/03/04, la generación con 40 fijos y la conservación del legado; después completar aceptación visual y operativa de permisos. Mantener mejoras de uso pequeñas cuando no comprometan esas reglas. Los cambios de esquema requieren un plan de datos previo. Relacionar cada cierre con el caso de [aceptación](pruebas-aceptacion.md), código y evidencia, y actualizar este registro.
