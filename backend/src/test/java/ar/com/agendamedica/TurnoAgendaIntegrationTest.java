@@ -75,6 +75,38 @@ class TurnoAgendaIntegrationTest {
     @Autowired TurnoRepository turnoRepository;
     @Autowired TurnoEventoRepository turnoEventoRepository;
     @Autowired ConfiguracionAgendaService configuracion;
+    @Autowired ar.com.agendamedica.service.UsuarioService usuarios;
+    @Autowired ar.com.agendamedica.service.AuthService auth;
+    @Autowired ar.com.agendamedica.repository.UsuarioRepository usuarioRepository;
+    @Autowired ar.com.agendamedica.security.JwtService jwt;
+    @Autowired ar.com.agendamedica.security.AgendaUserDetailsService userDetails;
+
+    @Test
+    void usuariosPersistenCuartoRolYRevocanSesionAlCambiarCredenciales() {
+        String sufijo = UUID.randomUUID().toString();
+        var admin = usuarios.crear(new UsuarioRequest("admin-" + sufijo + "@example.test", "PruebaAnterior123!",
+                ar.com.agendamedica.domain.enums.RolUsuario.ADMIN));
+        var obra = usuarios.crear(new UsuarioRequest("obra-" + sufijo + "@example.test", "PruebaAnterior123!",
+                ar.com.agendamedica.domain.enums.RolUsuario.OBRAS_SOCIALES));
+        assertEquals(ar.com.agendamedica.domain.enums.RolUsuario.OBRAS_SOCIALES,
+                usuarioRepository.findById(obra.id()).orElseThrow().getRol());
+        assertNotEquals("PruebaAnterior123!", usuarioRepository.findById(obra.id()).orElseThrow().getPasswordHash());
+        var sesion = auth.login(new LoginRequest(obra.email(), "PruebaAnterior123!"));
+        assertTrue(jwt.esValido(sesion.token(), userDetails.loadUserByUsername(obra.email())));
+        usuarios.cambiarPassword(obra.id(), "PruebaNueva456!");
+        assertThrows(BadRequestException.class, () -> usuarios.cambiarPassword(obra.id(), "á".repeat(40)));
+        assertThrows(BadRequestException.class, () -> usuarios.cambiarPassword(obra.id(), "corta"));
+        assertFalse(jwt.esValido(sesion.token(), userDetails.loadUserByUsername(obra.email())));
+        assertThrows(BadRequestException.class, () -> auth.login(new LoginRequest(obra.email(), "PruebaAnterior123!")));
+        sesion = auth.login(new LoginRequest(obra.email(), "PruebaNueva456!"));
+        usuarios.cambiarRol(obra.id(), ar.com.agendamedica.domain.enums.RolUsuario.RECEPCION);
+        assertFalse(jwt.esValido(sesion.token(), userDetails.loadUserByUsername(obra.email())));
+        usuarios.cambiarActivo(obra.id(), false);
+        assertThrows(org.springframework.security.core.userdetails.UsernameNotFoundException.class,
+                () -> userDetails.loadUserByUsername(obra.email()));
+        assertThrows(ConflictException.class, () -> usuarios.cambiarActivo(admin.id(), false));
+        assertThrows(ConflictException.class, () -> usuarios.cambiarRol(admin.id(), ar.com.agendamedica.domain.enums.RolUsuario.MEDICO));
+    }
 
     @BeforeEach
     void configuracionInicial() {

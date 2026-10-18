@@ -2,6 +2,8 @@ package ar.com.agendamedica.controller;
 
 import ar.com.agendamedica.dto.UsuarioRequest;
 import ar.com.agendamedica.dto.UsuarioResponse;
+import ar.com.agendamedica.dto.CambiarRolRequest;
+import ar.com.agendamedica.dto.CambiarPasswordRequest;
 import ar.com.agendamedica.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -34,5 +36,16 @@ public class UsuarioController {
             @PathVariable Long id,
             @RequestParam boolean activo) {
         return usuarioService.cambiarActivo(id, activo);
+    }
+
+    @PutMapping("/{id}/rol")
+    public UsuarioResponse cambiarRol(@PathVariable Long id, @Valid @RequestBody CambiarRolRequest request) {
+        return usuarioService.cambiarRol(id, request.rol());
+    }
+
+    @PutMapping("/{id}/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cambiarPassword(@PathVariable Long id, @Valid @RequestBody CambiarPasswordRequest request) {
+        usuarioService.cambiarPassword(id, request.password());
     }
 }

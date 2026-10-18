@@ -11,6 +11,9 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HexFormat;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 @Service
 public class JwtService {
@@ -24,11 +27,12 @@ public class JwtService {
         this.expirationMinutes = expirationMinutes;
     }
 
-    public String generarToken(String email, String rol) {
+    public String generarToken(String email, String rol, String passwordHash) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(email)
                 .claim("rol", rol)
+                .claim("credencial", huella(passwordHash))
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(expirationMinutes * 60)))
                 .signWith(key)
@@ -42,6 +46,9 @@ public class JwtService {
     public boolean esValido(String token, UserDetails userDetails) {
         Claims claims = claims(token);
         return claims.getSubject().equalsIgnoreCase(userDetails.getUsername())
+                && huella(userDetails.getPassword()).equals(claims.get("credencial", String.class))
+                && userDetails.getAuthorities().stream().anyMatch(authority ->
+                    authority.getAuthority().equals("ROLE_" + claims.get("rol", String.class)))
                 && claims.getExpiration().after(new Date());
     }
 
@@ -55,5 +62,14 @@ public class JwtService {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    private String huella(String passwordHash) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(passwordHash.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 no disponible", exception);
+        }
     }
 }

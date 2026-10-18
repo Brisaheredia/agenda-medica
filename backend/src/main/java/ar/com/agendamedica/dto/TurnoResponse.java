@@ -19,6 +19,11 @@ public record TurnoResponse(
         OrigenCancelacion origenCancelacion,
         String motivoCancelacion
 ) {
+    public TurnoResponse sinMotivos() {
+        return new TurnoResponse(id, pacienteId, paciente, profesionalId, franjaId, inicio, fin,
+                estado, null, createdAt, origenCancelacion, null);
+    }
+
     public static TurnoResponse from(Turno turno) {
         return new TurnoResponse(
                 turno.getId(),

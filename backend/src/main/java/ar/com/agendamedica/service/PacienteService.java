@@ -3,6 +3,8 @@ package ar.com.agendamedica.service;
 import ar.com.agendamedica.domain.entity.Paciente;
 import ar.com.agendamedica.dto.PacienteRequest;
 import ar.com.agendamedica.dto.PacienteResponse;
+import ar.com.agendamedica.dto.PacienteSeleccionResponse;
+import ar.com.agendamedica.exception.BadRequestException;
 import ar.com.agendamedica.exception.ConflictException;
 import ar.com.agendamedica.exception.ResourceNotFoundException;
 import ar.com.agendamedica.repository.PacienteRepository;
@@ -55,6 +57,14 @@ public class PacienteService {
                 .stream()
                 .map(PacienteResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PacienteSeleccionResponse> seleccionar(String query) {
+        if (query == null || query.trim().length() < 3) {
+            throw new BadRequestException("Ingresá al menos tres caracteres del apellido o el DNI completo");
+        }
+        return buscar(query).stream().map(PacienteSeleccionResponse::from).toList();
     }
 
     @Transactional(readOnly = true)

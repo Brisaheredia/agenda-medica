@@ -34,7 +34,7 @@ public class AuthService {
             throw new BadRequestException("Credenciales inválidas");
         }
 
-        String token = jwtService.generarToken(usuario.getEmail(), usuario.getRol().name());
+        String token = jwtService.generarToken(usuario.getEmail(), usuario.getRol().name(), usuario.getPasswordHash());
 
         return new LoginResponse(
                 token,

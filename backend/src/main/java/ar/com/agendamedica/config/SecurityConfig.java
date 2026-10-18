@@ -15,6 +15,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import jakarta.servlet.DispatcherType;
 
 @Configuration
 public class SecurityConfig {
@@ -34,10 +35,22 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(errors -> errors
+                        .authenticationEntryPoint((request, response, exception) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"message\":\"Ingresá nuevamente para continuar.\"}");
+                        })
+                        .accessDeniedHandler((request, response, exception) -> {
+                            response.setStatus(403);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"message\":\"No tenés permisos para realizar esta operación.\"}");
+                        }))
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
-                                "/api/auth/**",
+                                "/api/auth/login",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
@@ -53,18 +66,18 @@ public class SecurityConfig {
                                 "/api/agenda/generar-franjas",
                                 "/api/agenda/excepciones",
                                 "/api/agenda/bloqueos")
-                        .hasRole("ADMIN")
+                        .hasAnyRole("ADMIN", "MEDICO")
 
                         .requestMatchers(HttpMethod.POST,
                                 "/api/turnos/*/atencion",
                                 "/api/turnos/*/ausencia")
-                        .hasAnyRole("ADMIN", "MEDICO")
+                        .hasAnyRole("ADMIN", "MEDICO", "RECEPCION")
 
                         .requestMatchers(HttpMethod.POST,
                                 "/api/turnos",
                                 "/api/turnos/*/cancelacion",
                                 "/api/turnos/*/reprogramacion")
-                        .hasAnyRole("ADMIN", "RECEPCION")
+                        .hasAnyRole("ADMIN", "RECEPCION", "OBRAS_SOCIALES")
 
                         .requestMatchers(HttpMethod.POST, "/api/pacientes")
                         .hasAnyRole("ADMIN", "RECEPCION")
@@ -73,7 +86,19 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/pacientes/**")
                         .hasAnyRole("ADMIN", "RECEPCION")
 
-                        .anyRequest().authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/pacientes/seleccion")
+                        .hasAnyRole("ADMIN", "MEDICO", "RECEPCION", "OBRAS_SOCIALES")
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/pacientes", "/api/pacientes/*",
+                                "/api/agenda/reprogramaciones-pendientes")
+                        .hasAnyRole("ADMIN", "MEDICO", "RECEPCION")
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/profesionales", "/api/configuracion/agenda",
+                                "/api/turnos", "/api/turnos/*",
+                                "/api/agenda", "/api/agenda/disponibles",
+                                "/api/agenda/excepciones")
+                        .hasAnyRole("ADMIN", "MEDICO", "RECEPCION", "OBRAS_SOCIALES")
+                        .anyRequest().denyAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

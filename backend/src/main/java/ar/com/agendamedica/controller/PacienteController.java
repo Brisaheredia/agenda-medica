@@ -2,6 +2,7 @@ package ar.com.agendamedica.controller;
 
 import ar.com.agendamedica.dto.PacienteRequest;
 import ar.com.agendamedica.dto.PacienteResponse;
+import ar.com.agendamedica.dto.PacienteSeleccionResponse;
 import ar.com.agendamedica.service.PacienteService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,11 @@ public class PacienteController {
     @GetMapping("/{id}")
     public PacienteResponse obtener(@PathVariable Long id) {
         return pacienteService.obtener(id);
+    }
+
+    @GetMapping("/seleccion")
+    public List<PacienteSeleccionResponse> seleccionar(@RequestParam String query) {
+        return pacienteService.seleccionar(query);
     }
 
     @PostMapping
