@@ -1777,3 +1777,8 @@ a.nav-item {
 .pending-table th, .pending-table td { padding: 16px 12px; border-bottom: 1px solid #e3e9f0; vertical-align: top; }
 .pending-table th { background: #f5f7fa; font-size: 13px; }
 .pending-table td { font-size: 14px; }
+.users-list { padding: 0 1.5rem; }
+.user-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 1.25rem 0; border-bottom: 1px solid #e3eaf0; }
+.user-row:last-child { border-bottom: 0; }
+.user-row strong { overflow-wrap: anywhere; }
+.user-actions { display: flex; flex-wrap: wrap; gap: .5rem; }

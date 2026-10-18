@@ -10,6 +10,8 @@ import { PacientesPage } from "./pages/Pacientes";
 import { BloqueosPage } from "./pages/Bloqueos";
 import { AuditoriaPage } from "./pages/Auditoria";
 import { ReprogramacionesPage } from "./pages/Reprogramaciones";
+import { UsuariosPage } from "./pages/Usuarios";
+import { permisosDe, roles } from "./permisos";
 import { LoginPage } from "./pages/Login";
 import { useAgenda } from "./hooks/useAgenda";
 import { usePathname } from "./hooks/usePathname";
@@ -23,7 +25,7 @@ export default function App() {
       const s = JSON.parse(localStorage.getItem("agendaSesion") ?? "null");
       return s?.token &&
         s?.email &&
-        ["ADMIN", "RECEPCION", "MEDICO"].includes(s?.rol)
+        roles.includes(s?.rol)
         ? s
         : null;
     } catch {
@@ -75,8 +77,9 @@ export default function App() {
     setFiltro,
     ready,
   } = agenda;
-  const gestionar = sesion?.rol === "ADMIN" || sesion?.rol === "RECEPCION";
-  const cerrar = sesion?.rol === "ADMIN" || sesion?.rol === "MEDICO";
+  const permisos = permisosDe(sesion?.rol);
+  const gestionar = permisos.gestionarTurnos;
+  const cerrar = permisos.registrarResultados;
 
   useEffect(() => {
     if (!sesion) return;
@@ -182,6 +185,7 @@ export default function App() {
   const bloqueosPage = ruta === "/bloqueos";
   const auditoriaPage = ruta === "/auditoria";
   const reprogramacionesPage = ruta === "/reprogramaciones";
+  const usuariosPage = ruta === "/usuarios";
   const menu: {
     icon: string;
     label: string;
@@ -214,26 +218,39 @@ export default function App() {
       active: auditoriaPage,
     },
     { icon: "calendar", label: "Reprogramaciones", href: "/reprogramaciones", active: reprogramacionesPage },
+    { icon: "people", label: "Usuarios", href: "/usuarios", active: usuariosPage },
   ];
-  const pageContent = reprogramacionesPage ? (
+  const puedeVerRuta = (href: string | undefined) => {
+    if (href === "/usuarios" || href === "/auditoria") return permisos.administrar;
+    if (href === "/bloqueos") return permisos.gestionarHorarios;
+    if (href === "/pacientes" || href === "/reprogramaciones") return permisos.verContactos;
+    return true;
+  };
+  const pageContent = !puedeVerRuta(ruta) ? (
+    <section className="card"><h1>Acceso restringido</h1><p>Tu cuenta no tiene permiso para acceder a esta sección.</p><a href="/">Volver a la agenda</a></section>
+  ) : usuariosPage ? (
+    <UsuariosPage api={api} emailActual={sesion.email} salir={salir} />
+  ) : reprogramacionesPage ? (
     <ReprogramacionesPage api={api} profesionalId={profesional?.id} puedeGestionar={gestionar} />
   ) : bloqueosPage ? (
     <BloqueosPage
       api={api}
       profesionalId={profesional?.id}
-      esAdmin={sesion.rol === "ADMIN"}
+      puedeGestionar={permisos.gestionarHorarios}
     />
   ) : auditoriaPage ? (
     <AuditoriaPage api={api} esAdmin={sesion.rol === "ADMIN"} />
   ) : pacientesPage ? (
     <PacientesPage
       api={api}
-      puedeGestionar={sesion.rol === "ADMIN" || sesion.rol === "RECEPCION"}
+      puedeGestionar={permisos.gestionarPacientes}
     />
   ) : disponibilidad ? (
     <DisponibilidadPage
       profesionalId={profesional?.id}
-      esAdmin={sesion.rol === "ADMIN"}
+      puedeGestionarHorarios={permisos.gestionarHorarios}
+      puedeConfigurar={permisos.administrar}
+      verContactos={permisos.verContactos}
       busy={busy}
       api={api}
     />
@@ -262,6 +279,8 @@ export default function App() {
       setFiltro={setFiltro}
       gestionar={gestionar}
       cerrar={cerrar}
+      gestionarPacientes={permisos.gestionarPacientes}
+      verContactos={permisos.verContactos}
       selected={selected}
       setSelected={setSelected}
       setDialog={setDialog}
@@ -272,7 +291,7 @@ export default function App() {
   );
   return (
     <AppLayout
-      menu={menu}
+      menu={menu.filter((item) => puedeVerRuta(item.href))}
       profesional={profesional}
       sesion={sesion}
       busy={busy}
@@ -285,6 +304,7 @@ export default function App() {
             tipo={dialog.tipo}
             api={api}
             busy={busy}
+            cancelarPorConsultorio={permisos.cancelarPorConsultorio}
             close={() => setDialog(null)}
             submit={guardar}
           />

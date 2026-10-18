@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Profesional, Sesion } from "../types";
 import { Brand } from "./Brand";
 import { Icon } from "./Icon";
+import { nombresRol } from "../permisos";
 
 export type NavItem = {
   icon: string;
@@ -118,13 +119,7 @@ export function AppLayout({
             <div>
               <strong>{sesion.email}</strong>
               <span>
-                {
-                  {
-                    ADMIN: "Administración",
-                    RECEPCION: "Recepción",
-                    MEDICO: "Médico",
-                  }[sesion.rol]
-                }
+                {nombresRol[sesion.rol]}
               </span>
             </div>
             <button

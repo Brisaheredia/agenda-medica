@@ -29,11 +29,13 @@ export function CalendarioSemanalAgenda({
   api,
   irAlDia,
   revision = 0,
+  verContactos = true,
 }: {
   profesionalId: number | undefined;
   api: Api;
   irAlDia?: (fecha: string) => void;
   revision?: number;
+  verContactos?: boolean;
 }) {
   const [inicioSemana, setInicioSemana] = useState(() => lunesDe(hoy()));
   const [agenda, setAgenda] = useState<Record<string, DiaAgenda>>({});
@@ -171,7 +173,7 @@ export function CalendarioSemanalAgenda({
                 {cierre.horaInicio ? `Cierre ${cierre.horaInicio.slice(0, 5)}–${cierre.horaFin?.slice(0, 5) ?? "fin del día"}` : "Día cerrado"}
                 {cierre.motivo && <span>{cierre.motivo}</span>}
               </p>)}
-              {!cargando && colorDia === "consultorio" && <a className="reprogram-link" href="/reprogramaciones">Ver reprogramaciones</a>}
+              {!cargando && verContactos && colorDia === "consultorio" && <a className="reprogram-link" href="/reprogramaciones">Ver reprogramaciones</a>}
               {cargando ? (
                 <p className="availability-empty">Cargando…</p>
               ) : !filas.length ? (

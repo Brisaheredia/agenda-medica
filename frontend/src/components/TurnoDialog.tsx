@@ -12,6 +12,7 @@ export function TurnoDialog({
   busy,
   close,
   submit,
+  cancelarPorConsultorio = true,
 }: {
   turno: Turno;
   tipo: Accion;
@@ -19,6 +20,7 @@ export function TurnoDialog({
   busy: boolean;
   close: () => void;
   submit: (path: string, body?: object) => Promise<boolean>;
+  cancelarPorConsultorio?: boolean;
 }) {
   const [fecha, setFecha] = useState(turno.inicio.slice(0, 10) < hoy() ? hoy() : turno.inicio.slice(0, 10));
   const [origen, setOrigen] = useState<"PACIENTE" | "CONSULTORIO">("PACIENTE");
@@ -159,7 +161,7 @@ export function TurnoDialog({
               ¿Quién solicitó la cancelación?
               <select value={origen} onChange={(event) => setOrigen(event.target.value as typeof origen)}>
                 <option value="PACIENTE">El paciente llamó y canceló</option>
-                <option value="CONSULTORIO">El médico o el consultorio suspendió la atención</option>
+                {cancelarPorConsultorio && <option value="CONSULTORIO">El médico o el consultorio suspendió la atención</option>}
               </select>
             </label>
           )}

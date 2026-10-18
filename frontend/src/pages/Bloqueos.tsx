@@ -11,10 +11,10 @@ type Resultado = {
 type Props = {
   api: <T>(path: string, options?: RequestInit) => Promise<T>;
   profesionalId?: number;
-  esAdmin: boolean;
+  puedeGestionar: boolean;
 };
 
-export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
+export function BloqueosPage({ api, profesionalId, puedeGestionar }: Props) {
   const [fecha, setFecha] = useState(hoy());
   const [horaInicio, setHoraInicio] = useState("");
   const [horaFin, setHoraFin] = useState("");
@@ -27,7 +27,7 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
 
   async function guardar(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!profesionalId || busy) return;
+    if (!puedeGestionar || !profesionalId || busy) return;
     setBusy(true);
     setError("");
     setResultado(null);
@@ -58,7 +58,7 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
     }
   }
 
-  if (!esAdmin)
+  if (!puedeGestionar)
     return (
       <section>
         <div className="page-heading">
@@ -68,8 +68,7 @@ export function BloqueosPage({ api, profesionalId, esAdmin }: Props) {
           </div>
         </div>
         <div className="alert error" role="alert">
-          El backend permite crear bloqueos y excepciones únicamente a usuarios
-          con rol ADMIN.
+          Tu cuenta no tiene permiso para modificar los horarios de atención.
         </div>
       </section>
     );

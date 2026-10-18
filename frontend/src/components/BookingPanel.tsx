@@ -23,6 +23,7 @@ export function BookingPanel({
   profesionalId,
   irAFranja,
   reservar,
+  gestionarPacientes,
 }: {
   api: Api;
   franjas: Franja[];
@@ -33,6 +34,7 @@ export function BookingPanel({
   profesionalId?: number;
   irAFranja: (franja: Franja) => void;
   reservar: (paciente: Paciente, motivo: string) => Promise<boolean>;
+  gestionarPacientes: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [resultados, setResultados] = useState<Paciente[]>([]);
@@ -50,6 +52,10 @@ export function BookingPanel({
   const creating = useRef(false);
   useEffect(() => () => searching.current?.abort(), []);
   async function buscar() {
+    if (!gestionarPacientes && query.trim().length < 3) {
+      setError("Ingresá al menos tres caracteres del apellido o el DNI completo.");
+      return;
+    }
     searching.current?.abort();
     const controller = new AbortController();
     searching.current = controller;
@@ -58,7 +64,7 @@ export function BookingPanel({
     setBuscado(false);
     try {
       const data = await api<Paciente[]>(
-        `/api/pacientes?query=${encodeURIComponent(query.trim())}`,
+        `/api/pacientes${gestionarPacientes ? "" : "/seleccion"}?query=${encodeURIComponent(query.trim())}`,
         { signal: controller.signal },
       );
       setResultados(data.filter((p) => p.activo));
@@ -71,7 +77,7 @@ export function BookingPanel({
   }
   async function guardarPaciente(e: React.FormEvent) {
     e.preventDefault();
-    if (creating.current) return;
+    if (!gestionarPacientes || creating.current) return;
     creating.current = true;
     setGuardando(true);
     setError("");
@@ -109,7 +115,7 @@ export function BookingPanel({
       if (primera) setProximaFranja(primera);
       else
         setError(
-          "No hay horarios futuros disponibles. Revisá Disponibilidad para generar nuevas franjas.",
+          "No hay horarios futuros disponibles. Consultá con el médico o Administración para habilitar más horarios.",
         );
     } catch (e) {
       setError(detalleError(e));
@@ -209,7 +215,7 @@ export function BookingPanel({
           <div className="booking-empty-state" role="status">
             <p>
               {franjas.length === 0
-                ? "La agenda de esta fecha no tiene franjas generadas. Configurá un horario semanal y generá las franjas para el período."
+                ? "La agenda de esta fecha no tiene franjas generadas. Consultá con el médico o Administración para habilitarlas."
                 : "Las franjas de esta fecha están ocupadas, bloqueadas o ya pasaron. Probá otra fecha en la agenda."}
             </p>
             {franjas.length === 0 && (
@@ -221,7 +227,7 @@ export function BookingPanel({
         )}
         <div className="field-heading">
           <label htmlFor="patient-search">Paciente</label>
-          <button
+          {gestionarPacientes && <button
             className="text-button"
             onClick={() => {
               setCrear(true);
@@ -230,7 +236,7 @@ export function BookingPanel({
           >
             <Icon name="plus" size={14} />
             Nuevo paciente
-          </button>
+          </button>}
         </div>
         <form
           className="search-row"
@@ -305,7 +311,7 @@ export function BookingPanel({
             <span>DNI {paciente.dni}</span>
           </div>
         )}
-        <label>
+        {gestionarPacientes && <label>
           Motivo de consulta <span className="optional">(opcional)</span>
           <textarea
             rows={3}
@@ -314,7 +320,7 @@ export function BookingPanel({
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
           />
-        </label>
+        </label>}
         {error && !crear && (
           <p className="alert error" role="alert">
             {error}
@@ -343,7 +349,7 @@ export function BookingPanel({
           </button>
         )}
       </fieldset>
-      {crear && (
+      {gestionarPacientes && crear && (
         <Modal
           title="Nuevo paciente"
           busy={guardando}

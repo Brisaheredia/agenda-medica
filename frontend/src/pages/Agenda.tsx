@@ -35,6 +35,8 @@ type Props = {
   setFiltro: (value: Filtro) => void;
   gestionar: boolean;
   cerrar: boolean;
+  gestionarPacientes: boolean;
+  verContactos: boolean;
   selected: Franja | null;
   setSelected: (value: Franja | null) => void;
   setDialog: (value: { turno: Turno; tipo: Accion } | null) => void;
@@ -67,6 +69,8 @@ export function AgendaPage(props: Props) {
     setFiltro,
     gestionar,
     cerrar,
+    gestionarPacientes,
+    verContactos,
     selected,
     setSelected,
     setDialog,
@@ -173,7 +177,7 @@ export function AgendaPage(props: Props) {
           Actualizar
         </button>
       </section>}
-      {vista === "semana" && profesional && <CalendarioSemanalAgenda profesionalId={profesionalId} api={api} irAlDia={(dia) => { cambiarFecha(dia); setVista("dia"); }} />}
+      {vista === "semana" && profesional && <CalendarioSemanalAgenda profesionalId={profesionalId} api={api} verContactos={verContactos} irAlDia={(dia) => { cambiarFecha(dia); setVista("dia"); }} />}
       {errorAgenda && (
         <div className="alert error" role="alert">
           <span>{errorAgenda}</span>
@@ -251,7 +255,7 @@ export function AgendaPage(props: Props) {
             ))}
           </div>
           <LeyendaAgenda />
-          {ready && excepciones.some((e) => e.tipo === "CIERRE") && <div className="alert closure-banner" role="status">Atención suspendida total o parcialmente por el consultorio. Los turnos se conservan. <a href="/reprogramaciones">Ver pacientes para reprogramar</a></div>}
+          {ready && excepciones.some((e) => e.tipo === "CIERRE") && <div className="alert closure-banner" role="status">Atención suspendida total o parcialmente por el consultorio. Los turnos se conservan. {verContactos && <a href="/reprogramaciones">Ver pacientes para reprogramar</a>}</div>}
           {!ready && !errorAgenda && (
             <div className="card loading" role="status">
               Cargando horarios y turnos…
@@ -275,6 +279,7 @@ export function AgendaPage(props: Props) {
         {gestionar && (
           <BookingPanel
             api={api}
+            gestionarPacientes={gestionarPacientes}
             franjas={ready ? franjas.filter((f) => !cierreDelHorario(f.inicio, f.fin, excepciones)) : []}
             selected={selected}
             select={setSelected}

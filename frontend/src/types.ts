@@ -1,4 +1,4 @@
-export type Rol = "ADMIN" | "RECEPCION" | "MEDICO";
+export type Rol = "ADMIN" | "RECEPCION" | "MEDICO" | "OBRAS_SOCIALES";
 export type Sesion = { token: string; email: string; rol: Rol };
 export type Profesional = {
   id: number;

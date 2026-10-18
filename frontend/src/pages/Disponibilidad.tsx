@@ -7,7 +7,9 @@ import { GeneracionMensual } from "../components/GeneracionMensual";
 
 type Props = {
   profesionalId: number | undefined;
-  esAdmin: boolean;
+  puedeGestionarHorarios: boolean;
+  puedeConfigurar: boolean;
+  verContactos: boolean;
   busy: boolean;
   api: <T>(path: string, options?: RequestInit) => Promise<T>;
 };
@@ -30,7 +32,9 @@ const diasLaborables = diasSemana.slice(0, 5).map(([dia]) => dia);
 
 export function DisponibilidadPage({
   profesionalId,
-  esAdmin,
+  puedeGestionarHorarios,
+  puedeConfigurar,
+  verContactos,
   busy,
   api,
 }: Props) {
@@ -67,7 +71,7 @@ export function DisponibilidadPage({
 
   async function guardarConfiguracion(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!esAdmin || operando || !configuracion) return;
+    if (!puedeConfigurar || operando || !configuracion) return;
     setGuardandoConfiguracion(true);
     setError("");
     setMensaje("");
@@ -89,7 +93,7 @@ export function DisponibilidadPage({
   }
   async function guardarPlantilla(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!esAdmin || !profesionalId || operando || !configuracion || !diasSeleccionados.length) return;
+    if (!puedeGestionarHorarios || !profesionalId || operando || !configuracion || !diasSeleccionados.length) return;
     if (horaFin <= horaInicio) {
       setError("El horario de fin debe ser posterior al de inicio.");
       return;
@@ -136,8 +140,7 @@ export function DisponibilidadPage({
           <p className="eyebrow">CONFIGURACIÓN DEL CONSULTORIO</p>
           <h1 id="availability-title">Disponibilidad</h1>
           <p className="muted">
-            Definí horarios semanales y generá las franjas que se podrán
-            reservar.
+            {puedeGestionarHorarios ? "Definí horarios semanales y generá las franjas que se podrán reservar." : "Consultá los horarios de atención y la disponibilidad del consultorio."}
           </p>
         </div>
         <a className="secondary small" href={`/${window.location.search}`}>
@@ -145,12 +148,6 @@ export function DisponibilidadPage({
         </a>
       </div>
 
-      {!esAdmin && (
-        <div className="alert error" role="alert">
-          El backend permite administrar la disponibilidad únicamente a usuarios
-          con rol ADMIN.
-        </div>
-      )}
       {error && (
         <div className="alert error" role="alert">
           {error}
@@ -166,9 +163,10 @@ export function DisponibilidadPage({
         profesionalId={profesionalId}
         api={api}
         revision={revisionCalendario}
+        verContactos={verContactos}
       />
 
-      <form
+      {puedeConfigurar && <form
         className="card agenda-settings-form"
         onSubmit={guardarConfiguracion}
       >
@@ -181,7 +179,7 @@ export function DisponibilidadPage({
           </div>
           <Icon name="clock" />
         </div>
-        <fieldset disabled={!esAdmin || operando || !configuracion}>
+        <fieldset disabled={operando || !configuracion}>
           <div className="availability-fields">
             <p className="booking-note">Todos los turnos duran 40 minutos. La duración es fija.</p>
             <label>
@@ -198,14 +196,14 @@ export function DisponibilidadPage({
           </div>
           <button
             className="primary"
-            disabled={!esAdmin || operando || !configuracion}
+            disabled={operando || !configuracion}
           >
             {guardandoConfiguracion ? "Guardando…" : "Guardar configuración"}
           </button>
         </fieldset>
-      </form>
+      </form>}
 
-      <div className="availability-forms">
+      {puedeGestionarHorarios && <div className="availability-forms">
         <form className="card availability-form" onSubmit={guardarPlantilla}>
           <div className="panel-heading">
             <div>
@@ -215,7 +213,7 @@ export function DisponibilidadPage({
             <Icon name="clock" />
           </div>
           <fieldset
-            disabled={!esAdmin || operando || !profesionalId || !configuracion}
+            disabled={operando || !profesionalId || !configuracion}
           >
             <div className="availability-day-selection" role="group" aria-labelledby="attention-days-label">
               <span id="attention-days-label" className="availability-field-label">Días de atención</span>
@@ -302,11 +300,11 @@ export function DisponibilidadPage({
           api={api}
           profesionalId={profesionalId}
           horizonteDias={configuracion.horizonteReservaDias}
-          habilitada={esAdmin && !!profesionalId && !busy && !guardandoConfiguracion && !guardandoPlantilla}
+          habilitada={!!profesionalId && !busy && !guardandoConfiguracion && !guardandoPlantilla}
           onBusyChange={setGenerando}
           onConfirmado={() => setRevisionCalendario((revision) => revision + 1)}
         />}
-      </div>
+      </div>}
     </section>
   );
 }
