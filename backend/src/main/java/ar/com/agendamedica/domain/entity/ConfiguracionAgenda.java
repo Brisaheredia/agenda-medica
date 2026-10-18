@@ -18,7 +18,7 @@ public class ConfiguracionAgenda {
     private Integer duracionEstandarMin = 40;
 
     @Column(name = "horizonte_reserva_dias", nullable = false)
-    private Integer horizonteReservaDias = 90;
+    private Integer horizonteReservaDias = 45;
 
     public Long getId() { return id; }
     public Integer getDuracionEstandarMin() { return DURACION_TURNO_MIN; }
