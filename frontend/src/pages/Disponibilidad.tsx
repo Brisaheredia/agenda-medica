@@ -43,7 +43,7 @@ export function DisponibilidadPage({
   const [horaInicio, setHoraInicio] = useState("08:00");
   const [horaFin, setHoraFin] = useState("20:00");
   const [configuracion, setConfiguracion] = useState<ConfiguracionAgenda | null>(null);
-  const [horizonteDias, setHorizonteDias] = useState(90);
+  const [horizonteDias, setHorizonteDias] = useState(45);
   const [guardandoConfiguracion, setGuardandoConfiguracion] = useState(false);
   const [vigenciaDesde, setVigenciaDesde] = useState(hoy());
   const [vigenciaHasta, setVigenciaHasta] = useState("");
@@ -133,7 +133,6 @@ export function DisponibilidadPage({
     }
   }
 
-
   return (
     <section aria-labelledby="availability-title">
       <div className="page-heading">
@@ -141,7 +140,7 @@ export function DisponibilidadPage({
           <p className="eyebrow">CONFIGURACIÓN DEL CONSULTORIO</p>
           <h1 id="availability-title">Disponibilidad</h1>
           <p className="muted">
-            {puedeGestionarHorarios ? "Definí horarios semanales y generá las franjas que se podrán reservar." : "Consultá los horarios de atención y la disponibilidad del consultorio."}
+            {puedeGestionarHorarios ? "Organizá los días de atención y habilitá horarios para reservar." : "Consultá los horarios de atención y la disponibilidad del consultorio."}
           </p>
         </div>
         <a className="secondary small" href={`/${window.location.search}`}>
@@ -159,50 +158,6 @@ export function DisponibilidadPage({
           {mensaje}
         </div>
       )}
-
-      <CalendarioSemanalDisponibilidad
-        profesionalId={profesionalId}
-        api={api}
-        revision={revisionCalendario}
-        verContactos={verContactos}
-      />
-
-      {puedeConfigurar && <form
-        className="card agenda-settings-form"
-        onSubmit={guardarConfiguracion}
-      >
-        <div className="panel-heading">
-          <div>
-            <h2>Configuración de agenda</h2>
-            <p>
-              Definí con cuánta anticipación se pueden reservar turnos.
-            </p>
-          </div>
-          <Icon name="clock" />
-        </div>
-        <fieldset disabled={operando || !configuracion}>
-          <div className="availability-fields">
-            <p className="booking-note">Todos los turnos duran 40 minutos. La duración es fija.</p>
-            <label>
-              Anticipación máxima para reservar (días)
-              <input
-                type="number"
-                min="1"
-                max="365"
-                required
-                value={horizonteDias}
-                onChange={(e) => setHorizonteDias(Number(e.target.value))}
-              />
-            </label>
-          </div>
-          <button
-            className="primary"
-            disabled={operando || !configuracion}
-          >
-            {guardandoConfiguracion ? "Guardando…" : "Guardar configuración"}
-          </button>
-        </fieldset>
-      </form>}
 
       {puedeGestionarHorarios && <div className="availability-forms">
         <form className="card availability-form" onSubmit={guardarPlantilla}>
@@ -265,11 +220,7 @@ export function DisponibilidadPage({
                 />
               </label>
             </div>
-            <p className="booking-note">
-              {configuracion
-                ? "Cada turno dura 40 minutos. Esta duración no se puede modificar."
-                : "Cargando la duración de los turnos…"}
-            </p>
+
             <div className="availability-fields">
               <label>
                 Vigente desde
@@ -296,16 +247,61 @@ export function DisponibilidadPage({
           </fieldset>
         </form>
 
-        {configuracion && <GeneracionMensual
-          key={`${configuracion.duracionEstandarMin}/${configuracion.horizonteReservaDias}/${profesionalId}`}
-          api={api}
-          profesionalId={profesionalId}
-          horizonteDias={configuracion.horizonteReservaDias}
-          habilitada={!!profesionalId && !busy && !guardandoConfiguracion && !guardandoPlantilla}
-          onBusyChange={setGenerando}
-          onConfirmado={() => setRevisionCalendario((revision) => revision + 1)}
-        />}
+        <div className="availability-right">
+          {puedeConfigurar && <form
+            className="card agenda-settings-form"
+            onSubmit={guardarConfiguracion}
+          >
+            <div className="panel-heading">
+              <div>
+                <h2>Configuración de agenda</h2>
+                <p>
+                  Definí con cuánta anticipación se pueden reservar turnos.
+                </p>
+              </div>
+              <Icon name="clock" />
+            </div>
+            <fieldset disabled={operando || !configuracion}>
+              <div>
+                <label>
+                  Anticipación máxima para reservar (días)
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    required
+                    value={horizonteDias}
+                    onChange={(e) => setHorizonteDias(Number(e.target.value))}
+                  />
+                </label>
+              </div>
+              <button
+                className="primary"
+                disabled={operando || !configuracion}
+              >
+                {guardandoConfiguracion ? "Guardando…" : "Guardar configuración"}
+              </button>
+            </fieldset>
+          </form>}
+
+          {configuracion && <GeneracionMensual
+            key={`${configuracion.duracionEstandarMin}/${configuracion.horizonteReservaDias}/${profesionalId}`}
+            api={api}
+            profesionalId={profesionalId}
+            horizonteDias={configuracion.horizonteReservaDias}
+            habilitada={!!profesionalId && !busy && !guardandoConfiguracion && !guardandoPlantilla}
+            onBusyChange={setGenerando}
+            onConfirmado={() => setRevisionCalendario((revision) => revision + 1)}
+          />}
+        </div>
       </div>}
+
+      <CalendarioSemanalDisponibilidad
+        profesionalId={profesionalId}
+        api={api}
+        revision={revisionCalendario}
+        verContactos={verContactos}
+      />
     </section>
   );
 }

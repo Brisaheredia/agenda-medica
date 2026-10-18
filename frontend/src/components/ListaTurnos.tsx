@@ -2,6 +2,7 @@ import type { ExcepcionAgenda, Filtro, Franja, Turno } from "../types";
 import { activo, hora, reservable, instanteAgenda } from "../types";
 import { cierreDelHorario, estadoVisual } from "../lib/agendaVisual";
 import { Icon } from "./Icon";
+import { BadgeReprogramacion } from "./BadgeReprogramacion";
 export function Agenda({
   franjas,
   turnos,
@@ -114,6 +115,7 @@ export function Agenda({
               <span className={`badge status-${visual.clase}`}>
                 {visual.etiqueta}
               </span>
+              {turno && <BadgeReprogramacion turno={turno} />}
             </div>
             <p>
               {turno?.motivoConsulta ||

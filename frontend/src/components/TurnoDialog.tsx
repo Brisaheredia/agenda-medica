@@ -5,6 +5,7 @@ import type { Franja, Turno } from "../types";
 import { fechaLarga, hora, hoy, reservable } from "../types";
 import { Modal } from "./Modal";
 import { FechaInput } from "./FechaInput";
+import { BadgeReprogramacion } from "./BadgeReprogramacion";
 export type Accion = "cancelar" | "reprogramar" | "atencion" | "ausencia";
 export function TurnoDialog({
   turno,
@@ -89,6 +90,7 @@ export function TurnoDialog({
         <div className="slot-summary">
           <div>
             <strong>{turno.paciente}</strong>
+            <BadgeReprogramacion turno={turno} />
             <span>
               {fechaLarga(turno.inicio.slice(0, 10))} · {hora(turno.inicio)} hs
             </span>

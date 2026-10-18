@@ -9,6 +9,7 @@ export type NavItem = {
   label: string;
   href?: string;
   active?: boolean;
+  pendientes?: number;
 };
 type Props = {
   menu: NavItem[];
@@ -83,6 +84,13 @@ export function AppLayout({
               >
                 <Icon name={item.icon} />
                 <span>{item.label}</span>
+                {!!item.pendientes && item.pendientes > 0 && (
+                  <span className="nav-pending" role="status"
+                    aria-label={`${item.pendientes} ${item.pendientes === 1 ? "turno pendiente" : "turnos pendientes"} de reprogramar`}
+                    title="Hay pacientes pendientes de reprogramar">
+                    {item.pendientes}
+                  </span>
+                )}
               </a>
             ) : (
               <button key={item.label} className="nav-item" disabled>

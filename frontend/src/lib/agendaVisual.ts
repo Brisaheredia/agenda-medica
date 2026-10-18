@@ -1,6 +1,16 @@
 import type { ExcepcionAgenda, Franja, Turno } from "../types";
 import { moverDia, reservable, instanteAgenda } from "../types";
 
+export function franjasParaMostrar(franjas: Franja[], turnos: Turno[]) {
+  const franjasConTurno = new Set(
+    turnos.filter((turno) => turno.estado !== "CANCELADO").map((turno) => turno.franjaId),
+  );
+  return franjas.filter((franja) =>
+    franja.estado !== "LIBRE" || franjasConTurno.has(franja.id)
+    || instanteAgenda(franja.fin).getTime() - instanteAgenda(franja.inicio).getTime() === 40 * 60_000,
+  );
+}
+
 export function cierreDelHorario(inicio: string, fin: string, excepciones: ExcepcionAgenda[]) {
   return excepciones.find((excepcion) => {
     if (excepcion.tipo !== "CIERRE") return false;

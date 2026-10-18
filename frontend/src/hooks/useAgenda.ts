@@ -3,6 +3,7 @@ import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
 import type { ExcepcionAgenda, Filtro, Franja, Profesional, Turno } from "../types";
 import { hoy } from "../types";
+import { franjasParaMostrar } from "../lib/agendaVisual";
 
 export function useAgenda({
   api,
@@ -48,11 +49,12 @@ export function useAgenda({
       api<ExcepcionAgenda[]>(`/api/agenda/excepciones?profesionalId=${profesional.id}&desde=${fecha}&hasta=${fecha}`, { signal: controller.signal }),
     ])
       .then(([franjasDelDia, turnosDelDia, excepcionesDelDia]) => {
-        setFranjas(franjasDelDia);
+        const franjasVisibles = franjasParaMostrar(franjasDelDia, turnosDelDia);
+        setFranjas(franjasVisibles);
         setTurnos(turnosDelDia);
         setExcepciones(excepcionesDelDia);
         if (pendingFranjaId.current !== null) {
-          const seleccionada = franjasDelDia.find(
+          const seleccionada = franjasVisibles.find(
             (franja) => franja.id === pendingFranjaId.current,
           );
           if (seleccionada) setSelected(seleccionada);

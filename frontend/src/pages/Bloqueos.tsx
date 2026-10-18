@@ -13,9 +13,10 @@ type Props = {
   api: <T>(path: string, options?: RequestInit) => Promise<T>;
   profesionalId?: number;
   puedeGestionar: boolean;
+  onGuardado?: () => Promise<void>;
 };
 
-export function BloqueosPage({ api, profesionalId, puedeGestionar }: Props) {
+export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }: Props) {
   const [fecha, setFecha] = useState(hoy());
   const [horaInicio, setHoraInicio] = useState("");
   const [horaFin, setHoraFin] = useState("");
@@ -52,6 +53,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar }: Props) {
       });
       setResultado(response);
       setMotivo("");
+      await onGuardado?.();
     } catch (e) {
       setError(detalleError(e));
     } finally {

@@ -45,6 +45,7 @@ export type Turno = {
   motivoConsulta?: string;
   origenCancelacion?: "PACIENTE" | "CONSULTORIO" | null;
   motivoCancelacion?: string | null;
+  reprogramadoPorConsultorio?: boolean;
 };
 export type ExcepcionAgenda = {
   id: number;

@@ -3,8 +3,9 @@ import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
 import type { ExcepcionAgenda, Franja, Turno } from "../types";
 import { fechaLarga, hora, hoy, moverDia, lunesDe } from "../types";
-import { estadoVisual } from "../lib/agendaVisual";
+import { estadoVisual, franjasParaMostrar } from "../lib/agendaVisual";
 import { LeyendaAgenda } from "./LeyendaAgenda";
+import { BadgeReprogramacion } from "./BadgeReprogramacion";
 
 type DiaAgenda = { franjas: Franja[]; turnos: Turno[] };
 
@@ -54,7 +55,7 @@ export function CalendarioSemanalAgenda({
             api<Franja[]>(`/api/agenda?${query}`, { signal: controller.signal }),
             api<Turno[]>(`/api/turnos?${query}`, { signal: controller.signal }),
           ]);
-          return [fecha, { franjas, turnos }] as const;
+          return [fecha, { franjas: franjasParaMostrar(franjas, turnos), turnos }] as const;
         }),
       ),
     ])
@@ -199,6 +200,7 @@ export function CalendarioSemanalAgenda({
                             {turno?.paciente ?? visual.etiqueta}
                           </span>
                           {turno && <small>{visual.etiqueta}</small>}
+                          {turno && <BadgeReprogramacion turno={turno} />}
                         </li>
                       );
                     })}

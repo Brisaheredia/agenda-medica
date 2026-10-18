@@ -15,7 +15,9 @@ import { permisosDe, roles } from "./permisos";
 import { LoginPage } from "./pages/Login";
 import { useAgenda } from "./hooks/useAgenda";
 import { usePathname } from "./hooks/usePathname";
+import { useReprogramaciones } from "./hooks/useReprogramaciones";
 import { AppLayout } from "./components/AppLayout";
+import type { NavItem } from "./components/AppLayout";
 import "./styles.css";
 
 export default function App() {
@@ -80,6 +82,9 @@ export default function App() {
   const permisos = permisosDe(sesion?.rol);
   const gestionar = permisos.gestionarTurnos;
   const cerrar = permisos.registrarResultados;
+  const reprogramaciones = useReprogramaciones({
+    api, profesionalId: profesional?.id, habilitada: !!sesion && permisos.verContactos,
+  });
 
   useEffect(() => {
     if (!sesion) return;
@@ -139,6 +144,7 @@ export default function App() {
       });
       setRevision((n) => n + 1);
       setSelected(null);
+      await reprogramaciones.actualizar();
       return true;
     } catch (e) {
       const conflicto = e instanceof ApiError && e.status === 409;
@@ -186,12 +192,7 @@ export default function App() {
   const auditoriaPage = ruta === "/auditoria";
   const reprogramacionesPage = ruta === "/reprogramaciones";
   const usuariosPage = ruta === "/usuarios";
-  const menu: {
-    icon: string;
-    label: string;
-    href?: string;
-    active?: boolean;
-  }[] = [
+  const menu: NavItem[] = [
     { icon: "calendar", label: "Agenda", href: "/", active: ruta === "/" },
     {
       icon: "people",
@@ -217,7 +218,8 @@ export default function App() {
       href: "/auditoria",
       active: auditoriaPage,
     },
-    { icon: "calendar", label: "Reprogramaciones", href: "/reprogramaciones", active: reprogramacionesPage },
+    { icon: "calendar", label: "Reprogramaciones", href: "/reprogramaciones", active: reprogramacionesPage,
+      pendientes: reprogramaciones.pendientes.length },
     { icon: "people", label: "Usuarios", href: "/usuarios", active: usuariosPage },
   ];
   const puedeVerRuta = (href: string | undefined) => {
@@ -231,12 +233,13 @@ export default function App() {
   ) : usuariosPage ? (
     <UsuariosPage api={api} emailActual={sesion.email} salir={salir} />
   ) : reprogramacionesPage ? (
-    <ReprogramacionesPage api={api} profesionalId={profesional?.id} puedeGestionar={gestionar} />
+    <ReprogramacionesPage api={api} puedeGestionar={gestionar} datos={reprogramaciones} />
   ) : bloqueosPage ? (
     <BloqueosPage
       api={api}
       profesionalId={profesional?.id}
       puedeGestionar={permisos.gestionarHorarios}
+      onGuardado={reprogramaciones.actualizar}
     />
   ) : auditoriaPage ? (
     <AuditoriaPage api={api} esAdmin={sesion.rol === "ADMIN"} />
