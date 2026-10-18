@@ -1,5 +1,7 @@
 package ar.com.agendamedica.service;
 
+import ar.com.agendamedica.time.TiempoAgenda;
+
 import ar.com.agendamedica.domain.entity.ExcepcionAgenda;
 import ar.com.agendamedica.domain.entity.ConfiguracionAgenda;
 import ar.com.agendamedica.domain.entity.Franja;
@@ -71,7 +73,7 @@ public class AgendaService {
     public List<FranjaResponse> disponibles(Long profesionalId, LocalDateTime desde) {
         obtenerProfesional(profesionalId);
 
-        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime ahora = TiempoAgenda.ahora();
         LocalDateTime inicioBusqueda = desde == null || desde.isBefore(ahora) ? ahora : desde;
 
         LocalDateTime limite = ahora
@@ -135,7 +137,7 @@ public class AgendaService {
         if (!java.time.YearMonth.from(request.desde()).equals(java.time.YearMonth.from(request.hasta()))) {
             throw new BadRequestException("Habilitá un mes por vez");
         }
-        if (request.hasta().isAfter(LocalDate.now().plusDays(configuracionService.obtener().getHorizonteReservaDias()))) {
+        if (request.hasta().isAfter(TiempoAgenda.hoy().plusDays(configuracionService.obtener().getHorizonteReservaDias()))) {
             throw new BadRequestException("El período supera la anticipación máxima configurada");
         }
         var reglas = plantillaRepository.findByProfesionalIdAndVigenciaDesdeLessThanEqual(profesional.getId(), request.hasta());
@@ -146,7 +148,7 @@ public class AgendaService {
         }
         var obsoletas = franjaRepository.findLibresSinHistorial(profesional.getId(), request.desde().atStartOfDay(),
                         request.hasta().plusDays(1).atStartOfDay().minusNanos(1)).stream()
-                .filter(f -> f.getInicio().isAfter(LocalDateTime.now()) && !duracionCorrecta(f)).toList();
+                .filter(f -> f.getInicio().isAfter(TiempoAgenda.ahora()) && !duracionCorrecta(f)).toList();
         franjaRepository.deleteAll(obsoletas);
         franjaRepository.flush();
         int creadas = 0, existentes = 0, omitidas = 0;
@@ -163,7 +165,7 @@ public class AgendaService {
                  !inicio.plusMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN).isAfter(limite);
                  inicio = inicio.plusMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN)) {
                 var fin = inicio.plusMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN);
-                if (!inicio.isAfter(LocalDateTime.now())) continue;
+                if (!inicio.isAfter(TiempoAgenda.ahora())) continue;
                 final var inicioFranja = inicio;
                 var iguales = franjasDelDia(profesional.getId(), fecha).stream()
                         .anyMatch(f -> f.getInicio().equals(inicioFranja) && f.getFin().equals(fin));
@@ -207,7 +209,7 @@ public class AgendaService {
         validarDuracion(request.duracionMin());
         Profesional profesional = bloquearProfesional(request.profesionalId());
 
-        if (request.fecha().isBefore(LocalDate.now())) {
+        if (request.fecha().isBefore(TiempoAgenda.hoy())) {
             throw new BadRequestException("No se pueden crear excepciones en fechas pasadas");
         }
 
@@ -234,7 +236,7 @@ public class AgendaService {
                     continue;
                 }
 
-                if (franja.getEstado() == EstadoFranja.LIBRE && !franja.getInicio().isBefore(LocalDateTime.now())) {
+                if (franja.getEstado() == EstadoFranja.LIBRE && !franja.getInicio().isBefore(TiempoAgenda.ahora())) {
                     franja.setEstado(EstadoFranja.BLOQUEADA);
                     franjaRepository.save(franja);
                     franjasBloqueadas++;
@@ -264,7 +266,7 @@ public class AgendaService {
             for (LocalDateTime inicio = request.fecha().atTime(request.horaInicio());
                  !inicio.plusMinutes(duracion).isAfter(limite); inicio = inicio.plusMinutes(duracion)) {
                 LocalDateTime fin = inicio.plusMinutes(duracion);
-                if (!inicio.isAfter(LocalDateTime.now())) continue;
+                if (!inicio.isAfter(TiempoAgenda.ahora())) continue;
                 if (franjaRepository.existsByProfesionalIdAndInicioLessThanAndFinGreaterThan(
                         profesional.getId(), fin, inicio)) {
                     throw new ConflictException("La apertura se superpone con horarios existentes. Elegí un intervalo que no se superponga");

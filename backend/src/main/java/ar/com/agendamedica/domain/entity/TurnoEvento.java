@@ -1,5 +1,7 @@
 package ar.com.agendamedica.domain.entity;
 
+import ar.com.agendamedica.time.TiempoAgenda;
+
 import ar.com.agendamedica.domain.enums.TipoEventoTurno;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -16,7 +18,7 @@ public class TurnoEvento {
     @Column(name = "franja_nueva_id") private Long franjaNuevaId;
     @Column(length = 1000) private String detalle;
 
-    @PrePersist void prePersist(){ if(fecha==null) fecha=LocalDateTime.now(); }
+    @PrePersist void prePersist(){ if(fecha==null) fecha=TiempoAgenda.ahora(); }
     public Long getId(){return id;} public void setId(Long id){this.id=id;}
     public Turno getTurno(){return turno;} public void setTurno(Turno turno){this.turno=turno;}
     public TipoEventoTurno getTipo(){return tipo;} public void setTipo(TipoEventoTurno tipo){this.tipo=tipo;}

@@ -1,5 +1,7 @@
 package ar.com.agendamedica.service;
 
+import ar.com.agendamedica.time.TiempoAgenda;
+
 import ar.com.agendamedica.domain.entity.Franja;
 import ar.com.agendamedica.domain.entity.Profesional;
 import ar.com.agendamedica.domain.enums.EstadoFranja;
@@ -61,7 +63,7 @@ public class DisponibilidadService {
         if (!java.time.Duration.between(franja.getInicio(), franja.getFin()).equals(java.time.Duration.ofMinutes(40))) {
             throw new ConflictException("Sólo se pueden reservar horarios de 40 minutos");
         }
-        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime ahora = TiempoAgenda.ahora();
         if (franja.getInicio().isBefore(ahora)) {
             throw new BadRequestException("No se puede reservar una franja en el pasado");
         }

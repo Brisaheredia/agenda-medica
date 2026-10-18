@@ -1,5 +1,7 @@
 package ar.com.agendamedica.service;
 
+import ar.com.agendamedica.time.TiempoAgenda;
+
 import ar.com.agendamedica.domain.entity.Franja;
 import ar.com.agendamedica.domain.entity.Paciente;
 import ar.com.agendamedica.domain.entity.Turno;
@@ -214,7 +216,7 @@ public class TurnoService {
         Turno turno = obtenerParaModificar(id);
         validarTurnoActivo(turno);
 
-        if (turno.getInicio().isAfter(LocalDateTime.now())) {
+        if (turno.getInicio().isAfter(TiempoAgenda.ahora())) {
             throw new BadRequestException("No se puede registrar el resultado antes del horario del turno");
         }
 

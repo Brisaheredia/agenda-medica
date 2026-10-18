@@ -1,5 +1,7 @@
 package ar.com.agendamedica.exception;
 
+import ar.com.agendamedica.time.TiempoAgenda;
+
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +39,7 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ApiError> build(HttpStatus status, String message, String path, Map<String, String> validationErrors) {
-        ApiError body = new ApiError(LocalDateTime.now(), status.value(), status.getReasonPhrase(), message, path, validationErrors);
+        ApiError body = new ApiError(TiempoAgenda.ahora(), status.value(), status.getReasonPhrase(), message, path, validationErrors);
         return ResponseEntity.status(status).body(body);
     }
 }

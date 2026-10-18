@@ -1,5 +1,7 @@
 package ar.com.agendamedica.domain.entity;
 
+import ar.com.agendamedica.time.TiempoAgenda;
+
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -14,7 +16,7 @@ public class Auditoria {
     @Column(nullable = false) private LocalDateTime fecha;
     @Column(length = 2000) private String metadata;
 
-    @PrePersist void prePersist(){ if(fecha==null) fecha=LocalDateTime.now(); }
+    @PrePersist void prePersist(){ if(fecha==null) fecha=TiempoAgenda.ahora(); }
     public Long getId(){return id;} public void setId(Long id){this.id=id;}
     public Usuario getUsuario(){return usuario;} public void setUsuario(Usuario usuario){this.usuario=usuario;}
     public String getAccion(){return accion;} public void setAccion(String accion){this.accion=accion;}

@@ -1,5 +1,7 @@
 package ar.com.agendamedica.domain.entity;
 
+import ar.com.agendamedica.time.TiempoAgenda;
+
 import ar.com.agendamedica.domain.enums.RolUsuario;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -16,8 +18,8 @@ public class Usuario {
     @Column(name = "created_at", nullable = false, updatable = false) private LocalDateTime createdAt;
     @Column(name = "updated_at", nullable = false) private LocalDateTime updatedAt;
 
-    @PrePersist void prePersist(){ var now=LocalDateTime.now(); createdAt=now; updatedAt=now; }
-    @PreUpdate void preUpdate(){ updatedAt=LocalDateTime.now(); }
+    @PrePersist void prePersist(){ var now=TiempoAgenda.ahora(); createdAt=now; updatedAt=now; }
+    @PreUpdate void preUpdate(){ updatedAt=TiempoAgenda.ahora(); }
 
     public Long getId(){return id;} public void setId(Long id){this.id=id;}
     public String getEmail(){return email;} public void setEmail(String email){this.email=email;}
