@@ -75,11 +75,33 @@ class TurnoAgendaIntegrationTest {
     @Autowired TurnoRepository turnoRepository;
     @Autowired TurnoEventoRepository turnoEventoRepository;
     @Autowired ConfiguracionAgendaService configuracion;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
     @Autowired ar.com.agendamedica.service.UsuarioService usuarios;
     @Autowired ar.com.agendamedica.service.AuthService auth;
     @Autowired ar.com.agendamedica.repository.UsuarioRepository usuarioRepository;
     @Autowired ar.com.agendamedica.security.JwtService jwt;
     @Autowired ar.com.agendamedica.security.AgendaUserDetailsService userDetails;
+
+    @Test
+    void recuperaMarcaAntiguaSoloConCancelacionExplicitaDelConsultorio() throws Exception {
+        var profesional = crearProfesional();
+        var paciente = crearPaciente();
+        var fecha = LocalDate.now().plusDays(23);
+        var origen = crearFranja(profesional, fecha.atTime(8, 0));
+        var destino = crearFranja(profesional, fecha.atTime(8, 40));
+        var origenPaciente = crearFranja(profesional, fecha.atTime(10, 0));
+        var destinoPaciente = crearFranja(profesional, fecha.atTime(10, 40));
+        var suspendido = turnoService.crear(new CrearTurnoRequest(paciente.getId(), origen.getId(), "Control"));
+        turnoService.cancelar(suspendido.id(), new CancelarTurnoRequest("Urgencia", OrigenCancelacion.CONSULTORIO));
+        turnoService.reprogramar(suspendido.id(), new ReprogramarTurnoRequest(destino.getId(), "Coordinado"));
+        var voluntario = turnoService.crear(new CrearTurnoRequest(paciente.getId(), origenPaciente.getId(), "Control"));
+        turnoService.reprogramar(voluntario.id(), new ReprogramarTurnoRequest(destinoPaciente.getId(), "Cambio pedido por paciente"));
+        jdbc.update("UPDATE turnos SET reprogramado_por_consultorio = FALSE WHERE id = ?", suspendido.id());
+        var script = java.nio.file.Files.readString(java.nio.file.Path.of("sql/2026-10-17-reprogramado-consultorio.sql"));
+        jdbc.update(script.substring(script.indexOf("UPDATE turnos")));
+        assertTrue(turnoService.obtener(suspendido.id()).reprogramadoPorConsultorio());
+        assertFalse(turnoService.obtener(voluntario.id()).reprogramadoPorConsultorio());
+    }
 
     @Test
     void usuariosPersistenCuartoRolYRevocanSesionAlCambiarCredenciales() {
@@ -193,6 +215,8 @@ class TurnoAgendaIntegrationTest {
                 new ReprogramarTurnoRequest(nueva.getId(), "Cambio solicitado"));
 
         assertEquals(nueva.getId(), reprogramado.franjaId());
+        assertFalse(reprogramado.reprogramadoPorConsultorio());
+        assertFalse(turnoService.obtener(reprogramado.id()).reprogramadoPorConsultorio());
         assertEquals(EstadoFranja.LIBRE, franjaRepository.findById(anterior.getId()).orElseThrow().getEstado());
         assertEquals(EstadoFranja.OCUPADA, franjaRepository.findById(nueva.getId()).orElseThrow().getEstado());
 
@@ -249,6 +273,9 @@ class TurnoAgendaIntegrationTest {
 
         Franja destino = crearFranja(profesional, fecha.plusDays(1).atTime(9, 0));
         turnoService.reprogramar(turno.id(), new ReprogramarTurnoRequest(destino.getId(), "Coordinado por teléfono"));
+        assertTrue(turnoService.obtener(turno.id()).reprogramadoPorConsultorio());
+        assertTrue(turnoService.listarPorProfesionalYFecha(profesional.getId(), fecha.plusDays(1))
+                .getFirst().reprogramadoPorConsultorio());
         assertTrue(consultas.pendientes(profesional.getId()).isEmpty());
         assertEquals(EstadoFranja.BLOQUEADA, franjaRepository.findById(ocupada.getId()).orElseThrow().getEstado());
     }
@@ -268,9 +295,14 @@ class TurnoAgendaIntegrationTest {
         TurnoResponse nuevo = turnoService.reprogramar(turno.id(), new ReprogramarTurnoRequest(destino.getId(), "Paciente contactado"));
         assertEquals(turno.id(), nuevo.id()); assertEquals(EstadoTurno.RESERVADO, nuevo.estado());
         assertNull(nuevo.origenCancelacion());
+        assertTrue(nuevo.reprogramadoPorConsultorio());
         assertTrue(consultas.pendientes(profesional.getId()).isEmpty());
         assertEquals(EstadoFranja.BLOQUEADA, franjaRepository.findById(origen.getId()).orElseThrow().getEstado());
         assertEquals(3, turnoEventoRepository.findByTurnoIdOrderByFechaAsc(turno.id()).size());
+
+        Franja otroDestino = crearFranja(profesional, fecha.plusDays(2).atTime(9, 0));
+        turnoService.reprogramar(turno.id(), new ReprogramarTurnoRequest(otroDestino.getId(), "Otro horario coordinado"));
+        assertTrue(turnoService.obtener(turno.id()).reprogramadoPorConsultorio());
     }
 
     @Test

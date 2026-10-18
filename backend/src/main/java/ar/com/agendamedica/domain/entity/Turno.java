@@ -24,6 +24,8 @@ public class Turno {
     @Column(name = "motivo_consulta", length = 500) private String motivoConsulta;
     @Enumerated(EnumType.STRING) @Column(name = "origen_cancelacion", length = 20) private OrigenCancelacion origenCancelacion;
     @Column(name = "motivo_cancelacion", length = 500) private String motivoCancelacion;
+    @Column(name = "reprogramado_por_consultorio", nullable = false, columnDefinition = "boolean not null default false")
+    private boolean reprogramadoPorConsultorio;
     @Column(name = "created_at", nullable = false, updatable = false) private LocalDateTime createdAt;
     @Column(name = "updated_at", nullable = false) private LocalDateTime updatedAt;
 
@@ -40,5 +42,7 @@ public class Turno {
     public String getMotivoConsulta(){return motivoConsulta;} public void setMotivoConsulta(String motivoConsulta){this.motivoConsulta=motivoConsulta;}
     public OrigenCancelacion getOrigenCancelacion(){return origenCancelacion;} public void setOrigenCancelacion(OrigenCancelacion origen){this.origenCancelacion=origen;}
     public String getMotivoCancelacion(){return motivoCancelacion;} public void setMotivoCancelacion(String motivo){this.motivoCancelacion=motivo;}
+    public boolean isReprogramadoPorConsultorio(){return reprogramadoPorConsultorio;}
+    public void setReprogramadoPorConsultorio(boolean value){this.reprogramadoPorConsultorio=value;}
     public LocalDateTime getCreatedAt(){return createdAt;} public LocalDateTime getUpdatedAt(){return updatedAt;}
 }

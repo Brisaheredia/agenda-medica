@@ -135,6 +135,11 @@ public class TurnoService {
         Franja franjaNueva = primera.getId().equals(request.franjaId()) ? primera : segunda;
         disponibilidad.validarReservable(franjaNueva);
 
+        // Se conserva la procedencia aunque luego se vuelva a mover el mismo turno.
+        if (canceladoPorConsultorio || disponibilidad.estaCerrada(franjaAnterior)) {
+            turno.setReprogramadoPorConsultorio(true);
+        }
+
         disponibilidad.liberar(franjaAnterior);
         disponibilidad.ocupar(franjaNueva);
 

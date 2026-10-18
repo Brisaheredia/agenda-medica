@@ -137,7 +137,7 @@ class AutorizacionHttpTest {
         when(configuracion.obtener()).thenReturn(new ConfiguracionAgenda());
         var turno = new ar.com.agendamedica.dto.TurnoResponse(1L, 1L, "Paciente Prueba", 1L, 1L,
                 java.time.LocalDateTime.of(2099, 1, 5, 8, 0), java.time.LocalDateTime.of(2099, 1, 5, 8, 40),
-                ar.com.agendamedica.domain.enums.EstadoTurno.RESERVADO, "Dato reservado", null, null, "Dato cancelación");
+                ar.com.agendamedica.domain.enums.EstadoTurno.RESERVADO, "Dato reservado", null, null, "Dato cancelación", true);
         when(turnos.obtener(anyLong())).thenReturn(turno);
         when(turnos.listarPorProfesionalYFecha(anyLong(), any())).thenReturn(List.of(turno));
         when(turnos.crear(any())).thenReturn(turno);
@@ -205,7 +205,8 @@ class AutorizacionHttpTest {
                 .andExpect(jsonPath("$[0].telefono").doesNotExist()).andExpect(jsonPath("$[0].email").doesNotExist());
         mvc.perform(get("/api/turnos/1").header("Authorization", autorizacion))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.motivoConsulta").isEmpty())
-                .andExpect(jsonPath("$.motivoCancelacion").isEmpty());
+                .andExpect(jsonPath("$.motivoCancelacion").isEmpty())
+                .andExpect(jsonPath("$.reprogramadoPorConsultorio").value(true));
         mvc.perform(get("/api/turnos?profesionalId=1&fecha=2099-01-05").header("Authorization", autorizacion))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].motivoConsulta").isEmpty());
         mvc.perform(post("/api/turnos").header("Authorization", autorizacion).contentType(MediaType.APPLICATION_JSON)

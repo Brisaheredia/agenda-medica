@@ -17,11 +17,12 @@ public record TurnoResponse(
         String motivoConsulta,
         LocalDateTime createdAt,
         OrigenCancelacion origenCancelacion,
-        String motivoCancelacion
+        String motivoCancelacion,
+        boolean reprogramadoPorConsultorio
 ) {
     public TurnoResponse sinMotivos() {
         return new TurnoResponse(id, pacienteId, paciente, profesionalId, franjaId, inicio, fin,
-                estado, null, createdAt, origenCancelacion, null);
+                estado, null, createdAt, origenCancelacion, null, reprogramadoPorConsultorio);
     }
 
     public static TurnoResponse from(Turno turno) {
@@ -37,7 +38,8 @@ public record TurnoResponse(
                 turno.getMotivoConsulta(),
                 turno.getCreatedAt(),
                 turno.getOrigenCancelacion(),
-                turno.getMotivoCancelacion()
+                turno.getMotivoCancelacion(),
+                turno.isReprogramadoPorConsultorio()
         );
     }
 }
