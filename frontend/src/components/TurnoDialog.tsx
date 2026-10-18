@@ -4,6 +4,7 @@ import { abortado, detalleError } from "../api";
 import type { Franja, Turno } from "../types";
 import { fechaLarga, hora, hoy, reservable } from "../types";
 import { Modal } from "./Modal";
+import { FechaInput } from "./FechaInput";
 export type Accion = "cancelar" | "reprogramar" | "atencion" | "ausencia";
 export function TurnoDialog({
   turno,
@@ -98,16 +99,16 @@ export function TurnoDialog({
             <>
               <label>
                 Buscar horarios desde
-                <input
-                  type="date"
+                <FechaInput
+                  aria-label="Buscar horarios desde"
                   min={hoy()}
                   required
                   value={fecha}
-                  onChange={(e) => {
-                    if (e.target.value) {
+                  onChange={(valor) => {
+                    if (valor) {
                       setDestino("");
                       setFranjas([]);
-                      setFecha(e.target.value);
+                      setFecha(valor);
                     }
                   }}
                 />

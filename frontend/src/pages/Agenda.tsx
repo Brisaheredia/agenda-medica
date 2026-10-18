@@ -1,5 +1,5 @@
 import type { ExcepcionAgenda, Filtro, Franja, Paciente, Profesional, Turno } from "../types";
-import { activo, reservable } from "../types";
+import { activo, reservable, fechaCorta } from "../types";
 import { Agenda } from "../components/ListaTurnos";
 import { BookingPanel } from "../components/BookingPanel";
 import { Icon } from "../components/Icon";
@@ -8,6 +8,7 @@ import { CalendarioSemanalAgenda } from "../components/CalendarioSemanalAgenda";
 import { useState } from "react";
 import { LeyendaAgenda } from "../components/LeyendaAgenda";
 import { cierreDelHorario } from "../lib/agendaVisual";
+import { FechaInput } from "../components/FechaInput";
 
 type Props = {
   busy: boolean;
@@ -82,12 +83,6 @@ export function AgendaPage(props: Props) {
   const esHoy = fecha === hoy();
   const diaAnterior = moverDia(fecha, -1);
   const diaSiguiente = moverDia(fecha, 1);
-  const fechaCorta = (dia: string) =>
-    new Intl.DateTimeFormat("es-AR", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    }).format(new Date(`${dia}T12:00:00`));
   const filters: { id: Filtro; label: string }[] = [
     { id: "TODOS", label: "Todos" },
     { id: "LIBRE", label: "Disponibles" },
@@ -161,12 +156,11 @@ export function AgendaPage(props: Props) {
             Volver a hoy
           </button>
         )}
-        <input
-          type="date"
+        <FechaInput
           aria-label="Fecha de la agenda"
           value={fecha}
           disabled={busy}
-          onChange={(e) => cambiarFecha(e.target.value)}
+          onChange={cambiarFecha}
         />
         <button
           className="secondary"

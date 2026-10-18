@@ -4,6 +4,7 @@ import { abortado, detalleError } from "../api";
 import type { Turno, TurnoAfectado } from "../types";
 import { fechaLarga, hora } from "../types";
 import { TurnoDialog } from "../components/TurnoDialog";
+import { FechaInput } from "../components/FechaInput";
 
 export function ReprogramacionesPage({ api, profesionalId, puedeGestionar }: {
   api: Api;
@@ -68,7 +69,7 @@ export function ReprogramacionesPage({ api, profesionalId, puedeGestionar }: {
     <div className="card pending-card" aria-busy={cargando}>
       <div className="availability-fields">
         <label>Buscar paciente o contacto<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} /></label>
-        <label>Fecha del turno original<input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
+        <label>Fecha del turno original<FechaInput aria-label="Fecha del turno original" value={fecha} onChange={setFecha} /></label>
       </div>
       <p className="muted">{cargando ? "Cargando pacientes…" : `${visibles.length} turnos pendientes de ${pendientes.length} en total.`} Las cancelaciones solicitadas por el paciente quedan fuera de esta lista.</p>
       {!cargando && !error && !visibles.length && <p className="empty-state">No hay reprogramaciones pendientes para esta búsqueda.</p>}

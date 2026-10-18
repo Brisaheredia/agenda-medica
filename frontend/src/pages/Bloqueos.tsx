@@ -2,6 +2,7 @@ import { useState } from "react";
 import { detalleError } from "../api";
 import { hoy } from "../types";
 import { Icon } from "../components/Icon";
+import { FechaInput } from "../components/FechaInput";
 
 type Resultado = {
   franjasCreadas: number;
@@ -135,7 +136,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar }: Props) {
                   setEsFeriado(false);
                   setResultado(null);
                   if (!horaInicio) {
-                    setHoraInicio("09:00");
+                    setHoraInicio("08:00");
                     setHoraFin("12:00");
                   }
                 }}
@@ -160,18 +161,18 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar }: Props) {
             </div>
             <p className="muted block-help">
               {esApertura
-                ? "La apertura crea franjas adicionales para esta fecha, con turnos de 40 minutos."
+                ? "La apertura agrega horarios de atención para esta fecha."
                 : "El bloqueo cierra la fecha completa o solo el rango horario elegido. Conservamos los turnos y sus pacientes aparecen en Reprogramaciones para coordinar otro horario."}
             </p>
             <div className="availability-fields">
               <label>
                 Fecha
-                <input
-                  type="date"
+                <FechaInput
+                  aria-label="Fecha del bloqueo o apertura"
                   min={hoy()}
                   required
                   value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
+                  onChange={setFecha}
                 />
               </label>
               <label>
@@ -193,7 +194,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar }: Props) {
                     setHoraInicio("");
                     setHoraFin("");
                   } else {
-                    setHoraInicio("09:00");
+                    setHoraInicio("08:00");
                     setHoraFin("12:00");
                   }
                 }}
@@ -223,16 +224,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar }: Props) {
                     onChange={(e) => setHoraFin(e.target.value)}
                   />
                 </label>
-                {esApertura && (
-                  <label>
-                    Duración fija (minutos)
-                    <input
-                      type="number"
-                      readOnly
-                      value={40}
-                    />
-                  </label>
-                )}
+
               </div>
             )}
             {esApertura && !horaInicio && (

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
 import type { ExcepcionAgenda, Franja, Turno } from "../types";
-import { fechaLarga, hora, hoy, moverDia } from "../types";
+import { fechaLarga, hora, hoy, moverDia, lunesDe } from "../types";
 import { estadoVisual } from "../lib/agendaVisual";
 import { LeyendaAgenda } from "./LeyendaAgenda";
 
@@ -17,12 +17,6 @@ const nombresDias = [
   "Sábado",
   "Domingo",
 ];
-
-function lunesDe(fecha: string) {
-  const date = new Date(`${fecha}T12:00:00`);
-  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
 
 export function CalendarioSemanalAgenda({
   profesionalId,
@@ -164,9 +158,7 @@ export function CalendarioSemanalAgenda({
               >
                 <span>{nombresDias[index]}</span>
                 <strong>
-                  {new Intl.DateTimeFormat("es-AR", { day: "numeric" }).format(
-                    new Date(`${fecha}T12:00:00`),
-                  )}
+                  {Number(fecha.slice(8, 10))}
                 </strong>
               </button>
               {!cargando && cierres.map((cierre) => <p className="closure-note" key={cierre.id}>

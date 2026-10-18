@@ -4,6 +4,7 @@ import { hoy } from "../types";
 import { CalendarioSemanalDisponibilidad } from "../components/CalendarioSemanalDisponibilidad";
 import { Icon } from "../components/Icon";
 import { GeneracionMensual } from "../components/GeneracionMensual";
+import { FechaInput } from "../components/FechaInput";
 
 type Props = {
   profesionalId: number | undefined;
@@ -272,20 +273,20 @@ export function DisponibilidadPage({
             <div className="availability-fields">
               <label>
                 Vigente desde
-                <input
-                  type="date"
+                <FechaInput
+                  aria-label="Vigente desde"
                   required
                   value={vigenciaDesde}
-                  onChange={(e) => setVigenciaDesde(e.target.value)}
+                  onChange={setVigenciaDesde}
                 />
               </label>
               <label>
                 Vigente hasta <span className="optional">(opcional)</span>
-                <input
-                  type="date"
+                <FechaInput
+                  aria-label="Vigente hasta"
                   min={vigenciaDesde}
                   value={vigenciaHasta}
-                  onChange={(e) => setVigenciaHasta(e.target.value)}
+                  onChange={setVigenciaHasta}
                 />
               </label>
             </div>

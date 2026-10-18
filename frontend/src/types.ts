@@ -1,3 +1,6 @@
+import { instanteAgenda } from "./lib/fechas";
+export { hoy, moverDia, hora, fechaLarga, fechaCorta, fechaHora, lunesDe, instanteAgenda } from "./lib/fechas";
+
 export type Rol = "ADMIN" | "RECEPCION" | "MEDICO" | "OBRAS_SOCIALES";
 export type Sesion = { token: string; email: string; rol: Rol };
 export type Profesional = {
@@ -70,30 +73,8 @@ export type Filtro =
 export const activo = (turno: Turno) =>
   turno.estado === "RESERVADO" || turno.estado === "CONFIRMADO";
 export const reservable = (franja: Franja) =>
-  franja.estado === "LIBRE" && new Date(franja.inicio).getTime() > Date.now()
-  && new Date(franja.fin).getTime() - new Date(franja.inicio).getTime() === 40 * 60_000;
-export function hoy() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-export function moverDia(fecha: string, dias: number) {
-  const d = new Date(`${fecha}T12:00:00`);
-  d.setDate(d.getDate() + dias);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-export const hora = (valor: string) =>
-  new Intl.DateTimeFormat("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(valor));
-export const fechaLarga = (valor: string) =>
-  new Intl.DateTimeFormat("es-AR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(`${valor}T12:00:00`));
+  franja.estado === "LIBRE" && instanteAgenda(franja.inicio).getTime() > Date.now()
+  && instanteAgenda(franja.fin).getTime() - instanteAgenda(franja.inicio).getTime() === 40 * 60_000;
 export const etiquetas: Record<string, string> = {
   LIBRE: "Disponible",
   OCUPADA: "Ocupado",

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { createServer } from "vite";
 
-const server = await createServer({ server: { middlewareMode: true }, appType: "custom" });
+const server = await createServer({ server: { middlewareMode: true, ws: false, hmr: false }, appType: "custom" });
 after(() => server.close());
 const { permisosDe } = await server.ssrLoadModule("/src/permisos.ts");
 const { default: App } = await server.ssrLoadModule("/src/App.tsx");

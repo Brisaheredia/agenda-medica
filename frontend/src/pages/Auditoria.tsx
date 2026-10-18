@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
 import { Icon } from "../components/Icon";
+import { fechaHora } from "../types";
 
 type Evento = {
   id: number;
@@ -132,10 +133,7 @@ export function AuditoriaPage({
                 <div className="audit-event-heading">
                   <strong>{evento.accion.replaceAll("_", " ")}</strong>
                   <time dateTime={evento.fecha}>
-                    {new Intl.DateTimeFormat("es-AR", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(new Date(evento.fecha))}
+                    {fechaHora(evento.fecha)}
                   </time>
                 </div>
                 <p>

@@ -1,12 +1,12 @@
 import type { ExcepcionAgenda, Franja, Turno } from "../types";
-import { moverDia, reservable } from "../types";
+import { moverDia, reservable, instanteAgenda } from "../types";
 
 export function cierreDelHorario(inicio: string, fin: string, excepciones: ExcepcionAgenda[]) {
   return excepciones.find((excepcion) => {
     if (excepcion.tipo !== "CIERRE") return false;
     const desde = `${excepcion.fecha}T${excepcion.horaInicio ?? "00:00:00"}`;
     const hasta = excepcion.horaFin ? `${excepcion.fecha}T${excepcion.horaFin}` : `${moverDia(excepcion.fecha, 1)}T00:00:00`;
-    return new Date(inicio) < new Date(hasta) && new Date(fin) > new Date(desde);
+    return instanteAgenda(inicio) < instanteAgenda(hasta) && instanteAgenda(fin) > instanteAgenda(desde);
   });
 }
 
@@ -26,6 +26,6 @@ export function estadoVisual(franja?: Franja, turno?: Turno, excepciones: Excepc
   if (franja?.estado === "BLOQUEADA") return { clase: "consultorio", etiqueta: "Cerrado por el consultorio" };
   if (turno || franja?.estado === "OCUPADA") return { clase: "ocupado", etiqueta: "Turno ocupado" };
   if (franja && reservable(franja)) return { clase: "libre", etiqueta: "Horario disponible" };
-  return { clase: "neutro", etiqueta: franja && new Date(franja.inicio).getTime() > Date.now()
-    ? "Franja antigua · no reservable" : "Horario pasado" };
+  return { clase: "neutro", etiqueta: franja && instanteAgenda(franja.inicio).getTime() > Date.now()
+    ? "Horario no disponible" : "Horario pasado" };
 }

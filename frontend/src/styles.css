@@ -1494,12 +1494,32 @@ a.nav-item {
 .availability-form {
   padding: 22px;
 }
+.agenda-settings-form {
+  padding: 22px;
+  margin-bottom: 20px;
+}
+.agenda-settings-form .panel-heading { margin-bottom: 20px; }
+.agenda-settings-form fieldset { display: grid; gap: 18px; }
+.agenda-settings-form .booking-note { margin: 0; align-self: center; }
+.agenda-settings-form .primary { justify-self: start; }
+.date-input {
+  display: grid;
+  grid-template-columns: minmax(48px, .7fr) minmax(78px, 1.4fr) minmax(62px, .9fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 340px;
+  margin-top: 7px;
+}
+.date-input input, .date-input select { margin: 0; padding: 10px 6px; min-height: 42px; }
+.date-input .date-clear { grid-column: 1 / -1; justify-self: end; padding: 0; }
+.date-toolbar > .date-input { width: 260px; margin-top: 0; }
 .availability-form fieldset {
   border: 0;
   padding: 0;
   display: grid;
   gap: 16px;
 }
+.availability-form fieldset > label { margin: 0; }
 .availability-form .panel-heading {
   align-items: flex-start;
   margin-bottom: 20px;
@@ -1509,7 +1529,7 @@ a.nav-item {
 }
 .availability-fields {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 12px;
 }
 .availability-day-selection {

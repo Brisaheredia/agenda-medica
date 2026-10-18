@@ -1,5 +1,5 @@
 import type { ExcepcionAgenda, Filtro, Franja, Turno } from "../types";
-import { activo, hora, reservable } from "../types";
+import { activo, hora, reservable, instanteAgenda } from "../types";
 import { cierreDelHorario, estadoVisual } from "../lib/agendaVisual";
 import { Icon } from "./Icon";
 export function Agenda({
@@ -149,7 +149,7 @@ export function Agenda({
                     </button>
                   </>
                 )}
-                {cerrar && new Date(inicio).getTime() <= Date.now() && (
+                {cerrar && instanteAgenda(inicio).getTime() <= Date.now() && (
                   <>
                     <button
                       className="text-button"
