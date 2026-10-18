@@ -133,7 +133,7 @@ Motivo obligatorio no vacío, máximo 500. Origen PACIENTE o CONSULTORIO; omitid
 {"franjaId":11,"motivo":"Nuevo horario coordinado"}
 ```
 
-Destino obligatorio y distinto del actual; motivo opcional máximo 500; requiere turno activo o cancelado con origen CONSULTORIO, y destino válido. Una cancelación CONSULTORIO reprogramada pasa a RESERVADO y limpia sus campos actuales de cancelación; el evento anterior se conserva. Atención/ausencia no requieren cuerpo y sólo se admiten a partir del inicio del turno.
+Destino obligatorio y distinto del actual; motivo opcional máximo 500; requiere turno activo o cancelado con origen CONSULTORIO, y destino válido. Una cancelación CONSULTORIO reprogramada pasa a RESERVADO y limpia sus campos actuales de cancelación; el evento anterior se conserva. `reprogramadoPorConsultorio` es un booleano persistido que se activa al mover un turno cancelado por el consultorio o afectado por un cierre en su horario anterior. Se conserva en movimientos posteriores y no se activa por un cambio voluntario del paciente; se devuelve también a Obras sociales. Atención/ausencia no requieren cuerpo y sólo se admiten a partir del inicio del turno.
 
 ### Usuarios
 
@@ -151,7 +151,7 @@ Email obligatorio válido y único; password de al menos 8 caracteres y hasta 72
 | PacienteSeleccionResponse | id, dni, nombre, apellido, activo; sin teléfono/email |
 | ProfesionalResponse | id, nombre, apellido, matricula, activo |
 | FranjaResponse | id, profesionalId, inicio, fin, estado, origen |
-| TurnoResponse | id, pacienteId, paciente (apellido/nombre), profesionalId, franjaId, inicio, fin, estado, motivoConsulta, createdAt, origenCancelacion, motivoCancelacion |
+| TurnoResponse | id, pacienteId, paciente (apellido/nombre), profesionalId, franjaId, inicio, fin, estado, motivoConsulta, createdAt, origenCancelacion, motivoCancelacion, reprogramadoPorConsultorio |
 | PlantillaDisponibilidadResponse | id, profesionalId, diaSemana, horaInicio, horaFin, duracionMin, vigenciaDesde, vigenciaHasta |
 | ExcepcionAgendaResponse | id, profesionalId, fecha, horaInicio, horaFin, tipo, motivo, franjasCreadas, franjasBloqueadas, turnosAfectados (IDs) |
 | ExcepcionAgendaResumen | id, profesionalId, fecha, horaInicio, horaFin, tipo, motivo |

@@ -16,21 +16,24 @@ Los menús y botones se adaptan al rol. Obras sociales selecciona pacientes exis
 
 Entrar en **Disponibilidad** con Administración o Médico para definir días y generar horarios. Todos los roles pueden consultar el calendario. Sólo Administración ve y modifica la configuración de anticipación máxima.
 
+Primero aparecen los días y horarios a la izquierda. A la derecha están la configuración de anticipación y, debajo, la habilitación del mes. El calendario queda al final para revisar el resultado. En pantallas pequeñas las secciones se apilan.
+
 ### Guardar configuración
 
-1. En **Configuración de agenda** se informa **Duración fija: 40 minutos**; no es editable.
-2. Elegir la **Anticipación máxima para reservar**, por ejemplo 90 días si esa es la política vigente.
+1. Abrir **Configuración de agenda**, en la columna derecha.
+2. Elegir la **Anticipación máxima para reservar**: inicialmente **45 días**, configurable entre 1 y 365.
 3. Pulsar **Guardar configuración** y esperar confirmación.
 
 La configuración editable es la anticipación máxima. La duración de 40 minutos es una regla fija; no existe cambio de duración ni regeneración por ese motivo.
+
+Los selectores muestran día, mes y año en español. Para una fecha opcional, **Limpiar** la quita. “Hoy” y los horarios se interpretan siempre en la zona de Buenos Aires, aunque el dispositivo use otra zona horaria.
 
 ### Elegir días y horario
 
 1. En **1. Días y horario de atención**, pulsar **Lunes a viernes**. También se puede marcar o desmarcar cada día; **Toda la semana** incluye sábado y domingo, y **Limpiar** quita todos.
 2. Verificar **Desde 08:00** y **Hasta 20:00**. Son horarios editables del formulario.
-3. Verificar el texto que informa que cada turno dura 40 minutos.
-4. Elegir **Vigente desde** y, si corresponde, **Vigente hasta**.
-5. Pulsar **Guardar horario para 5 días**. El número cambia con la selección.
+3. Elegir **Vigente desde** y, si corresponde, **Vigente hasta**.
+4. Pulsar **Guardar horario para 5 días**. El número cambia con la selección.
 
 Un horario común se guarda para los días elegidos. Para horarios distintos, realizar otra carga con los días correspondientes. Si se informa un error parcial, los días guardados ya fueron registrados: quedan seleccionados sólo los pendientes para reintentar. No volver a marcar los guardados para ese mismo intento.
 
@@ -39,13 +42,15 @@ La pantalla todavía no lista las reglas existentes ni permite editarlas/elimina
 ### Habilitar el mes
 
 1. Guardar los días y horarios de atención.
-2. En **2. Habilitar horarios del mes**, elegir el mes. Su último día debe estar dentro de la anticipación máxima configurada.
+2. En **2. Habilitar horarios del mes**, elegir el mes. Se habilita hasta el límite de anticipación configurado, aunque termine a mitad del mes.
 3. Pulsar **Habilitar horarios**. Se informa cuántos se crearon, ya existían o se omitieron por cierres.
 4. Consultar la semana habilitada; el calendario se actualiza al finalizar.
 
-Se procesa un mes por vez. Los 90 días son un límite de anticipación, no una generación automática. Todos los horarios nuevos duran 40 minutos; 08:00–20:00 produce 18 por día sin cierres. Repetir no duplica horarios ni cambia turnos asignados.
+Se procesa un mes por vez. La anticipación configurada es un límite, no una generación automática. El mes se muestra en español y, si el horizonte termina antes de fin de mes, sólo se habilitan fechas hasta ese límite. Todos los horarios nuevos duran 40 minutos; 08:00–20:00 produce 18 por día sin cierres. Repetir no duplica horarios ni cambia turnos asignados.
 
 Al habilitar el período se retiran únicamente franjas futuras de otra duración que estén LIBRES y sin turnos ni eventos históricos. Si un horario antiguo tiene compromisos o historial y se superpone con la grilla, se informa conflicto y se revierte toda la operación; no se borran citas ni se cancelan pacientes automáticamente. Las reservas antiguas conservan sus tiempos registrados, pero una franja de otra duración no admite reservas nuevas. No hace falta la migración mensual propuesta anteriormente.
+
+La agenda diaria y semanal oculta las franjas libres de otra duración que no tienen un turno vigente. Las reservas, cancelaciones y bloqueos siguen visibles; este filtro de pantalla no elimina registros de la BD.
 
 ## Registrar y buscar pacientes
 
@@ -58,6 +63,8 @@ También se puede dar de alta un paciente desde **Asignar turno**; al guardarlo 
 ## Consultar y navegar la agenda
 
 En **Agenda**, elegir **Día** o **Semana**. En día, el centro muestra **Hoy** sólo si la fecha seleccionada es la actual; los botones laterales muestran las fechas anterior y siguiente. En otra fecha aparece **Volver a hoy**. El selector permite ir directamente a una fecha y **Actualizar** vuelve a consultar los datos.
+
+La etiqueta **Reprogramado por el consultorio** identifica citas trasladadas después de una cancelación del consultorio o un cierre que afectaba al turno. Aparece en agenda diaria, semanal y en el diálogo del turno; se conserva al recargar y en movimientos posteriores. Un cambio voluntario del paciente no activa esta etiqueta.
 
 En semana se muestran siete días y se puede entrar a uno para gestionarlo. Los filtros del día permiten ver disponibles, reservados, atendidos, ausentes, bloqueados y cancelados. El resumen cuenta franjas, disponibilidad futura y turnos reservados/confirmados. No es un reporte de actividad por período.
 
@@ -94,15 +101,19 @@ Si otra persona ocupó la franja, el sistema informa conflicto y actualiza la ag
 
 ## Suspender atención o abrir una fecha extraordinaria
 
+Al elegir un rango horario o abrir una atención extraordinaria sin horario previo, **Desde** propone **08:00**. El horario se puede editar; la opción de día completo no requiere horas.
+
 En **Bloqueos y excepciones**, Administración o Médico elige:
 
 - **Bloquear horarios:** fecha completa o intervalo con motivo opcional.
 - **Feriado / día no laborable:** cierre manual de la fecha; no descarga feriados automáticamente.
-- **Apertura extraordinaria:** fecha e intervalo; usa la duración fija de 40 minutos, mostrada como lectura. Rechaza intervalos superpuestos con franjas vigentes. Una apertura no elimina un cierre existente.
+- **Apertura extraordinaria:** fecha e intervalo; usa la duración fija de 40 minutos. Rechaza intervalos superpuestos con franjas vigentes. Una apertura no elimina un cierre existente.
 
 Un cierre conserva los turnos y muestra un enlace a **Reprogramaciones** con la cantidad de afectados. Cancelar o mover un turno no habilita su horario anterior si sigue cerrado.
 
 ## Llamar y reprogramar pacientes afectados
+
+Cuando hay pendientes, **Reprogramaciones** muestra en el menú un contador rojo titilante. Desaparece al resolver todos. Se actualiza al realizar operaciones de agenda, volver a la ventana y cada 30 segundos mientras la aplicación está visible. El contador representa el total, aunque se filtre la lista. Si el dispositivo solicita reducir movimiento, conserva el aviso sin animación.
 
 1. Abrir **Reprogramaciones** en el menú, o el enlace que aparece tras bloquear horarios.
 2. Consultar nombre, DNI, teléfono, email, fecha/hora original y motivo de suspensión. Se puede filtrar por paciente/contacto y fecha original.

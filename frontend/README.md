@@ -47,9 +47,14 @@ El login se muestra al no existir sesión, sin ruta `/login` independiente. La n
 - Sesión almacenada en `localStorage` bajo `agendaSesion`. El rol mostrado no reemplaza la autorización del backend.
 - HTTP 401 cierra sesión; HTTP 403 muestra falta de permisos. `permisos.ts` concentra la matriz de la interfaz; la API vuelve a autorizar cada operación. Ver [roles y permisos](../docs/roles-permisos.md).
 - “Hoy” aparece en el centro sólo para la fecha actual; los controles laterales muestran fechas adyacentes. En otros días aparece “Volver a hoy”.
+- `lib/fechas.ts` determina “hoy” y presenta los horarios en Buenos Aires. Las fechas civiles se operan sin depender de la zona del navegador. `FechaInput` muestra día/mes/año en español y la generación mensual ofrece meses en español sin usar calendarios nativos.
 - Disponibilidad ofrece casillas por día, “Lunes a viernes”, “Toda la semana” y “Limpiar”. Se propone 08:00–20:00 como formulario nuevo, no como lectura de plantillas existentes.
 - La duración es fija en 40 minutos: no hay campo editable ni se envía una duración desde el cliente. Sólo se guarda el horizonte de reserva.
 - Guardar varios días realiza una petición por día, secuencialmente. No es una única transacción: si falla, se informan éxitos parciales y quedan seleccionados los pendientes.
 - GeneracionMensual habilita un mes por operación. El backend conserva reservas e historial; al terminar se actualiza el calendario. No hay cambio de duración ni regeneración asociada. “Próximo horario libre” muestra la primera alternativa.
 
 Ambas pantallas usan el mismo calendario semanal: dos peticiones por día más una consulta de excepciones por semana (15 en total). Los colores se resuelven en `lib/agendaVisual.ts`; `LeyendaAgenda` los explica sin depender sólo del color. Reprogramaciones consulta un DTO con contacto, sin pedir un paciente por fila. Mantener esta particularidad visible en análisis de rendimiento. Ver [arquitectura](../docs/arquitectura.md) y [manual](../docs/manual-usuario.md).
+
+Disponibilidad presenta días/horarios a la izquierda, configuración y generación a la derecha, y el calendario debajo. No repite avisos de duración. La anticipación inicial es de 45 días; la configuración persistida que devuelve la API es la fuente para reservar y generar. `BadgeReprogramacion` muestra la procedencia del consultorio según el indicador persistido de TurnoResponse, sin deducirla de textos ingresados.
+
+`useReprogramaciones` comparte los pendientes entre el menú y la pantalla de contactos. El menú muestra un contador titilante cuando hay pendientes. Refresca al operar la agenda, bloquear atención, volver a la ventana y cada 30 segundos mientras está visible; aborta solicitudes y limpia temporizadores al cambiar de sesión/profesional. Sólo consulta para roles con acceso a contactos. Un fallo transitorio conserva el último resultado y se informa en Reprogramaciones.

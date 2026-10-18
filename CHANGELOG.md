@@ -2,6 +2,18 @@
 
 Registro de cambios relevantes inspeccionados, no historial exhaustivo de cada commit ni acta de liberación productiva.
 
+## Fechas, disponibilidad y seguimiento de reprogramaciones
+
+Fecha y hora de negocio explícitas en Buenos Aires, controles de fecha en español y horario inicial 08:00 en Bloqueos y excepciones. Disponibilidad organiza los días a la izquierda, la configuración y generación a la derecha y el calendario debajo; oculta horarios antiguos vacíos y quita avisos repetidos de duración. La anticipación inicial es de 45 días y sigue siendo configurable. La procedencia de reprogramación del consultorio se conserva en BD y se muestra con una etiqueta; el menú avisa con un contador titilante si hay pendientes. Validación: 190 pruebas backend y 15 frontend aprobadas; build de frontend correcto.
+
+| Commit | Cambio y efecto |
+|---|---|
+| `1f53aa0` | Backend(fix): unifica fechas y horas en Buenos Aires y prueba límites de medianoche. |
+| `42d2bdc` | Backend(feat): conserva la procedencia de reprogramaciones del consultorio e incorpora SQL de recuperación con evidencia explícita. |
+| `53c5e3c` | Backend(fix): establece la anticipación inicial en 45 días. |
+| `66e29bf` | Frontend(fix): normaliza fechas, horarios y controles en español; Bloqueos propone inicio a las 08:00. |
+| `0d6f6c9` | Frontend(feat): reorganiza Disponibilidad y destaca reprogramaciones pendientes. |
+
 ## Roles, permisos y administración de cuentas
 
 Cuatro roles según matriz acordada: autorización HTTP, permisos de interfaz, datos mínimos para Obras sociales y pantalla de usuarios para Administración. Cambio de rol/contraseña invalida sesiones anteriores y se protege al último administrador activo. Pruebas HTTP y de render por rol, y persistencia en MySQL de prueba. Las contraseñas de la instalación se entregan por separado.

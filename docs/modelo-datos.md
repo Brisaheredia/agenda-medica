@@ -9,7 +9,7 @@ Modelo lógico derivado de las diez entidades JPA actuales. MySQL conserva confi
 | Usuario / usuarios | ID, email único, password_hash, rol, activo, created_at, updated_at. Cuenta operativa. |
 | Paciente / pacientes | ID, DNI único, nombre, apellido, teléfono/email opcionales, activo y marcas de tiempo. |
 | Profesional / profesionales | ID, nombre, apellido, matrícula única, activo y marcas de tiempo. |
-| ConfiguracionAgenda / configuracion_agenda | ID fijo 1, duracion_estandar_min, horizonte_reserva_dias. Duración fija 40; horizonte inicial 90 si falta la fila. La columna de duración se conserva por compatibilidad. |
+| ConfiguracionAgenda / configuracion_agenda | ID fijo 1, duracion_estandar_min, horizonte_reserva_dias. Duración fija 40; horizonte inicial 45 si falta la fila. La columna de duración se conserva por compatibilidad. |
 | PlantillaDisponibilidad / plantillas_disponibilidad | Profesional, día de semana, inicio/fin, duracion_min, vigencia_desde/hasta. |
 | ExcepcionAgenda / excepciones_agenda | Profesional, fecha, horas opcionales, tipo APERTURA/CIERRE, motivo. |
 | Franja / franjas | Profesional, inicio/fin concretos, estado, origen y version. |
@@ -94,10 +94,14 @@ No se dibuja una transición de reserva a confirmado porque no existe operación
 
 Los turnos nuevos duran exactamente 40 minutos por decisión del responsable. ConfiguracionAgenda expone la constante y rechaza cambios; la columna previa permanece por compatibilidad, sin autorizar otras duraciones. La plantilla conserva horarios/vigencia y puede contener duración histórica; la generación usa 40. El turno copia su compromiso y no se reescribe automáticamente.
 
-El esquema usa fecha/hora local sin offset. Alinear zona de JVM/BD/cliente. Las anotaciones de Jackson/JDBC no corrigen por sí mismas la zona de now().
+El esquema usa fecha/hora civil de Buenos Aires sin offset. `TiempoAgenda` fija la zona de los cálculos y timestamps del backend; el frontend interpreta estos valores como hora de Buenos Aires. Las anotaciones de Jackson/JDBC se mantienen alineadas, pero no reemplazan esa referencia explícita. La corrección de zona no modifica filas previas ni supone qué zona se usó al grabarlas.
 
 ## Evolución del esquema
 
 No se requiere la migración mensual: se retiraron vigente, inicio_vigente y el reemplazo de índices propuestos para cambios de duración. Si se llegó a aplicar ese script anterior sin regenerar meses, sus columnas adicionales pueden permanecer; la aplicación no las utiliza.
 
 Actualmente se usa `ddl-auto=update` para desarrollo y create-drop en test. Este cambio agrega dos columnas nullable; el [SQL aditivo](../backend/sql/2026-10-17-origen-cancelacion.sql) sirve para esquemas previos con DDL manual y sólo si las columnas faltan. No se migran motivos/orígenes por conjetura: cancelaciones anteriores permanecen sin origen conocido. Antes de producción incorporar migraciones revisadas, respaldo/restauración y una prueba de actualización desde una base anterior. No ejecutar SQL de corrección masiva sobre datos reales sin una migración y validación específicas.
+
+## Procedencia de una reprogramación
+
+`turnos.reprogramado_por_consultorio` es booleano, inicialmente false. Se activa al reprogramar por cancelación CONSULTORIO o cierre que afectaba al horario de origen, y conserva esa procedencia. No depende del motivo libre ni se borra al limpiar los campos actuales de cancelación. El [SQL aditivo](../backend/sql/2026-10-17-reprogramado-consultorio.sql) agrega la columna si falta y permite recuperar marcas antiguas sólo cuando existe una cancelación CONSULTORIO explícita seguida por un evento REPROGRAMACION. Los cierres antiguos sin causa inequívoca registrada no se infieren. Con ddl-auto=update, Hibernate agrega la columna al reiniciar; el UPDATE de recuperación se puede ejecutar por separado.

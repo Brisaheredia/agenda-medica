@@ -21,7 +21,7 @@ El filtro consulta usuarios mediante AgendaUserDetailsService. El esquema muestr
 | Información | Autoridad y aplicación actual |
 |---|---|
 | Duración y horizonte guardados | Duración fija de 40 como regla de negocio; sólo el horizonte es editable y se guarda en ConfiguracionAgenda. |
-| Configuración ausente | GET devuelve 40/90 desde un objeto nuevo, sin insertarlo. PUT lo persiste. |
+| Configuración ausente | GET devuelve 40 minutos y horizonte inicial de 45 días desde un objeto nuevo, sin insertarlo. PUT lo persiste. |
 | Regla semanal vigente | Plantilla persistida con día, horas, duración y vigencia. No existe listado/edición de reglas por API. |
 | Intervalo reservable | Franja persistida: inicio, fin y estado. La generación materializa intervalos de exactamente 40 minutos. |
 | Compromiso e historial | Turno, TurnoEvento y Auditoria persistidos. |
@@ -84,7 +84,7 @@ Se eliminó el circuito de regeneración y su migración. La consulta de pacient
 
 Spring Security exige autenticación y roles. JwtService firma HMAC con clave externa; contraseñas BCrypt; usuario y autoridades se cargan desde BD para requests autenticados. El cliente persiste sesión en localStorage. La autorización sigue la [matriz de cuatro roles](roles-permisos.md), con rutas explícitas y denegación por defecto. El JWT incluye rol y huella de credencial: un cambio de rol/contraseña o una desactivación invalida el acceso anterior. No hay refresh token ni lista de sesiones para cierre remoto individual. Seguridad devuelve JSON con 401 para sesión inválida y 403 para permiso insuficiente; el despacho de errores no queda bloqueado por autorización.
 
-Las fechas de negocio son LocalDate/LocalTime/LocalDateTime sin offset en JSON. JDBC/Jackson están configurados a Argentina, pero `now()` usa la zona de la JVM y el navegador interpreta fechas locales. Alinear zona de SO/JVM/navegador; no afirmar que la zona queda garantizada sólo por Jackson. No hay Clock inyectado para pruebas temporales.
+Las fechas de negocio son LocalDate/LocalTime/LocalDateTime sin offset en JSON y representan hora civil de Buenos Aires. `TiempoAgenda` obtiene fecha/hora explícitamente en America/Argentina/Buenos_Aires para reglas, eventos y timestamps, sin depender de la zona de la JVM; tiene una variante con Clock para probar instantes fijos. JDBC/Jackson mantienen la zona Argentina. `frontend/src/lib/fechas.ts` calcula hoy en esa zona, interpreta los horarios sin offset de la API como UTC-3 y respeta offsets explícitos. Las fechas civiles se desplazan con operaciones UTC sin cambiar su día; los horarios se muestran en Buenos Aires. Cambiar la zona del navegador o servidor no debe adelantar el día. La corrección no reescribe fechas ya persistidas.
 
 ## Decisiones registradas
 
