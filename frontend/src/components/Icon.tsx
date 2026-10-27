@@ -43,8 +43,8 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
     close: <path d="m6 6 12 12M6 18 18 6" />,
     refresh: (
       <>
-        <path d="M20 7v5h-5M4 17v-5h5" />
-        <path d="M6 7a7 7 0 0 1 12-2l2 2M18 17a7 7 0 0 1-12 2l-2-2" />
+        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+        <path d="M21 3v5h-5" />
       </>
     ),
     exit: (

@@ -156,20 +156,22 @@ export function AgendaPage(props: Props) {
             Volver a hoy
           </button>
         )}
-        <FechaInput
-          aria-label="Fecha de la agenda"
-          value={fecha}
-          disabled={busy}
-          onChange={cambiarFecha}
-        />
-        <button
-          className="secondary"
-          disabled={busy || cargando || !profesional}
-          onClick={() => setRevision((n) => n + 1)}
-        >
-          <Icon name="refresh" size={16} />
-          Actualizar
-        </button>
+        <div className="date-toolbar-actions">
+          <FechaInput
+            aria-label="Fecha de la agenda"
+            value={fecha}
+            disabled={busy}
+            onChange={cambiarFecha}
+          />
+          <button
+            className="secondary"
+            disabled={busy || cargando || !profesional}
+            onClick={() => setRevision((n) => n + 1)}
+          >
+            <Icon name="refresh" size={16} />
+            Actualizar
+          </button>
+        </div>
       </section>}
       {vista === "semana" && profesional && <CalendarioSemanalAgenda profesionalId={profesionalId} api={api} verContactos={verContactos} irAlDia={(dia) => { cambiarFecha(dia); setVista("dia"); }} />}
       {errorAgenda && (

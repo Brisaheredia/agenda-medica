@@ -450,7 +450,7 @@ a.nav-item {
 .date-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 15px;
   padding: 15px 17px;
   margin-bottom: 20px;
@@ -504,10 +504,18 @@ a.nav-item {
 }
 .date-toolbar input {
   font-size: 11px;
-  width: 135px;
-  padding: 10px 7px;
 }
-.date-toolbar > .secondary {
+.date-toolbar-actions {
+  display: grid;
+  grid-template-columns: minmax(0, .7fr) minmax(0, 1.4fr) minmax(0, .9fr) max-content;
+  align-items: start;
+  gap: 8px;
+  width: 380px;
+  max-width: 100%;
+}
+.date-toolbar-actions > .secondary {
+  grid-column: 4;
+  grid-row: 1;
   font-size: 11px;
 }
 .metrics {
@@ -1088,9 +1096,6 @@ a.nav-item {
   .date-title {
     flex-basis: calc(100% - 180px);
   }
-  .date-toolbar input {
-    margin-left: auto;
-  }
   .metrics {
     gap: 10px;
   }
@@ -1183,13 +1188,6 @@ a.nav-item {
   }
   .date-title strong {
     font-size: 12px;
-  }
-  .date-toolbar input {
-    width: 133px;
-    margin-left: 0;
-  }
-  .date-toolbar > .secondary {
-    width: 100%;
   }
   .metrics {
     grid-template-columns: 1fr;
@@ -1545,7 +1543,14 @@ a.nav-item {
 }
 .date-input input, .date-input select { margin: 0; padding: 10px 6px; min-height: 42px; }
 .date-input .date-clear { grid-column: 1 / -1; justify-self: end; padding: 0; }
-.date-toolbar > .date-input { width: 260px; margin-top: 0; }
+.date-toolbar-actions > .date-input {
+  display: contents;
+}
+.date-toolbar-actions .date-input .date-clear {
+  grid-column: 4;
+  grid-row: 2;
+  justify-self: center;
+}
 .availability-form fieldset {
   border: 0;
   padding: 0;
