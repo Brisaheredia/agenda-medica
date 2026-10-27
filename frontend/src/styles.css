@@ -455,6 +455,9 @@ a.nav-item {
   padding: 15px 17px;
   margin-bottom: 20px;
 }
+.date-toolbar > .text-button {
+  min-height: 42px;
+}
 .date-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(95px, 1.2fr) minmax(0, 1fr);
