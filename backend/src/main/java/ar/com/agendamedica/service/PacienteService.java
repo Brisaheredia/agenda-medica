@@ -8,10 +8,12 @@ import ar.com.agendamedica.exception.BadRequestException;
 import ar.com.agendamedica.exception.ConflictException;
 import ar.com.agendamedica.exception.ResourceNotFoundException;
 import ar.com.agendamedica.repository.PacienteRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class PacienteService {
@@ -40,9 +42,7 @@ public class PacienteService {
     @Transactional(readOnly = true)
     public List<PacienteResponse> buscar(String query) {
         if (query == null || query.isBlank()) {
-            return pacienteRepository.findAll().stream()
-                    .filter(Paciente::isActivo)
-                    .limit(20)
+            return pacienteRepository.findTop20ByActivoTrueOrderByApellidoAscNombreAsc().stream()
                     .map(PacienteResponse::from)
                     .toList();
         }
@@ -53,7 +53,12 @@ public class PacienteService {
             return List.of(PacienteResponse.from(exacto.get()));
         }
 
-        return pacienteRepository.findTop20ByActivoTrueAndApellidoContainingIgnoreCaseOrderByApellidoAscNombreAsc(q)
+        // Escapar metacaracteres de LIKE evita que % y _ amplíen la búsqueda.
+        String patron = "%" + q.toLowerCase(Locale.ROOT)
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_") + "%";
+        return pacienteRepository.buscarPorApellidoOTelefonoOEmail(patron, PageRequest.of(0, 20))
                 .stream()
                 .map(PacienteResponse::from)
                 .toList();
@@ -62,7 +67,7 @@ public class PacienteService {
     @Transactional(readOnly = true)
     public List<PacienteSeleccionResponse> seleccionar(String query) {
         if (query == null || query.trim().length() < 3) {
-            throw new BadRequestException("Ingresá al menos tres caracteres del apellido o el DNI completo");
+            throw new BadRequestException("Ingresá al menos tres caracteres del apellido, teléfono o email, o el DNI completo");
         }
         return buscar(query).stream().map(PacienteSeleccionResponse::from).toList();
     }

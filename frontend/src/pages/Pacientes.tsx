@@ -34,7 +34,7 @@ export function PacientesPage({
   const searchRef = useRef<AbortController | null>(null);
 
   const cargar = useCallback(
-    async (texto = query) => {
+    async (texto: string) => {
       searchRef.current?.abort();
       const controller = new AbortController();
       searchRef.current = controller;
@@ -52,7 +52,7 @@ export function PacientesPage({
         if (!controller.signal.aborted) setCargando(false);
       }
     },
-    [api, query],
+    [api],
   );
 
   useEffect(() => {
@@ -96,7 +96,7 @@ export function PacientesPage({
       );
       setModal(false);
       setMensaje(edicion ? "Paciente actualizado." : "Paciente creado.");
-      await cargar();
+      await cargar(query);
     } catch (e) {
       setError(detalleError(e));
     } finally {
@@ -115,7 +115,7 @@ export function PacientesPage({
         `Se desactivó a ${desactivar.apellido}, ${desactivar.nombre}.`,
       );
       setDesactivar(null);
-      await cargar();
+      await cargar(query);
     } catch (e) {
       setError(detalleError(e));
     } finally {
@@ -159,13 +159,13 @@ export function PacientesPage({
           void cargar(query);
         }}
       >
-        <label htmlFor="patients-search">Buscar por DNI o apellido</label>
+        <label htmlFor="patients-search">Buscar por DNI, apellido, teléfono o email</label>
         <div className="search-row">
           <input
             id="patients-search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ingresá un DNI o apellido"
+            placeholder="Ingresá DNI, apellido, teléfono o email"
           />
           <button className="secondary" disabled={cargando}>
             <Icon name="search" size={17} />

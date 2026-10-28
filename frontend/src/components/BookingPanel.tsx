@@ -53,7 +53,7 @@ export function BookingPanel({
   useEffect(() => () => searching.current?.abort(), []);
   async function buscar() {
     if (!gestionarPacientes && query.trim().length < 3) {
-      setError("Ingresá al menos tres caracteres del apellido o el DNI completo.");
+      setError("Ingresá al menos tres caracteres del apellido, teléfono o email, o el DNI completo.");
       return;
     }
     searching.current?.abort();
@@ -247,7 +247,7 @@ export function BookingPanel({
         >
           <input
             id="patient-search"
-            placeholder="Buscar por DNI o apellido"
+            placeholder="Buscar por DNI, apellido, teléfono o email"
             value={query}
             onChange={(e) => {
               searching.current?.abort();

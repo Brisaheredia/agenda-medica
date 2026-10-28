@@ -23,9 +23,9 @@ Roles: **A**=ADMIN, **R**=RECEPCION, **M**=MEDICO, **O**=OBRAS_SOCIALES, **T**=c
 |---|---|---|---|
 | POST | `/auth/login` | Público | 200 LoginResponse |
 | GET | `/profesionales` | T | 200 ProfesionalResponse[] activos |
-| GET | `/pacientes?query=` | A,M,R | 200 PacienteResponse[] |
+| GET | `/pacientes?query=` | A,M,R | 200 PacienteResponse[]; DNI exacto, apellido, teléfono o email; máximo 20 activos |
 | GET | `/pacientes/{id}` | A,M,R | 200 PacienteResponse |
-| GET | `/pacientes/seleccion?query=Apellido` | T | 200 PacienteSeleccionResponse[], mínimo tres caracteres |
+| GET | `/pacientes/seleccion?query=texto` | T | 200 PacienteSeleccionResponse[], mínimo tres caracteres; apellido, teléfono, email o DNI |
 | POST | `/pacientes` | A,R | 201 PacienteResponse |
 | PUT | `/pacientes/{id}` | A,R | 200 PacienteResponse |
 | DELETE | `/pacientes/{id}` | A,R | 204, baja lógica |
