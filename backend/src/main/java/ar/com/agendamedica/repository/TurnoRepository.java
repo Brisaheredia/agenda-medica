@@ -32,6 +32,18 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     List<Turno> findPorPeriodo(@Param("profesionalId") Long profesionalId,
                               @Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 
+    @Query("""
+            select t from Turno t join fetch t.paciente
+            where t.profesional.id = :profesionalId
+              and t.estado in :estados
+              and t.inicio < :hasta and t.fin > :desde
+            order by t.inicio asc, t.id asc
+            """)
+    List<Turno> findAfectadosPorCierre(@Param("profesionalId") Long profesionalId,
+                                      @Param("estados") List<EstadoTurno> estados,
+                                      @Param("desde") LocalDateTime desde,
+                                      @Param("hasta") LocalDateTime hasta);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from Turno t where t.id = :id")
     Optional<Turno> findByIdForUpdate(@Param("id") Long id);

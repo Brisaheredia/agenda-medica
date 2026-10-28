@@ -1843,3 +1843,41 @@ a.nav-item {
 .user-row:last-child { border-bottom: 0; }
 .user-row strong { overflow-wrap: anywhere; }
 .user-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+/* RF-10 / RN-07: revisión de turnos afectados antes del cierre */
+.block-preview {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #e8c280;
+  border-radius: 9px;
+  background: #fff8e8;
+  color: #704f14;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.block-preview p { margin: 0; }
+.block-preview-list {
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.block-preview-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  border-radius: 6px;
+}
+.block-preview-list li span { text-align: right; }
+.block-preview .secondary { justify-self: start; }
+@media (max-width: 540px) {
+  .block-preview-list li { flex-direction: column; gap: 2px; }
+  .block-preview-list li span { text-align: left; }
+}

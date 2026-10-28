@@ -27,7 +27,6 @@ import org.springframework.transaction.annotation.Isolation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -191,9 +190,22 @@ public class AgendaService {
         return new GenerarFranjasResponse(creadas, existentes, omitidas);
     }
 
+    @Transactional(readOnly = true)
+    public PrevisualizacionBloqueoResponse previsualizarBloqueo(BloqueoAgendaRequest request) {
+        validarFechaYHorario(request.fecha(), request.horaInicio(), request.horaFin());
+        obtenerProfesional(request.profesionalId());
+        List<TurnoEnBloqueoResponse> afectados = buscarTurnosAfectados(
+                request.profesionalId(), request.fecha(), request.horaInicio(), request.horaFin())
+                .stream().map(TurnoEnBloqueoResponse::from).toList();
+        return new PrevisualizacionBloqueoResponse(afectados.size(), afectados);
+    }
+
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ExcepcionAgendaResponse crearBloqueo(BloqueoAgendaRequest request) {
-        return crearExcepcion(new ExcepcionAgendaRequest(
+        if (request.turnosAfectadosEsperados() == null) {
+            throw new BadRequestException("Revisá primero los turnos afectados antes de confirmar el cierre");
+        }
+        return guardarExcepcion(new ExcepcionAgendaRequest(
                 request.profesionalId(),
                 request.fecha(),
                 request.horaInicio(),
@@ -201,19 +213,36 @@ public class AgendaService {
                 TipoExcepcionAgenda.CIERRE,
                 null,
                 request.motivo()
-        ));
+        ), request.turnosAfectadosEsperados());
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ExcepcionAgendaResponse crearExcepcion(ExcepcionAgendaRequest request) {
+        // Los cierres sólo se confirman por /bloqueos, después de revisar afectados.
+        if (request.tipo() == TipoExcepcionAgenda.CIERRE) {
+            throw new BadRequestException("Para crear cierres, usá la previsualización y confirmación de bloqueos");
+        }
+        return guardarExcepcion(request, null);
+    }
+
+    private ExcepcionAgendaResponse guardarExcepcion(ExcepcionAgendaRequest request,
+                                                     List<Long> turnosEsperados) {
         validarDuracion(request.duracionMin());
         Profesional profesional = bloquearProfesional(request.profesionalId());
 
-        if (request.fecha().isBefore(TiempoAgenda.hoy())) {
-            throw new BadRequestException("No se pueden crear excepciones en fechas pasadas");
-        }
+        validarFechaYHorario(request.fecha(), request.horaInicio(), request.horaFin());
 
-        validarRangoExcepcion(request);
+        // La misma exclusión mutua usada al reservar y reprogramar turnos evita
+        // altas simultáneas entre esta verificación y el guardado del cierre.
+        List<Long> turnosAfectados = List.of();
+        if (request.tipo() == TipoExcepcionAgenda.CIERRE) {
+            turnosAfectados = buscarTurnosAfectados(
+                    profesional.getId(), request.fecha(), request.horaInicio(), request.horaFin())
+                    .stream().map(Turno::getId).toList();
+            if (!turnosAfectados.equals(turnosEsperados)) {
+                throw new ConflictException("Los turnos afectados cambiaron. Volvé a revisar antes de confirmar el cierre");
+            }
+        }
 
         ExcepcionAgenda excepcion = new ExcepcionAgenda();
         excepcion.setProfesional(profesional);
@@ -226,7 +255,6 @@ public class AgendaService {
 
         int franjasCreadas = 0;
         int franjasBloqueadas = 0;
-        List<Long> turnosAfectados = new ArrayList<>();
 
         if (request.tipo() == TipoExcepcionAgenda.CIERRE) {
             List<Franja> franjas = franjasDelDia(profesional.getId(), request.fecha());
@@ -243,18 +271,6 @@ public class AgendaService {
                 }
             }
 
-            turnosAfectados = turnoRepository.findByProfesionalIdAndInicioBetweenOrderByInicioAsc(
-                            profesional.getId(),
-                            request.fecha().atStartOfDay(),
-                            request.fecha().plusDays(1).atStartOfDay().minusNanos(1))
-                    .stream()
-                    .filter(t -> ESTADOS_ACTIVOS.contains(t.getEstado()))
-                    .filter(t -> solapa(
-                            request,
-                            t.getInicio().toLocalTime(),
-                            t.getFin().toLocalTime()))
-                    .map(Turno::getId)
-                    .toList();
         } else {
             if (request.horaInicio() == null || request.horaFin() == null) {
                 throw new BadRequestException(
@@ -309,13 +325,23 @@ public class AgendaService {
         }
     }
 
-    private void validarRangoExcepcion(ExcepcionAgendaRequest request) {
-        if ((request.horaInicio() == null) != (request.horaFin() == null)) {
+    private void validarFechaYHorario(LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
+        if (fecha.isBefore(TiempoAgenda.hoy())) {
+            throw new BadRequestException("No se pueden crear excepciones en fechas pasadas");
+        }
+        if ((horaInicio == null) != (horaFin == null)) {
             throw new BadRequestException("horaInicio y horaFin deben informarse juntas");
         }
-        if (request.horaInicio() != null && !request.horaFin().isAfter(request.horaInicio())) {
+        if (horaInicio != null && !horaFin.isAfter(horaInicio)) {
             throw new BadRequestException("La hora de fin debe ser posterior a la hora de inicio");
         }
+    }
+
+    private List<Turno> buscarTurnosAfectados(Long profesionalId, LocalDate fecha,
+                                             LocalTime horaInicio, LocalTime horaFin) {
+        LocalDateTime desde = horaInicio == null ? fecha.atStartOfDay() : fecha.atTime(horaInicio);
+        LocalDateTime hasta = horaFin == null ? fecha.plusDays(1).atStartOfDay() : fecha.atTime(horaFin);
+        return turnoRepository.findAfectadosPorCierre(profesionalId, ESTADOS_ACTIVOS, desde, hasta);
     }
 
     private boolean solapa(ExcepcionAgendaRequest request, LocalTime inicio, LocalTime fin) {

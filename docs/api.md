@@ -95,10 +95,24 @@ La generación utiliza el horario vigente más reciente por día y siempre 40 mi
 
 ### Cierre, bloqueo y apertura
 
-POST `/agenda/bloqueos` recibe:
+Para cerrar una fecha o intervalo se requieren dos etapas (RF-10 / RN-07).
+
+1. POST `/api/agenda/bloqueos/previsualizacion` con `profesionalId`, `fecha`,
+   `horaInicio`, `horaFin` y `motivo` (sin `turnosAfectadosEsperados`). **No
+   escribe datos**. Responde `cantidadTurnosAfectados` y la lista
+   `turnosAfectados` con `turnoId`, nombre del paciente y horario.
+2. POST `/api/agenda/bloqueos` con los mismos datos más
+   `turnosAfectadosEsperados`, un arreglo con los IDs exactos de la vista previa
+   (también `[]` si no hay afectados). Se valida de nuevo dentro de una
+   transacción con bloqueo del profesional, antes de crear el cierre.
+   Si los afectados cambiaron, responde **409 Conflict**, sin guardar el cierre.
+   La interfaz requiere volver a revisar. Si no se envían los IDs revisados,
+   responde **400**.
+
+POST `/agenda/bloqueos` recibe, luego de la previsualización:
 
 ```json
-{"profesionalId":1,"fecha":"2026-10-20","horaInicio":"10:00","horaFin":"12:00","motivo":"Suspensión de atención"}
+{"profesionalId":1,"fecha":"2026-10-20","horaInicio":"10:00","horaFin":"12:00","motivo":"Suspensión de atención","turnosAfectadosEsperados":[12,15]}
 ```
 
 Ambas horas null/omitidas representan día completo; deben enviarse juntas si se usa intervalo. Fecha no pasada y motivo opcional hasta 255. El bloqueo se convierte en excepción CIERRE.
@@ -109,7 +123,7 @@ POST `/agenda/excepciones` usa el mismo núcleo más tipo y duración:
 {"profesionalId":1,"fecha":"2026-10-24","horaInicio":"08:00","horaFin":"12:00","tipo":"APERTURA","duracionMin":40,"motivo":"Atención extraordinaria"}
 ```
 
-Tipo obligatorio APERTURA/CIERRE. APERTURA exige ambas horas; duracionMin es opcional y sólo admite 40; para CIERRE la duración puede ser null. Se conservan compromisos y se devuelven afectados después de guardar.
+En este endpoint solo se admite APERTURA; cualquier CIERRE debe pasar por la previsualización y confirmación de `/api/agenda/bloqueos`. APERTURA exige ambas horas; duracionMin es opcional y sólo admite 40. Los cierres conservan compromisos y sus afectados siguen disponibles en Reprogramaciones después de guardar.
 
 ### Turnos
 

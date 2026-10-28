@@ -4,6 +4,16 @@ import { hoy } from "../types";
 import { Icon } from "../components/Icon";
 import { FechaInput } from "../components/FechaInput";
 
+type TurnoEnBloqueo = {
+  turnoId: number;
+  paciente: string;
+  horaInicio: string;
+  horaFin: string;
+};
+type PrevisualizacionBloqueo = {
+  cantidadTurnosAfectados: number;
+  turnosAfectados: TurnoEnBloqueo[];
+};
 type Resultado = {
   franjasCreadas: number;
   franjasBloqueadas: number;
@@ -26,6 +36,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [previsualizacion, setPrevisualizacion] = useState<PrevisualizacionBloqueo | null>(null);
 
   async function guardar(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,20 +52,30 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
       motivo: motivo.trim() || null,
     };
     try {
-      const path = esApertura
-        ? "/api/agenda/excepciones"
-        : "/api/agenda/bloqueos";
+      if (!esApertura && !previsualizacion) {
+        // Primera etapa: no modifica la agenda.
+        const previa = await api<PrevisualizacionBloqueo>(
+          "/api/agenda/bloqueos/previsualizacion",
+          { method: "POST", body: JSON.stringify(body) },
+        );
+        setPrevisualizacion(previa);
+        return;
+      }
+
+      const path = esApertura ? "/api/agenda/excepciones" : "/api/agenda/bloqueos";
       const payload = esApertura
         ? { ...body, tipo: "APERTURA" }
-        : body;
+        : { ...body, turnosAfectadosEsperados: previsualizacion!.turnosAfectados.map((t) => t.turnoId) };
       const response = await api<Resultado>(path, {
         method: "POST",
         body: JSON.stringify(payload),
       });
       setResultado(response);
+      setPrevisualizacion(null);
       setMotivo("");
       await onGuardado?.();
     } catch (e) {
+      setPrevisualizacion(null); // Un conflicto requiere consultar nuevamente los afectados.
       setError(detalleError(e));
     } finally {
       setBusy(false);
@@ -125,6 +146,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
                   setEsApertura(false);
                   setEsFeriado(false);
                   setResultado(null);
+                  setPrevisualizacion(null);
                 }}
               >
                 Bloquear horarios
@@ -137,6 +159,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
                   setEsApertura(true);
                   setEsFeriado(false);
                   setResultado(null);
+                  setPrevisualizacion(null);
                   if (!horaInicio) {
                     setHoraInicio("08:00");
                     setHoraFin("12:00");
@@ -156,6 +179,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
                   setHoraFin("");
                   setMotivo((actual) => actual || "Feriado / día no laborable");
                   setResultado(null);
+                  setPrevisualizacion(null);
                 }}
               >
                 Feriado / día no laborable
@@ -174,7 +198,10 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
                   min={hoy()}
                   required
                   value={fecha}
-                  onChange={setFecha}
+                  onChange={(value) => {
+                    setFecha(value);
+                    setPrevisualizacion(null);
+                  }}
                 />
               </label>
               <label>
@@ -182,7 +209,10 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
                 <input
                   maxLength={255}
                   value={motivo}
-                  onChange={(e) => setMotivo(e.target.value)}
+                  onChange={(e) => {
+                    setMotivo(e.target.value);
+                    setPrevisualizacion(null);
+                  }}
                   placeholder="Ej. feriado, capacitación"
                 />
               </label>
@@ -192,6 +222,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
                 type="checkbox"
                 checked={!horaInicio && !horaFin}
                 onChange={(e) => {
+                  setPrevisualizacion(null);
                   if (e.target.checked) {
                     setHoraInicio("");
                     setHoraFin("");
@@ -213,7 +244,10 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
                     type="time"
                     required
                     value={horaInicio}
-                    onChange={(e) => setHoraInicio(e.target.value)}
+                    onChange={(e) => {
+                      setHoraInicio(e.target.value);
+                      setPrevisualizacion(null);
+                    }}
                   />
                 </label>
                 <label>
@@ -223,7 +257,10 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
                     required
                     min={horaInicio}
                     value={horaFin}
-                    onChange={(e) => setHoraFin(e.target.value)}
+                    onChange={(e) => {
+                      setHoraFin(e.target.value);
+                      setPrevisualizacion(null);
+                    }}
                   />
                 </label>
 
@@ -234,17 +271,49 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
                 Para una apertura extraordinaria, indicá el horario.
               </p>
             )}
+            {!esApertura && previsualizacion && (
+              <div className="block-preview" role="status">
+                <strong>
+                  {previsualizacion.cantidadTurnosAfectados === 0
+                    ? "No hay turnos afectados por este cierre."
+                    : previsualizacion.cantidadTurnosAfectados === 1
+                      ? "1 turno se verá afectado por este cierre."
+                      : `${previsualizacion.cantidadTurnosAfectados} turnos se verán afectados por este cierre.`}
+                </strong>
+                {previsualizacion.turnosAfectados.length > 0 && (
+                  <>
+                    <p>Estos turnos se conservarán para reprogramarlos después:</p>
+                    <ul className="block-preview-list">
+                      {previsualizacion.turnosAfectados.map((turno) => (
+                        <li key={turno.turnoId}>
+                          <strong>{turno.paciente}</strong>
+                          <span>{turno.horaInicio.slice(0, 5)}–{turno.horaFin.slice(0, 5)} (turno #{turno.turnoId})</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                <p>Confirmá solo si corresponde suspender la atención. Los turnos no se borrarán.</p>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setPrevisualizacion(null)}
+                >
+                  Modificar antes de confirmar
+                </button>
+              </div>
+            )}
             <button
-              className="primary"
+              className={!esApertura && previsualizacion ? "danger" : "primary"}
               disabled={!profesionalId || busy || (esApertura && !horaInicio)}
             >
               {busy
-                ? "Guardando…"
+                ? "Procesando…"
                 : esApertura
                   ? "Crear apertura"
-                  : esFeriado
-                    ? "Registrar día no laborable"
-                    : "Crear bloqueo"}
+                  : previsualizacion
+                    ? "Confirmar cierre de agenda"
+                    : "Revisar turnos afectados"}
             </button>
           </fieldset>
         </form>

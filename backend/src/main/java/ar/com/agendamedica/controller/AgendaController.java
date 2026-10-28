@@ -55,6 +55,12 @@ public class AgendaController {
         return agendaService.crearExcepcion(request);
     }
 
+    @PostMapping("/bloqueos/previsualizacion")
+    public PrevisualizacionBloqueoResponse previsualizarBloqueo(
+            @Valid @RequestBody BloqueoAgendaRequest request) {
+        return agendaService.previsualizarBloqueo(request);
+    }
+
     @PostMapping("/bloqueos")
     @ResponseStatus(HttpStatus.CREATED)
     public ExcepcionAgendaResponse crearBloqueo(

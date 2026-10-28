@@ -65,7 +65,8 @@ public class SecurityConfig {
                                 "/api/agenda/plantillas",
                                 "/api/agenda/generar-franjas",
                                 "/api/agenda/excepciones",
-                                "/api/agenda/bloqueos")
+                                "/api/agenda/bloqueos",
+                                "/api/agenda/bloqueos/previsualizacion")
                         .hasAnyRole("ADMIN", "MEDICO")
 
                         .requestMatchers(HttpMethod.POST,

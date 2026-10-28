@@ -5,11 +5,13 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 public record BloqueoAgendaRequest(
         @NotNull Long profesionalId,
         @NotNull LocalDate fecha,
         LocalTime horaInicio,
         LocalTime horaFin,
-        @Size(max = 255) String motivo
+        @Size(max = 255) String motivo,
+        List<Long> turnosAfectadosEsperados
 ) {}
