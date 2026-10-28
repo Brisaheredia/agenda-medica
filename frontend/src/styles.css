@@ -1881,3 +1881,33 @@ a.nav-item {
   .block-preview-list li { flex-direction: column; gap: 2px; }
   .block-preview-list li span { text-align: left; }
 }
+
+/* RF-11: controles y navegación del rango sobre la estética existente de Semana. */
+.agenda-range-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 14px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.agenda-range-controls > label { min-width: 0; }
+.agenda-range-controls .date-input { max-width: none; }
+.agenda-range-controls .date-input input,
+.agenda-range-controls .date-input select { margin-top: 0; }
+.agenda-range-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+@media (max-width: 750px) {
+  .agenda-range-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .agenda-range-controls > button { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 480px) {
+  .agenda-range-controls { grid-template-columns: 1fr; }
+  .agenda-range-controls > button { grid-column: auto; }
+}

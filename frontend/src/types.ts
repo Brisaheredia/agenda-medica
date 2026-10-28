@@ -56,6 +56,12 @@ export type ExcepcionAgenda = {
   tipo: "CIERRE" | "APERTURA";
   motivo: string | null;
 };
+export type DiaAgendaRango = {
+  fecha: string;
+  franjas: Franja[];
+  turnos: Turno[];
+  excepciones: ExcepcionAgenda[];
+};
 export type TurnoAfectado = {
   turno: Turno;
   dni: string;

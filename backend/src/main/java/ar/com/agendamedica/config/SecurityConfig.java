@@ -97,7 +97,7 @@ public class SecurityConfig {
                                 "/api/profesionales", "/api/configuracion/agenda",
                                 "/api/turnos", "/api/turnos/*",
                                 "/api/agenda", "/api/agenda/disponibles",
-                                "/api/agenda/excepciones")
+                                "/api/agenda/excepciones", "/api/agenda/rango")
                         .hasAnyRole("ADMIN", "MEDICO", "RECEPCION", "OBRAS_SOCIALES")
                         .anyRequest().denyAll()
                 )

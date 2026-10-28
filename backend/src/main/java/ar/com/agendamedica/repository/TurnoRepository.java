@@ -21,6 +21,17 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     List<Turno> findByProfesionalIdAndEstadoInAndInicioLessThanAndFinGreaterThan(
             Long profesionalId, List<EstadoTurno> estados, LocalDateTime fin, LocalDateTime inicio);
 
+    @Query("""
+            select t from Turno t
+            join fetch t.paciente join fetch t.profesional join fetch t.franja
+            where t.profesional.id = :profesionalId
+              and t.inicio >= :desde and t.inicio < :hasta
+            order by t.inicio asc, t.id asc
+            """)
+    List<Turno> findInicioEnRango(@Param("profesionalId") Long profesionalId,
+                                  @Param("desde") LocalDateTime desde,
+                                  @Param("hasta") LocalDateTime hasta);
+
     @Query("select t.profesional.id from Turno t where t.id = :id")
     Optional<Long> findProfesionalId(@Param("id") Long id);
 

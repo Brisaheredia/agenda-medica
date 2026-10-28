@@ -17,6 +17,16 @@ public interface FranjaRepository extends JpaRepository<Franja, Long> {
     List<Franja> findByProfesionalIdAndEstadoAndInicioGreaterThanEqualOrderByInicioAsc(Long profesionalId, EstadoFranja estado, LocalDateTime desde);
     boolean existsByProfesionalIdAndInicioLessThanAndFinGreaterThan(Long profesionalId, LocalDateTime fin, LocalDateTime inicio);
 
+    @Query("""
+            select f from Franja f join fetch f.profesional
+            where f.profesional.id = :profesionalId
+              and f.inicio >= :desde and f.inicio < :hasta
+            order by f.inicio asc
+            """)
+    List<Franja> findPorRango(@Param("profesionalId") Long profesionalId,
+                              @Param("desde") LocalDateTime desde,
+                              @Param("hasta") LocalDateTime hasta);
+
     @Query("select f.profesional.id from Franja f where f.id = :id")
     Optional<Long> findProfesionalId(@Param("id") Long id);
 

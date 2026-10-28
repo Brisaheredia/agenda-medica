@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
-import type { ExcepcionAgenda, Franja, Turno } from "../types";
+import type { DiaAgendaRango, ExcepcionAgenda, Franja, Turno } from "../types";
 import { fechaLarga, hora, hoy, moverDia, lunesDe } from "../types";
 import { estadoVisual, franjasParaMostrar } from "../lib/agendaVisual";
 import { LeyendaAgenda } from "./LeyendaAgenda";
@@ -46,22 +46,17 @@ export function CalendarioSemanalAgenda({
     const controller = new AbortController();
     setCargando(true);
     setError("");
-    Promise.all([
-      api<ExcepcionAgenda[]>(`/api/agenda/excepciones?profesionalId=${profesionalId}&desde=${fechas[0]}&hasta=${fechas[6]}`, { signal: controller.signal }),
-      Promise.all(
-        fechas.map(async (fecha) => {
-          const query = `profesionalId=${profesionalId}&fecha=${fecha}`;
-          const [franjas, turnos] = await Promise.all([
-            api<Franja[]>(`/api/agenda?${query}`, { signal: controller.signal }),
-            api<Turno[]>(`/api/turnos?${query}`, { signal: controller.signal }),
-          ]);
-          return [fecha, { franjas: franjasParaMostrar(franjas, turnos), turnos }] as const;
-        }),
-      ),
-    ])
-      .then(([cierres, dias]) => {
-        setAgenda(Object.fromEntries(dias));
-        setExcepciones(cierres);
+    api<DiaAgendaRango[]>(
+      `/api/agenda/rango?profesionalId=${profesionalId}&desde=${fechas[0]}&hasta=${fechas[6]}`,
+      { signal: controller.signal },
+    )
+      .then((dias) => {
+        if (controller.signal.aborted) return;
+        setAgenda(Object.fromEntries(dias.map((dia) => [dia.fecha, {
+          franjas: franjasParaMostrar(dia.franjas, dia.turnos),
+          turnos: dia.turnos,
+        }])));
+        setExcepciones(dias.flatMap((dia) => dia.excepciones));
       })
       .catch((e) => {
         if (!abortado(e)) {

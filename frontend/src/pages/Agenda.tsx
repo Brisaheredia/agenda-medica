@@ -5,6 +5,7 @@ import { BookingPanel } from "../components/BookingPanel";
 import { Icon } from "../components/Icon";
 import type { Accion } from "../components/TurnoDialog";
 import { CalendarioSemanalAgenda } from "../components/CalendarioSemanalAgenda";
+import { CalendarioRangoAgenda } from "../components/CalendarioRangoAgenda";
 import { useState } from "react";
 import { LeyendaAgenda } from "../components/LeyendaAgenda";
 import { cierreDelHorario } from "../lib/agendaVisual";
@@ -79,7 +80,7 @@ export function AgendaPage(props: Props) {
     guardar,
     irAFranja,
   } = props;
-  const [vista, setVista] = useState<"dia" | "semana">("dia");
+  const [vista, setVista] = useState<"dia" | "semana" | "rango">("dia");
   const esHoy = fecha === hoy();
   const diaAnterior = moverDia(fecha, -1);
   const diaSiguiente = moverDia(fecha, 1);
@@ -96,17 +97,19 @@ export function AgendaPage(props: Props) {
     <>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">{vista === "dia" ? "ORGANIZACIÓN DIARIA" : "ORGANIZACIÓN SEMANAL"}</p>
+          <p className="eyebrow">{vista === "dia" ? "ORGANIZACIÓN DIARIA" : vista === "semana" ? "ORGANIZACIÓN SEMANAL" : "CONSULTA POR RANGO"}</p>
           <h1>Agenda del consultorio</h1>
           <p className="muted">
             {vista === "dia"
               ? "Todos los horarios del día, en un solo lugar."
-              : "Consultá los turnos y horarios de toda la semana."}
+              : vista === "semana" ? "Consultá los turnos y horarios de toda la semana."
+              : "Consultá horarios y turnos entre las fechas que elijas."}
           </p>
         </div>
         <div className="page-heading-actions agenda-view-toggle" role="group" aria-label="Vista de agenda">
           <button className={vista === "dia" ? "filter active" : "filter"} aria-pressed={vista === "dia"} onClick={() => setVista("dia")}>Día</button>
           <button className={vista === "semana" ? "filter active" : "filter"} aria-pressed={vista === "semana"} onClick={() => setVista("semana")}>Semana</button>
+          <button className={vista === "rango" ? "filter active" : "filter"} aria-pressed={vista === "rango"} onClick={() => setVista("rango")}>Rango</button>
         </div>
       </div>
       {mensaje && (
@@ -174,6 +177,7 @@ export function AgendaPage(props: Props) {
         </div>
       </section>}
       {vista === "semana" && profesional && <CalendarioSemanalAgenda profesionalId={profesionalId} api={api} verContactos={verContactos} irAlDia={(dia) => { cambiarFecha(dia); setVista("dia"); }} />}
+      {vista === "rango" && profesional && <CalendarioRangoAgenda profesionalId={profesionalId} api={api} verContactos={verContactos} irAlDia={(dia) => { cambiarFecha(dia); setVista("dia"); }} />}
       {errorAgenda && (
         <div className="alert error" role="alert">
           <span>{errorAgenda}</span>

@@ -31,6 +31,7 @@ Roles: **A**=ADMIN, **R**=RECEPCION, **M**=MEDICO, **O**=OBRAS_SOCIALES, **T**=c
 | DELETE | `/pacientes/{id}` | A,R | 204, baja lógica |
 | GET | `/agenda?profesionalId=1&fecha=2026-10-19` | T | 200 FranjaResponse[] |
 | GET | `/agenda/disponibles?profesionalId=1&desde=2026-10-19T08:00:00` | T | 200 FranjaResponse[] |
+| GET | `/agenda/rango?profesionalId=1&desde=2026-10-19&hasta=2026-10-25` | T | 200 AgendaDiaRangoResponse[]; hasta 90 días inclusivos |
 | GET | `/agenda/excepciones?profesionalId=1&desde=2026-10-19&hasta=2026-10-25` | T | 200 ExcepcionAgendaResumen[] |
 | GET | `/agenda/reprogramaciones-pendientes?profesionalId=1` | A,M,R | 200 TurnoAfectadoResponse[] |
 | POST | `/agenda/plantillas` | A,M | 201 PlantillaDisponibilidadResponse |
@@ -185,3 +186,17 @@ Spring Security responde JSON `{message}` con 401 ante sesión ausente/inválida
 La consulta de excepciones requiere profesionalId, desde y hasta (inclusive); rechaza hasta anterior a desde. Pendientes devuelve activos afectados por cierres y cancelados con origen CONSULTORIO, ordenados por inicio y sin duplicar por cierres solapados. Incluye fechas pasadas aún sin resolver y excluye cancelados por paciente o sin origen. No necesita una consulta por paciente. La lista con contactos sólo está disponible para A,M,R. O puede reprogramar desde la agenda; no recibe motivos de consulta/cancelación en TurnoResponse y al crear se ignora motivoConsulta. O sólo puede cancelar con origen PACIENTE (o null, que equivale a PACIENTE); CONSULTORIO devuelve 403.
 
 No existen GET de plantillas/conflictos, historial de eventos por turno, agenda arbitraria por rango, búsqueda de usuarios por email, alta de profesional, confirmación explícita, notificaciones ni portal público. Distinguirlos de operaciones previstas por el SRS. El [registro de pendientes](pendientes-riesgos.md) indica diferencias y prioridades.
+
+### Agenda por rango (RF-11)
+
+`GET /api/agenda/rango?profesionalId=1&desde=2026-10-19&hasta=2026-10-25`
+
+devuelve un elemento por **cada fecha** consultada, incluso si no tiene horarios:
+
+```json
+[
+  {"fecha":"2026-10-19","franjas":[],"turnos":[],"excepciones":[]}
+]
+```
+
+`franjas`, `turnos` y `excepciones` utilizan los mismos DTO que las consultas diarias; los turnos cancelados también se incluyen. El período es inclusivo (`desde`/`hasta`) y no puede superar **90 días**. Fechas en orden incorrecto y períodos demasiado largos producen 400. La vista semanal usa también este endpoint para evitar una solicitud por día. Usuarios de Obras Sociales reciben turnos sin `motivoConsulta` ni `motivoCancelacion`, como en `GET /api/turnos`. La consulta es de solo lectura y no genera franjas nuevas.
