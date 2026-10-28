@@ -200,3 +200,12 @@ devuelve un elemento por **cada fecha** consultada, incluso si no tiene horarios
 ```
 
 `franjas`, `turnos` y `excepciones` utilizan los mismos DTO que las consultas diarias; los turnos cancelados también se incluyen. El período es inclusivo (`desde`/`hasta`) y no puede superar **90 días**. Fechas en orden incorrecto y períodos demasiado largos producen 400. La vista semanal usa también este endpoint para evitar una solicitud por día. Usuarios de Obras Sociales reciben turnos sin `motivoConsulta` ni `motivoCancelacion`, como en `GET /api/turnos`. La consulta es de solo lectura y no genera franjas nuevas.
+
+### RF-13 / RN-09 — Historial de un turno y reprogramaciones trazables
+
+`GET /api/turnos/{id}/historial` — roles `ADMIN`, `MEDICO` o `RECEPCION` (401 si no hay sesión; 403 para `OBRAS_SOCIALES`).
+Devuelve eventos en orden cronológico (y por ID si comparten fecha), incluyendo `tipo`, `fecha`, `usuario` (email de quien operó, `null` para eventos viejos sin actor), franjas anterior/nueva, sus horarios y `detalle`. Si el turno no existe, devuelve 404. Sólo consulta: no altera los turnos.
+
+`POST /api/turnos/{id}/reprogramacion` ahora exige `franjaId` y `motivo` no vacío (máximo 500 caracteres). Toda operación de creación, cancelación, reprogramación o marcación de atención/ausencia guarda el usuario autenticado en el evento. Los eventos anteriores sin actor no se reescriben y en pantalla figuran como «Usuario no registrado (evento anterior)».
+
+En la agenda diaria y en Reprogramaciones hay un botón «Historial» que utiliza el diseño del modal existente. No hay migraciones SQL: la tabla `turno_eventos` ya contiene `usuario_id`, `franja_anterior_id`, `franja_nueva_id`, `detalle` y `fecha`.

@@ -13,12 +13,14 @@ import ar.com.agendamedica.dto.CancelarTurnoRequest;
 import ar.com.agendamedica.dto.CrearTurnoRequest;
 import ar.com.agendamedica.dto.ReprogramarTurnoRequest;
 import ar.com.agendamedica.dto.TurnoResponse;
+import ar.com.agendamedica.dto.TurnoHistorialResponse;
 import ar.com.agendamedica.dto.TurnoAfectadoResponse;
 import ar.com.agendamedica.exception.BadRequestException;
 import ar.com.agendamedica.exception.ConflictException;
 import ar.com.agendamedica.exception.ResourceNotFoundException;
 import ar.com.agendamedica.repository.TurnoEventoRepository;
 import ar.com.agendamedica.repository.TurnoRepository;
+import ar.com.agendamedica.repository.FranjaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
@@ -26,6 +28,11 @@ import org.springframework.transaction.annotation.Isolation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class TurnoService {
@@ -34,17 +41,20 @@ public class TurnoService {
 
     private final TurnoRepository turnoRepository;
     private final TurnoEventoRepository turnoEventoRepository;
+    private final FranjaRepository franjaRepository;
     private final DisponibilidadService disponibilidad;
     private final PacienteService pacienteService;
     private final AuditoriaService auditoriaService;
 
     public TurnoService(TurnoRepository turnoRepository,
                         TurnoEventoRepository turnoEventoRepository,
+                        FranjaRepository franjaRepository,
                         DisponibilidadService disponibilidad,
                         PacienteService pacienteService,
                         AuditoriaService auditoriaService) {
         this.turnoRepository = turnoRepository;
         this.turnoEventoRepository = turnoEventoRepository;
+        this.franjaRepository = franjaRepository;
         this.disponibilidad = disponibilidad;
         this.pacienteService = pacienteService;
         this.auditoriaService = auditoriaService;
@@ -153,12 +163,15 @@ public class TurnoService {
         turnoRepository.save(turno);
 
         String detalle = normalize(request.motivo());
+        if (detalle == null) {
+            throw new BadRequestException("El motivo de reprogramación es obligatorio");
+        }
         registrarEvento(
                 turno,
                 TipoEventoTurno.REPROGRAMACION,
                 franjaAnteriorId,
                 franjaNueva.getId(),
-                detalle == null ? "Turno reprogramado" : "Reprogramación: " + detalle
+                "Reprogramación: " + detalle
         );
         auditoriaService.registrar(
                 "REPROGRAMAR_TURNO",
@@ -185,6 +198,23 @@ public class TurnoService {
     @Transactional(readOnly = true)
     public TurnoResponse obtener(Long id) {
         return TurnoResponse.from(obtenerEntidad(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TurnoHistorialResponse> historial(Long id) {
+        // No se necesita bloquear el turno ni cambiar su estado para consultar los eventos.
+        if (!turnoRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Turno no encontrado: " + id);
+        }
+        var eventos = turnoEventoRepository.findByTurnoIdOrderByFechaAscIdAsc(id);
+        Set<Long> ids = new HashSet<>();
+        for (var evento : eventos) {
+            if (evento.getFranjaAnteriorId() != null) ids.add(evento.getFranjaAnteriorId());
+            if (evento.getFranjaNuevaId() != null) ids.add(evento.getFranjaNuevaId());
+        }
+        Map<Long, Franja> franjas = franjaRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Franja::getId, Function.identity()));
+        return eventos.stream().map(evento -> TurnoHistorialResponse.from(evento, franjas)).toList();
     }
 
     @Transactional(readOnly = true)
@@ -273,6 +303,7 @@ public class TurnoService {
         evento.setFranjaAnteriorId(franjaAnteriorId);
         evento.setFranjaNuevaId(franjaNuevaId);
         evento.setDetalle(detalle);
+        evento.setUsuario(auditoriaService.usuarioActualRequerido());
         turnoEventoRepository.save(evento);
     }
 

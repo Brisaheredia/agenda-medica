@@ -1911,3 +1911,12 @@ a.nav-item {
   .agenda-range-controls { grid-template-columns: 1fr; }
   .agenda-range-controls > button { grid-column: auto; }
 }
+
+/* RF-13: historial de turnos con el estilo de Auditoría y modales existentes. */
+.turno-history { padding: 0 1.25rem 1.25rem; max-height: min(72vh, 680px); overflow-y: auto; }
+.turno-history-list { max-height: none; }
+.turno-history .audit-event { min-width: 0; }
+.turno-history .audit-event-heading { flex-wrap: wrap; gap: .35rem; }
+.turno-history-change { display: grid; gap: .3rem; font-size: .9rem; margin: .5rem 0; }
+.turno-history-change span { overflow-wrap: anywhere; }
+.pending-actions { display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }

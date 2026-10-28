@@ -4,6 +4,7 @@ import ar.com.agendamedica.dto.CancelarTurnoRequest;
 import ar.com.agendamedica.dto.CrearTurnoRequest;
 import ar.com.agendamedica.dto.ReprogramarTurnoRequest;
 import ar.com.agendamedica.dto.TurnoResponse;
+import ar.com.agendamedica.dto.TurnoHistorialResponse;
 import ar.com.agendamedica.service.TurnoService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -46,6 +47,11 @@ public class TurnoController {
     @GetMapping("/{id}")
     public TurnoResponse obtener(@PathVariable Long id, Authentication authentication) {
         return visible(turnoService.obtener(id), authentication);
+    }
+
+    @GetMapping("/{id}/historial")
+    public List<TurnoHistorialResponse> historial(@PathVariable Long id) {
+        return turnoService.historial(id);
     }
 
     @PostMapping("/{id}/cancelacion")

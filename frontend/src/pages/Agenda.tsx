@@ -10,6 +10,7 @@ import { useState } from "react";
 import { LeyendaAgenda } from "../components/LeyendaAgenda";
 import { cierreDelHorario } from "../lib/agendaVisual";
 import { FechaInput } from "../components/FechaInput";
+import { HistorialTurnoDialog } from "../components/HistorialTurnoDialog";
 
 type Props = {
   busy: boolean;
@@ -81,6 +82,7 @@ export function AgendaPage(props: Props) {
     irAFranja,
   } = props;
   const [vista, setVista] = useState<"dia" | "semana" | "rango">("dia");
+  const [turnoHistorial, setTurnoHistorial] = useState<Turno | null>(null);
   const esHoy = fecha === hoy();
   const diaAnterior = moverDia(fecha, -1);
   const diaSiguiente = moverDia(fecha, 1);
@@ -273,6 +275,7 @@ export function AgendaPage(props: Props) {
               busy={busy}
               select={setSelected}
               action={(turno, tipo) => setDialog({ turno, tipo })}
+              historial={verContactos ? setTurnoHistorial : undefined}
             />
           )}
         </section>
@@ -299,6 +302,7 @@ export function AgendaPage(props: Props) {
           />
         )}
       </div>}
+      {turnoHistorial && <HistorialTurnoDialog key={turnoHistorial.id} turno={turnoHistorial} api={api} close={() => setTurnoHistorial(null)} />}
     </>
   );
 }

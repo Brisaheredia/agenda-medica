@@ -146,14 +146,11 @@ export function TurnoDialog({
           )}
           {(tipo === "cancelar" || tipo === "reprogramar") && (
             <label>
-              Motivo{" "}
-              {tipo === "reprogramar" && (
-                <span className="optional">(opcional)</span>
-              )}
+              Motivo
               <textarea
                 rows={3}
                 maxLength={500}
-                required={tipo === "cancelar"}
+                required
                 value={motivo}
                 onChange={(e) => setMotivo(e.target.value)}
               />
@@ -191,7 +188,7 @@ export function TurnoDialog({
               className={tipo === "cancelar" ? "danger" : "primary"}
               disabled={
                 tipo === "reprogramar"
-                  ? !destino || cargando
+                  ? !destino || cargando || !motivo.trim()
                   : tipo === "cancelar"
                     ? !motivo.trim()
                     : false

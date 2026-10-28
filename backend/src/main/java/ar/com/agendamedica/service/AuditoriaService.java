@@ -1,9 +1,11 @@
 package ar.com.agendamedica.service;
 
 import ar.com.agendamedica.domain.entity.Auditoria;
+import ar.com.agendamedica.domain.entity.Usuario;
 import ar.com.agendamedica.dto.AuditoriaResponse;
 import ar.com.agendamedica.repository.AuditoriaRepository;
 import ar.com.agendamedica.repository.UsuarioRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,17 @@ public class AuditoriaService {
         }
 
         auditoriaRepository.save(auditoria);
+    }
+
+    // Los eventos de turnos deben conservar quién realizó cada operación.
+    // Si la identidad ya no existe no se registra un evento anónimo.
+    public Usuario usuarioActualRequerido() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getName() == null) {
+            throw new AccessDeniedException("No se identificó al usuario de la operación");
+        }
+        return usuarioRepository.findByEmailIgnoreCase(auth.getName())
+                .orElseThrow(() -> new AccessDeniedException("Usuario de sesión no encontrado"));
     }
 
     @Transactional(readOnly = true)

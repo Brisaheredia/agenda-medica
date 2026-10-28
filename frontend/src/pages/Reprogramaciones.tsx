@@ -5,6 +5,7 @@ import type { Turno } from "../types";
 import type { Reprogramaciones } from "../hooks/useReprogramaciones";
 import { fechaLarga, hora } from "../types";
 import { TurnoDialog } from "../components/TurnoDialog";
+import { HistorialTurnoDialog } from "../components/HistorialTurnoDialog";
 import { FechaInput } from "../components/FechaInput";
 
 export function ReprogramacionesPage({ api, puedeGestionar, datos }: {
@@ -18,6 +19,7 @@ export function ReprogramacionesPage({ api, puedeGestionar, datos }: {
   const [busqueda, setBusqueda] = useState("");
   const [fecha, setFecha] = useState("");
   const [turno, setTurno] = useState<Turno | null>(null);
+  const [turnoHistorial, setTurnoHistorial] = useState<Turno | null>(null);
   const [busy, setBusy] = useState(false);
   const mutation = useRef(false);
 
@@ -67,10 +69,14 @@ export function ReprogramacionesPage({ api, puedeGestionar, datos }: {
           <td>{p.telefono && <a href={`tel:${p.telefono}`}>{p.telefono}</a>}{p.email && <a href={`mailto:${p.email}`}>{p.email}</a>}{!p.telefono && !p.email && <span>Sin contacto registrado. Completalo en Pacientes.</span>}</td>
           <td>{fechaLarga(p.turno.inicio.slice(0, 10))}<span>{hora(p.turno.inicio)}–{hora(p.turno.fin)}</span></td>
           <td>{p.motivo || "Suspensión del consultorio"}</td>
-          <td>{puedeGestionar ? <button className="secondary small" disabled={busy} onClick={() => setTurno(p.turno)}>Reprogramar</button> : "Sólo consulta"}</td>
+          <td><div className="pending-actions">
+            {puedeGestionar && <button className="secondary small" disabled={busy} onClick={() => setTurno(p.turno)}>Reprogramar</button>}
+            <button className="text-button" disabled={busy} onClick={() => setTurnoHistorial(p.turno)}>Historial</button>
+          </div></td>
         </tr>)}</tbody>
       </table></div>}
     </div>
+    {turnoHistorial && <HistorialTurnoDialog key={turnoHistorial.id} turno={turnoHistorial} api={api} close={() => setTurnoHistorial(null)} />}
     {turno && <TurnoDialog key={turno.id} turno={turno} tipo="reprogramar" api={api} busy={busy} close={() => setTurno(null)} submit={guardar} />}
   </section>;
 }

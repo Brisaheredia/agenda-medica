@@ -14,6 +14,7 @@ export function Agenda({
   busy,
   select,
   action,
+  historial,
 }: {
   franjas: Franja[];
   turnos: Turno[];
@@ -24,6 +25,7 @@ export function Agenda({
   cerrar: boolean;
   busy: boolean;
   select: (f: Franja) => void;
+  historial?: (t: Turno) => void;
   action: (
     t: Turno,
     tipo: "cancelar" | "reprogramar" | "atencion" | "ausencia",
@@ -130,10 +132,11 @@ export function Agenda({
                     : "Sin motivo informado.")}
             </p>
             {turno?.motivoCancelacion && <p>Motivo de cancelación: {turno.motivoCancelacion}</p>}
-            {turno?.estado === "CANCELADO" && turno.origenCancelacion === "CONSULTORIO" && gestionar && <button className="text-button" disabled={busy} onClick={() => action(turno, "reprogramar")}>Reprogramar</button>}
-            {turno && activo(turno) && (
+            {turno && (historial || activo(turno) || (turno.estado === "CANCELADO" && turno.origenCancelacion === "CONSULTORIO" && gestionar)) && (
               <div className="appointment-actions">
-                {gestionar && (
+                {historial && <button className="text-button" disabled={busy} onClick={() => historial(turno)}>Historial</button>}
+                {turno.estado === "CANCELADO" && turno.origenCancelacion === "CONSULTORIO" && gestionar && <button className="text-button" disabled={busy} onClick={() => action(turno, "reprogramar")}>Reprogramar</button>}
+                {activo(turno) && gestionar && (
                   <>
                     <button
                       className="text-button"
@@ -151,7 +154,7 @@ export function Agenda({
                     </button>
                   </>
                 )}
-                {cerrar && instanteAgenda(inicio).getTime() <= Date.now() && (
+                {activo(turno) && cerrar && instanteAgenda(inicio).getTime() <= Date.now() && (
                   <>
                     <button
                       className="text-button"

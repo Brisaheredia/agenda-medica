@@ -47,6 +47,19 @@ export type Turno = {
   motivoCancelacion?: string | null;
   reprogramadoPorConsultorio?: boolean;
 };
+export type EventoTurno = {
+  id: number;
+  tipo: "CREACION" | "CONFIRMACION" | "CANCELACION" | "REPROGRAMACION" | "ATENCION" | "AUSENCIA";
+  fecha: string;
+  usuario: string | null;
+  franjaAnteriorId: number | null;
+  inicioAnterior: string | null;
+  finAnterior: string | null;
+  franjaNuevaId: number | null;
+  inicioNuevo: string | null;
+  finNuevo: string | null;
+  detalle: string | null;
+};
 export type ExcepcionAgenda = {
   id: number;
   profesionalId: number;
