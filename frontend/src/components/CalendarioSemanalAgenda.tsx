@@ -1,23 +1,10 @@
 import { useEffect, useState } from "react";
 import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
-import type { DiaAgendaRango, ExcepcionAgenda, Franja, Turno } from "../types";
-import { fechaLarga, hora, hoy, moverDia, lunesDe } from "../types";
-import { estadoVisual, franjasParaMostrar } from "../lib/agendaVisual";
+import type { DiaAgendaRango } from "../types";
+import { fechaLarga, hoy, moverDia, lunesDe } from "../types";
 import { LeyendaAgenda } from "./LeyendaAgenda";
-import { BadgeReprogramacion } from "./BadgeReprogramacion";
-
-type DiaAgenda = { franjas: Franja[]; turnos: Turno[] };
-
-const nombresDias = [
-  "Lunes",
-  "Martes",
-  "Miércoles",
-  "Jueves",
-  "Viernes",
-  "Sábado",
-  "Domingo",
-];
+import { DiaCalendarioAgenda } from "./DiaCalendarioAgenda";
 
 export function CalendarioSemanalAgenda({
   profesionalId,
@@ -33,10 +20,9 @@ export function CalendarioSemanalAgenda({
   verContactos?: boolean;
 }) {
   const [inicioSemana, setInicioSemana] = useState(() => lunesDe(hoy()));
-  const [agenda, setAgenda] = useState<Record<string, DiaAgenda>>({});
+  const [agenda, setAgenda] = useState<Record<string, DiaAgendaRango>>({});
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
-  const [excepciones, setExcepciones] = useState<ExcepcionAgenda[]>([]);
   const fechas = Array.from({ length: 7 }, (_, index) =>
     moverDia(inicioSemana, index),
   );
@@ -52,17 +38,12 @@ export function CalendarioSemanalAgenda({
     )
       .then((dias) => {
         if (controller.signal.aborted) return;
-        setAgenda(Object.fromEntries(dias.map((dia) => [dia.fecha, {
-          franjas: franjasParaMostrar(dia.franjas, dia.turnos),
-          turnos: dia.turnos,
-        }])));
-        setExcepciones(dias.flatMap((dia) => dia.excepciones));
+        setAgenda(Object.fromEntries(dias.map((dia) => [dia.fecha, dia])));
       })
       .catch((e) => {
         if (!abortado(e)) {
           setError(detalleError(e));
           setAgenda({});
-          setExcepciones([]);
         }
       })
       .finally(() => {
@@ -117,93 +98,16 @@ export function CalendarioSemanalAgenda({
       )}
       <LeyendaAgenda />
       <div className="availability-week-grid">
-        {fechas.map((fecha, index) => {
-          const dia = agenda[fecha];
-          const turnosPorFranja = new Map(
-            dia?.turnos
-              .filter((turno) => turno.estado !== "CANCELADO")
-              .map((turno) => [turno.franjaId, turno]),
-          );
-          const filas: { franja?: Franja; turno?: Turno }[] = (
-            dia?.franjas ?? []
-          ).map((franja) => ({
-            franja,
-            turno: turnosPorFranja.get(franja.id),
-          }));
-          (dia?.turnos ?? [])
-            .filter(
-              (turno) =>
-                turno.estado === "CANCELADO" ||
-                !dia?.franjas.some((franja) => franja.id === turno.franjaId),
-            )
-            .forEach((turno) => filas.push({ turno }));
-          const cierres = excepciones.filter((e) => e.fecha === fecha && e.tipo === "CIERRE");
-          const estados = filas.map(({ franja, turno }) => estadoVisual(franja, turno, excepciones).clase);
-          const colorDia = cierres.length || estados.includes("consultorio") ? "consultorio"
-            : estados.includes("libre") ? "libre" : estados.includes("paciente") ? "paciente"
-            : estados.includes("ocupado") ? "ocupado" : "neutro";
-          return (
-            <section
-              className={`availability-day day-${colorDia} ${index === 6 ? "is-sunday" : ""} ${fecha === hoy() ? "is-today" : ""}`}
-              key={fecha}
-            >
-              <button
-                className="agenda-week-day"
-                onClick={() => irAlDia?.(fecha)}
-                disabled={!irAlDia}
-              >
-                <span>{nombresDias[index]}</span>
-                <strong>
-                  {Number(fecha.slice(8, 10))}
-                </strong>
-              </button>
-              {!cargando && cierres.map((cierre) => <p className="closure-note" key={cierre.id}>
-                {cierre.horaInicio ? `Cierre ${cierre.horaInicio.slice(0, 5)}–${cierre.horaFin?.slice(0, 5) ?? "fin del día"}` : "Día cerrado"}
-                {cierre.motivo && <span>{cierre.motivo}</span>}
-              </p>)}
-              {!cargando && verContactos && colorDia === "consultorio" && <a className="reprogram-link" href="/reprogramaciones">Ver reprogramaciones</a>}
-              {cargando ? (
-                <p className="availability-empty">Cargando…</p>
-              ) : !filas.length ? (
-                <p className="availability-empty">Sin horarios</p>
-              ) : (
-                <ul>
-                  {filas
-                    .sort((a, b) =>
-                      (a.turno?.inicio ?? a.franja?.inicio ?? "").localeCompare(
-                        b.turno?.inicio ?? b.franja?.inicio ?? "",
-                      ),
-                    )
-                    .map(({ franja, turno }, slotIndex) => {
-                      const visual = estadoVisual(franja, turno, excepciones);
-                      const inicio = turno?.inicio ?? franja?.inicio ?? "";
-                      const fin = turno?.fin ?? franja?.fin;
-                      return (
-                        <li
-                          className={`agenda-week-slot status-${visual.clase}`}
-                          key={
-                            turno
-                              ? `t-${turno.id}`
-                              : `f-${franja?.id}-${slotIndex}`
-                          }
-                        >
-                          <strong>
-                            {hora(inicio)}
-                            {fin ? `–${hora(fin)}` : ""}
-                          </strong>
-                          <span>
-                            {turno?.paciente ?? visual.etiqueta}
-                          </span>
-                          {turno && <small>{visual.etiqueta}</small>}
-                          {turno && <BadgeReprogramacion turno={turno} />}
-                        </li>
-                      );
-                    })}
-                </ul>
-              )}
-            </section>
-          );
-        })}
+        {fechas.map((fecha) => (
+          <DiaCalendarioAgenda
+            key={fecha}
+            fecha={fecha}
+            dia={agenda[fecha]}
+            irAlDia={irAlDia}
+            verContactos={verContactos}
+            cargando={cargando}
+          />
+        ))}
       </div>
     </section>
   );

@@ -1,31 +1,13 @@
 import { useEffect, useState } from "react";
 import type { Api } from "../api";
 import { abortado, detalleError } from "../api";
-import type { DiaAgendaRango, Franja, Turno } from "../types";
-import { fechaCorta, fechaLarga, hora, hoy, moverDia } from "../types";
-import { estadoVisual, franjasParaMostrar } from "../lib/agendaVisual";
+import type { DiaAgendaRango } from "../types";
+import { fechaCorta, hoy, moverDia } from "../types";
 import { FechaInput } from "./FechaInput";
 import { LeyendaAgenda } from "./LeyendaAgenda";
-import { BadgeReprogramacion } from "./BadgeReprogramacion";
+import { DiaCalendarioAgenda } from "./DiaCalendarioAgenda";
 
-const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const DIAS_POR_PAGINA = 7;
-
-function filasDelDia(dia: DiaAgendaRango) {
-  const franjas = franjasParaMostrar(dia.franjas, dia.turnos);
-  const porFranja = new Map(dia.turnos.filter(t => t.estado !== "CANCELADO").map(t => [t.franjaId, t]));
-  const idsFranja = new Set(franjas.map(franja => franja.id));
-  const filas: { franja?: Franja; turno?: Turno }[] = franjas.map(franja => ({
-    franja, turno: porFranja.get(franja.id),
-  }));
-  for (const turno of dia.turnos) {
-    if (turno.estado === "CANCELADO" || !idsFranja.has(turno.franjaId)) {
-      filas.push({ turno });
-    }
-  }
-  return filas.sort((a, b) => (a.turno?.inicio ?? a.franja?.inicio ?? "")
-    .localeCompare(b.turno?.inicio ?? b.franja?.inicio ?? ""));
-}
 
 export function CalendarioRangoAgenda({ profesionalId, api, irAlDia, verContactos = true }: {
   profesionalId?: number;
@@ -105,41 +87,15 @@ export function CalendarioRangoAgenda({ profesionalId, api, irAlDia, verContacto
     {cargando ? <p className="availability-empty">Cargando horarios…</p>
       : diasVisibles.length === 0 ? <p className="availability-empty">No hay días para mostrar.</p>
       : <div className="availability-week-grid" style={{ gridTemplateColumns: `repeat(${diasVisibles.length}, minmax(105px, 1fr))` }}>
-        {diasVisibles.map(dia => {
-          const filas = filasDelDia(dia);
-          const cierres = dia.excepciones.filter(e => e.tipo === "CIERRE");
-          const estados = filas.map(({ franja, turno }) => estadoVisual(franja, turno, dia.excepciones).clase);
-          const colorDia = cierres.length || estados.includes("consultorio") ? "consultorio"
-            : estados.includes("libre") ? "libre" : estados.includes("paciente") ? "paciente"
-            : estados.includes("ocupado") ? "ocupado" : "neutro";
-          const numeroDia = new Date(`${dia.fecha}T12:00:00Z`).getUTCDay();
-          return <section className={`availability-day day-${colorDia} ${numeroDia === 0 ? "is-sunday" : ""} ${dia.fecha === hoy() ? "is-today" : ""}`} key={dia.fecha}>
-            <button className="agenda-week-day" onClick={() => irAlDia(dia.fecha)}
-              aria-label={`Abrir agenda del ${fechaLarga(dia.fecha)}`} title="Abrir agenda del día">
-              <span>{diasSemana[numeroDia]}</span>
-              <strong>{Number(dia.fecha.slice(8, 10))}</strong>
-            </button>
-            {cierres.map(cierre => <p key={cierre.id} className="closure-note">
-              {cierre.horaInicio ? `Cierre ${cierre.horaInicio.slice(0, 5)}–${cierre.horaFin?.slice(0, 5) ?? "fin del día"}` : "Día cerrado"}
-              {cierre.motivo && <span>{cierre.motivo}</span>}
-            </p>)}
-            {verContactos && colorDia === "consultorio" && <a className="reprogram-link" href="/reprogramaciones">Ver reprogramaciones</a>}
-            {!filas.length ? <p className="availability-empty">Sin horarios</p> : <ul>
-              {filas.map(({ franja, turno }, indice) => {
-                const visual = estadoVisual(franja, turno, dia.excepciones);
-                const inicio = turno?.inicio ?? franja?.inicio ?? "";
-                const fin = turno?.fin ?? franja?.fin ?? "";
-                return <li className={`agenda-week-slot status-${visual.clase}`}
-                  key={turno ? `t-${turno.id}` : `f-${franja?.id}-${indice}`}>
-                  <strong>{hora(inicio)}–{hora(fin)}</strong>
-                  <span>{turno?.paciente ?? visual.etiqueta}</span>
-                  {turno && <small>{visual.etiqueta}</small>}
-                  {turno && <BadgeReprogramacion turno={turno} />}
-                </li>;
-              })}
-            </ul>}
-          </section>;
-        })}
+        {diasVisibles.map(dia => (
+          <DiaCalendarioAgenda
+            key={dia.fecha}
+            fecha={dia.fecha}
+            dia={dia}
+            irAlDia={irAlDia}
+            verContactos={verContactos}
+          />
+        ))}
       </div>}
   </section>;
 }
