@@ -1,37 +1,31 @@
-# Pendientes, defectos y riesgos
+# Pendientes y riesgos — alcance vigente
 
-Registro actualizado el 17 de octubre de 2026. P1 indica impedimento para dar por cerrado el circuito operativo; P2 consolidación del MVP; P3 mejora posterior. “Inspección” y “riesgo” no equivalen a reproducción E2E. No se asignan responsables ni fechas ficticias: el equipo debe completarlos al planificar.
+**Actualizado:** 29/10/2026. Este registro distingue riesgos técnicos reales, verificación pendiente y funcionalidades explícitamente **fuera del alcance**. No se asignan fechas, responsables ni estados de pruebas sin evidencia.
 
-| ID | Prioridad y evidencia | Situación y cierre verificable |
+## Riesgos que pueden afectar la entrega
+
+| ID | Prioridad | Situación y criterio de cierre |
 |---|---|---|
-| INC-01 | Corregido en código y prueba de límite mensual | Generación/apertura iteran con LocalDateTime y límite de fin. Se comprueba 23:00–23:59 sin desbordar ni continuar indefinidamente; CA-14 ampliado. |
-| INC-02 | Corregido para escrituras de aplicación, integración MySQL | Generación/apertura rechazan superposición; generación limpia sólo libres antiguas sin historial. Reserva valida por intervalo con bloqueo por profesional, incluso entre IDs diferentes. No se requiere migración mensual; los compromisos e historia previos se conservan. |
-| INC-03 | Corregido, pruebas unitarias e integración MySQL | DisponibilidadService conserva bloqueo al cancelar/reprogramar y rechaza destinos cerrados; CA-08/09 con validación UI pendiente. |
-| INC-04 | Implementado, integración MySQL aprobada | Reprogramaciones recupera turnos/contactos/motivo y permite resolver individualmente, excluyendo cancelaciones del paciente. CA-10 visual pendiente. |
-| INC-05 | Parcial, prueba concurrente aprobada | Turno con bloqueo común y franjas ordenadas por ID. Dos reprogramaciones del mismo turno no dejan franjas huérfanas en test. Falta intercalar cierres/generación y otras combinaciones; CA-18. |
-| INC-06 | Corregido en código, integración mensual | Duración fija de 40 en backend y frontend; rechaza otros valores. El seed ya no genera franjas. Las citas antiguas conservan su tiempo, pero franjas de otra duración no admiten nuevas reservas; CA-17. |
-| INC-07 | P2, inspección | Búsqueda de Pacientes depende de query y recarga lista sin filtro al escribir. Definir búsqueda explícita o con demora y validar CA-05. |
-| INC-08 | P2, inspección | No hay edición/listado/reemplazo integral de reglas; la planificación mensual selecciona la última regla vigente por día, pero no hay pantalla de edición/listado de reglas. Completar administración sin destruir compromisos. |
-| INC-09 | Corregido en permisos y parámetros HTTP, prueba automatizada | 401 JSON para sesión inválida, 403 para permiso insuficiente y despacho de errores permitido. Parámetro obligatorio omitido conserva 400. No se homogeneizan todos los errores técnicos. |
-| INC-10 | P2, inspección | TurnoEvento no asigna usuario aunque exista campo; motivo de reprogramación opcional. Resolver RN-09 y prueba de actor; CA-09. |
-| INC-11 | Parcial, inspección y smoke de lógica | Disponibles limita pasado a ahora y excluye cierres. Reprogramación lista alternativas desde fecha; reserva rápida muestra primera. No hay hasta ni agenda arbitraria por rango; CA-13. |
-| INC-12 | P2, inspección | Reprogramar permite turno original pasado si sigue activo. Definir y aplicar excepción administrativa del SRS. |
-| INC-13 | Corregido para ejecución local | JWT propio de test; 14 pruebas de integración y 9 unitarias aprobadas. Docker local requirió api.version=1.44. CI remoto no consultado. |
-| INC-14 | P2 antes de despliegue, inspección | CORS abierto, ddl-auto update y falta de migraciones/operación productiva. Aplicar configuración y CA-15. |
-| INC-15 | P3, inspección | Pacientes sin query carga todos y limita en memoria; apertura consulta franjas en cada iteración; semana hace 15 GET. Medir y optimizar consultas según RNF. |
+| R-01 | Media | Contrastar manual y API con el producto final tras retirar aperturas extraordinarias. Deben permanecer los cierres con vista previa, turnos afectados y reprogramación manual. |
+| R-02 | Media | Base de datos con franjas antiguas fuera del horario fijo: no ofrecer nuevas reservas en esas franjas; no borrar turnos históricos. Revisar en el entorno local. |
+| R-03 | Media | La documentación y referencias de pruebas conocidas se ajustaron al nuevo alcance. Verificar ejecución y cobertura de la suite actual durante la etapa formal de Testing. |
+| R-04 | Media | Revisar versiones de pruebas, compilación completa, restricciones de roles y concurrencia sobre el commit definitivo. La revisión estática no equivale a aceptación. |
+| R-05 | Baja en el TP / alta si se despliega | CORS permisivo de desarrollo, configuración de esquema, HTTPS y recuperación de respaldos deben revisarse antes de usar datos reales o desplegar públicamente. |
+| R-06 | Baja | Posible consulta adicional por turno en agenda diaria; medir N+1/costo SQL si el volumen crece. No justificar una reestructuración grande sin datos. |
 
-## Correcciones ya incorporadas
+## Cambios funcionales ya incorporados (inspección de código)
 
-- `c93ccc0`: duración inicial de configuración pasó a 40; no migra registros existentes.
-- `6999346`: calendario incluye profesionalId; selección múltiple de días y duración semanal desde configuración guardada; pasos y recarga tras generación.
-- `96fc37a`: fecha seleccionada al centro, Hoy sólo si corresponde y fechas adyacentes.
+- Búsqueda de pacientes por DNI, apellido, teléfono y email.
+- Previsualización y revalidación transaccional de afectados antes de un cierre.
+- Agenda por día/semana/rango e historial del turno, con actor y motivo en eventos nuevos.
+- Horario fijo lunes a viernes 08:00–20:00, franjas de 40 minutos; habilitación del mes actual y los tres siguientes.
+- Modularización de planificación y representación diaria compartida en frontend.
+- Retiro de la creación de aperturas extraordinarias; lectura de registros históricos conservada.
 
-La corrección del parámetro evita el 403 observado en ese calendario; no corrige todo el tratamiento HTTP del backend. La selección múltiple tampoco crea una transacción común de varios días.
+## Funcionalidades deliberadamente excluidas
 
-## Decisiones de alcance pendientes
+Administración de plantillas, variaciones permanentes del horario habitual, aperturas extraordinarias, reportes periódicos, historia clínica, pagos, recetas, notificaciones, portal paciente, optimización automática de reprogramaciones, sede/profesional múltiple. **No son tickets de corrección pendientes**: requieren un nuevo acuerdo de alcance.
 
-Se implementó la [matriz de cuatro roles solicitada](roles-permisos.md), con autorización HTTP y controles de interfaz. Quedan por definir el momento de previsualización de afectados y la obligatoriedad del motivo de reprogramación. Definir responsable técnico, respaldo, retención y recuperación. No expandir automáticamente a recordatorios, sincronización de feriados, reportes o portal paciente: requieren acuerdo específico.
+## Próximas actividades académicas
 
-## Orden de implementación
-
-Validar visualmente INC-01/02/03/04, la generación con 40 fijos y la conservación del legado; después completar aceptación visual y operativa de permisos. Mantener mejoras de uso pequeñas cuando no comprometan esas reglas. Los cambios de esquema requieren un plan de datos previo. Relacionar cada cierre con el caso de [aceptación](pruebas-aceptacion.md), código y evidencia, y actualizar este registro.
+Preparar documento de roles, tareas y herramientas con evidencias reales; revisar repositorio y empaquetado. Formalizar después la suite de Testing exigida por la cátedra, sin inventar resultados. Consultar [requisitos](requisitos.md), [trazabilidad](trazabilidad.md) y [pruebas](pruebas-aceptacion.md).

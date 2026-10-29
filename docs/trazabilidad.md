@@ -1,63 +1,49 @@
-# Trazabilidad de requisitos y evidencias
+# Trazabilidad de implementación y calidad
 
-Actualizado con colores y reprogramaciones, 17 de octubre de 2026. Relaciona requisitos del DOCX con implementación y verificaciones. Los casos CA son planes de aceptación, no ejecuciones aprobadas; el estado se mantiene en [pruebas](pruebas-aceptacion.md).
+**Base:** alcance acordado con Salvador y correspondencia con RF/RN/RNF del documento inicial. Estado: 29/10/2026, posterior a refactorización de agenda y retiro de aperturas. La verificación formal corresponde a la entrega de Testing.
 
-## Funcionalidad
+## Necesidades → implementación → comprobación prevista
 
-Las rutas de archivos se expresan desde la raíz del repositorio. Para prioridades y diferencias consultar [requisitos](requisitos.md) y [pendientes](pendientes-riesgos.md).
-
-| RF | Regla relacionada | Implementación principal | Verificación |
-|---|---|---|---|
-| RF-01 | RN-16 | AuthController/AuthService, security/, Login y api.ts | CA-01/12 |
-| RF-02 | RN-10/20 | PacienteService/Repository, Pacientes y PacienteForm | CA-05 |
-| RF-03 | RN-04/14 | AgendaService.crearPlantilla, Disponibilidad | CA-03/04/17 |
-| RF-04 | RN-04/05/13 | AgendaService.generarFranjas y GeneracionMensual, FranjaRepository | CA-03/07/14 |
-| RF-05 | RN-01/12 | AgendaController, TurnoController, useAgenda, Agenda | CA-06/16 |
-| RF-06 | RN-01/03/10/15 | TurnoService.crear, BookingPanel | CA-06/07 |
-| RF-07 | RN-08/11/17 | TurnoService.cancelar, DisponibilidadService, TurnoDialog | CA-08 |
-| RF-08 | RN-09/15/19 | TurnoService.reprogramar, TurnoEvento, TurnoDialog | CA-09/18 |
-| RF-09 | RN-05/07 | AgendaService.crearBloqueo/crearExcepcion, Bloqueos | CA-08/10 |
-| RF-10 | RN-07 | Cierres puntuales devuelven IDs posteriores; contactos recuperables en Reprogramaciones | CA-10; previsualización pendiente |
-| RF-11 | RN-12/13 | CalendarioSemanalAgenda/Disponibilidad y GET diarios | CA-13/16; falta rango |
-| RF-12 | RN-18 | TurnoService.cambiarEstadoFinal, ListaTurnos | CA-11/12 |
-| RF-13 | RN-09/11 | TurnoEventoRepository; falta endpoint/pantalla | CA-09 ampliado |
-| RF-14 | RN-13/19 | AgendaService.disponibles, BookingPanel.buscarProxima | CA-13 |
-| RF-15 | RN-04/05 | AgendaService.crearExcepcion, Bloqueos | CA-07/10/17 |
-| RF-16 | RN-06/07 | Plantilla con vigencias, sin reemplazo integral | CA-03 ampliado |
-| RF-17 | RN-07/09 | AgendaConsultaService/Controller, TurnoAfectadoResponse y Reprogramaciones | CA-10 |
-| RF-18 | — | Sin implementación; excluido | No exigido en aceptación actual |
-| RF-19 | RN-16 | Sin portal; excluido | No exigido en aceptación actual |
-| RF-20 | RN-09/17 | AuditoriaService y TurnoEvento | CA-08/09/12 |
-| RF-21 | — | Sólo resumen diario; reporte pendiente de fase | No exigido en aceptación actual |
-| RF-22 | RN-13/14 | ConfiguracionAgendaService, Disponibilidad | CA-02/17 |
-| RF-23 | RN-05/07 | Cierre manual de fecha en Bloqueos | CA-08/10 |
-| RF-24 | RN-01/15 | PESSIMISTIC_WRITE en FranjaRepository | Test concurrente aprobado en MySQL; CA-06/18 |
-
-## Calidad del documento inicial
-
-| RNF | Objetivo | Evidencia actual o validación necesaria |
+| Necesidad / referencia | Implementación principal | Evidencia o comprobación pendiente |
 |---|---|---|
-| RNF-01 | Reserva en hasta 5 interacciones principales | Medir recorrido normal; no medido |
-| RNF-02 | Agenda p95 <1 s, 20 usuarios | Prueba de carga pendiente |
-| RNF-03 | DNI <500 ms con 100.000 pacientes | Carga de datos/prueba pendiente |
-| RNF-04 | Reinicio sin perder confirmados | MySQL/transacciones presentes; demostrar persistencia/reinicio |
-| RNF-05 | Un activo por franja | Bloqueo pesimista y test de doble reserva aprobados en MySQL de prueba |
-| RNF-06 | BCrypt/Argon2 | BCrypt implementado |
-| RNF-07 | Autenticación/autorización en escritura | SecurityConfig presente; matriz HTTP por ejecutar |
-| RNF-08 | HTTPS desplegado | No se verificó despliegue |
-| RNF-09 | Datos personales mínimos | Campos básicos; revisar texto libre/auditoría |
-| RNF-10 | Usuario y timestamp críticos | Auditoría general; actor de TurnoEvento pendiente |
-| RNF-11 | Separación de responsabilidades | DisponibilidadService (5 colaboradores), generación por mes dentro de AgendaService y AgendaConsultaService (2); AgendaService todavía con 7 |
-| RNF-12 | Pruebas automatizadas críticas | 14 tests de integración + 9 unitarios aprobados; cobertura HTTP/UI/carga incompleta |
-| RNF-13 | Chrome/Edge/Firefox actuales | Matriz de navegadores pendiente |
-| RNF-14 | Uso desde 360 px | CSS adaptable; comprobación de aceptación pendiente |
-| RNF-15 | Claves/índices apropiados | Anotaciones JPA inspeccionadas; carga/rendimiento pendiente |
-| RNF-16 | Backup/restauración documentados | Procedimiento incluido; restauración pendiente |
-| RNF-17 | Logs útiles sin exposición | Revisar entorno/logs y texto libre; sin acta integral |
-| RNF-18 | JSON/códigos coherentes | DTO/advice presentes; contrato de errores parcial |
-| RNF-19 | OpenAPI/Swagger | Dependencia/rutas configuradas; contrastar esquema al desplegar |
-| RNF-20 | A lo sumo una reserva concurrente | Reserva y reprogramación del mismo turno concurrentes aprobadas; reservas superpuestas entre IDs aprobadas; cierres/generación comparten el bloqueo del profesional |
+| Pacientes / RF-02, RN-10/20 | PacienteController, PacienteService, PacienteRepository, Pacientes y PacienteForm | Registrar/editar, localizar por DNI, apellido y contacto; rechazar DNI duplicado. |
+| Horarios habituales / RF-04 | HorarioConsultorio, PlanificacionHorariosService, GeneracionMensual, Disponibilidad | Mes actual y tres futuros completos; 18 franjas por día hábil de 08:00 a 20:00; repetición sin duplicados. |
+| Consultar agenda / RF-05, RF-11 | AgendaService, AgendaRangoService, CalendarioSemanalAgenda, CalendarioRangoAgenda y DiaCalendarioAgenda | Día/semana/rango, fechas sin horarios y cierres. |
+| Asignar / RF-06, RF-24, RN-01/15 | TurnoService, DisponibilidadService, FranjaRepository, BookingPanel | Reservar una franja libre y rechazar reserva concurrente o intervalo superpuesto. |
+| Cancelar / RF-07, RN-08/17 | TurnoService, TurnoDialog, TurnoEvento | Conservar historial, liberar si no hay cierre, distinguir origen. |
+| Suspender atención / RF-09, RF-10, RF-15 (solo cierre), RN-05/07 | AgendaController y AgendaService: `/bloqueos/previsualizacion` y `/bloqueos`; BloqueosPage | Advertir afectados antes, confirmar con revalidación, conservar turnos y prohibir aperturas nuevas y suspensiones en fines de semana. |
+| Recuperar afectados / RF-17 | AgendaConsultaService, TurnoAfectadoResponse, Reprogramaciones | Recuperar pacientes/contactos tras reinicio y reprogramar uno a uno. |
+| Reprogramar / RF-08, RN-09/19 | TurnoService, TurnoEventoRepository, HistorialTurnoDialog | Preservar ID, actor, motivo, franja anterior y nueva; rechazar destino ocupado. |
+| Resultados / RF-12 | TurnoService, ListaTurnos | Atendido o ausente solo al alcanzar la fecha/hora del turno. |
+| Accesos / RF-01, RF-20, RN-16 | SecurityConfig, JWT, UsuarioService, AuditoriaService, permisos.ts | Verificar matriz por rol, revocación de sesiones y datos mínimos. |
 
-## Cómo registrar una ejecución
+**Fuera de alcance funcional:** RF-03 como editor semanal, RF-15 como apertura, RF-16, RF-18, RF-19, RF-21 y RF-22 como configuración pública. No son defectos pendientes de implementación. Los identificadores se conservan para mostrar qué se descartó al validar el alcance.
 
-Para cada caso conservar ID, commit, fecha/zona, entorno, rol, datos ficticios/precondiciones, pasos, resultado esperado/obtenido, evidencia y defecto asociado. Resultado permitido: aprobado, fallido, bloqueado o no ejecutado. Bloqueado por Docker no significa aprobado ni fallo de una regla de negocio. No asignar un porcentaje global sin ponderación y alcance acordados.
+## Objetivos no funcionales del análisis inicial
+
+| RNF | Objetivo | Evidencia o límite actual |
+|---|---|---|
+| RNF-01 | Reserva en ≤5 interacciones | Evaluación de usabilidad pendiente. |
+| RNF-02 | p95 agenda <1 s con 20 usuarios | Medición de carga pendiente. |
+| RNF-03 | Búsqueda DNI <500 ms con 100.000 pacientes | Medición con volumen pendiente. |
+| RNF-04 | Persistencia tras reinicio | MySQL y transacciones; comprobación operativa pendiente. |
+| RNF-05 | Una reserva activa por franja | Bloqueo/validación por intervalo implementados; prueba de concurrencia formal posterior. |
+| RNF-06 | Contraseñas con hash adaptativo | BCrypt implementado. |
+| RNF-07 | Escrituras autenticadas y autorizadas | Spring Security y matriz de rutas presentes; revisar HTTP por rol. |
+| RNF-08 | HTTPS desplegado | No acreditado en entorno de producción. |
+| RNF-09 | Datos personales mínimos | Datos identificatorios/de contacto; revisar textos libres en auditoría. |
+| RNF-10 | Usuario y fecha en operaciones críticas | AuditoriaService y TurnoEvento; eventos históricos sin usuario permanecen sin autor. |
+| RNF-11 | Separación modular | PlanificacionHorariosService y AgendaService; DiaCalendarioAgenda compartido. |
+| RNF-12 | Pruebas automáticas críticas | Hay pruebas existentes; revisar adecuación a cambios antes de ejecución formal. |
+| RNF-13 | Navegadores actuales | Comprobación en Chrome/Edge/Firefox pendiente. |
+| RNF-14 | Usabilidad desde 360 px | Estilos responsive; inspección de aceptación pendiente. |
+| RNF-15 | Integridad referencial e índices | MySQL/JPA con índices; carga y planes SQL pendientes de medir. |
+| RNF-16 | Respaldo y restauración | Procedimiento documentado; restauración pendiente de comprobar. |
+| RNF-17 | Logs útiles sin datos sensibles | Revisión en entorno real pendiente. |
+| RNF-18 | JSON y códigos HTTP | DTO y excepciones presentes; revisar contratos 400/403/409. |
+| RNF-19 | OpenAPI/Swagger | Dependencia configurada; comprobar documentación generada en ejecución. |
+| RNF-20 | Máximo un turno concurrente por franja | Transacciones y bloqueos presentes; ejecución formal de concurrencia pendiente. |
+
+## Criterio de reporte
+
+**Implementado en código ≠ probado ≠ aceptado por el cliente.** Las pruebas existentes y los resultados históricos se detallan en [pruebas](pruebas-aceptacion.md), pero no se atribuyen automáticamente al commit actual. La formalización de una suite y su acta corresponde a la siguiente entrega de la cátedra.

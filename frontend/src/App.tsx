@@ -208,7 +208,7 @@ export default function App() {
     },
     {
       icon: "block",
-      label: "Bloqueos y excepciones",
+      label: "Suspensiones",
       href: "/bloqueos",
       active: bloqueosPage,
     },

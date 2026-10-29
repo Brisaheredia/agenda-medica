@@ -1,104 +1,81 @@
-# Arquitectura y decisiones
+# Arquitectura y decisiones de diseño
 
-Monolito web con frontend separado y API Spring Boot. React usa HTTP/JSON con JWT; los servicios de negocio coordinan repositorios JPA contra MySQL. Actualizado el 17 de octubre de 2026 con disponibilidad efectiva y consulta de pendientes.
+**Revisión:** 29/10/2026, versión posterior a modularización y retiro de aperturas extraordinarias. Las decisiones del análisis inicial que se descartaron se conservan en Git y en el [documento fuente](referencias/README.md).
 
-## Diagrama de componentes
+## Vista de componentes
 
 ```mermaid
 flowchart LR
-    operador["Personal del consultorio"] --> frontend["React y Vite"]
-    frontend -->|"HTTP y JSON con JWT"| seguridad["Spring Security y filtro JWT"]
-    seguridad --> controladores["Controladores REST y DTO"]
-    controladores --> servicios["Servicios de negocio y transacciones"]
-    servicios --> repositorios["Repositorios Spring Data JPA"]
-    repositorios --> mysql[("MySQL")]
+    A[Personal del consultorio] --> B[React y Vite]
+    B -->|HTTP JSON y JWT| C[Spring Security]
+    C --> D[Controladores REST]
+    D --> E[Servicios de dominio]
+    E --> F[Repositorios JPA]
+    F --> G[(MySQL)]
 ```
 
-El filtro consulta usuarios mediante AgendaUserDetailsService. El esquema muestra las capas predominantes; ProfesionalController accede directamente a su repositorio como excepción documentada.
+El backend es un monolito por capas, con frontend independiente. Los controladores presentan DTO y aplican validaciones estructurales; los servicios coordinan reglas y transacciones; los repositorios encapsulan persistencia. No se agregaron interfaces o capas solo por cantidad de archivos.
 
-## Responsabilidades y fuente de verdad
+## Modularidad y responsabilidades
 
-| Información | Autoridad y aplicación actual |
+| Módulo | Responsabilidad |
 |---|---|
-| Duración y horizonte guardados | Duración fija de 40 como regla de negocio; sólo el horizonte es editable y se guarda en ConfiguracionAgenda. |
-| Configuración ausente | GET devuelve 40 minutos y horizonte inicial de 45 días desde un objeto nuevo, sin insertarlo. PUT lo persiste. |
-| Regla semanal vigente | Plantilla persistida con día, horas, duración y vigencia. No existe listado/edición de reglas por API. |
-| Intervalo reservable | Franja persistida: inicio, fin y estado. La generación materializa intervalos de exactamente 40 minutos. |
-| Compromiso e historial | Turno, TurnoEvento y Auditoria persistidos. |
-| Formulario nuevo | Lunes a viernes y 08:00–20:00 son valores propuestos de UI; no prueban existencia de reglas en BD. |
+| `HorarioConsultorio` | Regla fija de días, horas y alineación de franjas: lunes a viernes, 08:00–20:00, 40 min. |
+| `PlanificacionHorariosService` | Generar franjas de un mes, respetar cierres, no duplicar ni eliminar compromisos. Consulta el período de forma agrupada. |
+| `AgendaService` | Consultar agenda/disponibilidad y realizar cierres con revisión de afectados. |
+| `AgendaConsultaService` | Consultar suspensiones y pacientes pendientes de reprogramación. |
+| `AgendaRangoService` | Consulta por período con un conjunto acotado de lecturas, evitando una llamada SQL por día. |
+| `TurnoService` / `DisponibilidadService` | Ciclo de vida del turno, revalidación de intervalos, transacciones y estados de franjas. |
+| `PacienteService` | Datos mínimos de pacientes, búsquedas y baja lógica. |
+| `AuditoriaService` | Registro de operaciones críticas. |
+| `App.tsx`, `api.ts`, `useAgenda` | Navegación/sesión, HTTP y estado de agenda en React. |
+| `CalendarioSemanalAgenda`, `CalendarioRangoAgenda`, `DiaCalendarioAgenda` | Cada vista controla su navegación; comparten representación de días, horarios y cierres. |
 
-La duración dejó de ser configurable por decisión del responsable: el backend aplica 40 en generación, plantillas, aperturas y validación de reserva. El frontend sólo informa el valor. ConfiguracionAgenda conserva la columna anterior por compatibilidad, pero expone 40 incluso si una base antigua tenía otro valor; al guardar configuración se normaliza sin alterar citas existentes.
+La separación de generación respecto de consultas/cierres y la extracción de un día reutilizable mejoraron **cohesión, acoplamiento y mantenibilidad**, sin cambiar el diseño visual ni ampliar el problema. No se afirma que toda clase extensa sea un defecto: se evalúan responsabilidades y dependencias concretas.
 
-## Límites de módulos
+## Regla de horario y límite de reserva
 
-Controladores validan estructura y exponen DTO; servicios contienen reglas/transacciones; repositorios consultan/persisten; entidades representan el esquema. Los DTO de respuesta mapean entidades dentro de transacciones porque `open-in-view=false`. `ProfesionalController` consulta el repositorio directamente, excepción pequeña al patrón predominante.
+El horario confirmado por Salvador **no es configurable**. Las franjas se generan de lunes a viernes de 08:00 a 20:00, dieciocho por día, de 40 minutos. Se habilita por mes: el actual (solo horarios futuros) y los **tres meses calendario siguientes completos**. La regla de tres meses es una decisión interna del equipo, no una exigencia expresamente enviada por el cliente.
 
-Frontend concentra composición en App, datos diarios en useAgenda y HTTP en api.ts. La selección múltiple realiza varias llamadas al mismo contrato diario, con recuperación parcial. Ambas pantallas comparten CalendarioSemanalAgenda y el criterio de color de agendaVisual. La semana hace 15 solicitudes (14 diarias y una de excepciones); aún no existe endpoint de agenda por rango.
+Las viejas tablas/campos de plantillas y horizonte en días pueden seguir en el esquema **por compatibilidad**, pero no definen el comportamiento de disponibilidad en esta versión. No hay endpoints para crear o administrar plantillas. No se crean aperturas extraordinarias ni se ofrecen franjas fuera del horario habitual, aunque existan registros históricos. La aplicación conserva turnos antiguos, incluidos los que ya estaban comprometidos, sin reescribirlos.
 
-## Flujos transaccionales
+## Operaciones críticas
 
-**Reserva:** bloquear el profesional y la franja, obtener paciente activo; validar vigencia, futuro, horizonte, cierres y ausencia de un turno activo del mismo profesional que solape el intervalo. Crear turno, ocupar franja, registrar evento/auditoría y confirmar. Las escrituras de agenda utilizan el mismo bloqueo por profesional y aislamiento READ_COMMITTED para ver los cambios confirmados al esperar.
+**Reserva:** autenticación/autorización; bloqueo por profesional y franjas; comprobación de futuro, horario fijo, cierre, solapamiento e identidad del paciente; ocupación de franja y creación de evento dentro de la transacción. Dos reservas competidoras no deberían confirmar el mismo intervalo.
 
-**Cancelación:** bloquear turno y validar activo; bloquear franja; guardar CANCELADO, origen y motivo. PACIENTE libera sólo sin cierre; CONSULTORIO bloquea. Registrar evento y auditoría dentro de la misma transacción.
+**Cancelación:** conserva el registro del turno y su historial. Libera franja si corresponde; los cierres prevalecen. Distingue cancelación solicitada por paciente de la originada en el consultorio.
 
-**Reprogramación:** bloquear turno; admitir activo o cancelado CONSULTORIO; bloquear franjas en orden de ID y validar destino incluyendo cierres; mover el mismo turno; liberar origen sólo si no está cerrado y ocupar destino. Si estaba cancelado, pasa a RESERVADO. Registrar evento e IDs en la misma transacción.
+**Reprogramación:** conserva el ID del turno, valida destino, registra actor, motivo, horario anterior y nuevo; al mover turnos afectados por cierres conserva la trazabilidad de la suspensión.
 
-**Cierre:** guardar excepción; bloquear franjas libres; mantener ocupadas; devolver IDs de turnos activos afectados. Es una respuesta posterior a la escritura, sin simulación previa. AgendaConsultaService ofrece la lista recuperable con datos de contacto y motivo; se deriva de la BD y excluye cancelaciones del paciente.
+**Suspensión:** la pantalla primero llama `POST /api/agenda/bloqueos/previsualizacion`, que devuelve afectados **sin escribir**. En `POST /api/agenda/bloqueos` el servicio bloquea al profesional, comprueba que los mismos turnos sigan afectados y, si es así, registra un cierre y bloquea franjas libres. Si hay cambios concurrentes, responde 409 y se exige otra revisión. Los compromisos se mantienen para reprogramarlos después. Los feriados se representan como cierres manuales, no como un servicio especial.
 
-## Secuencia de reserva
+## Seguridad y persistencia
+
+Spring Security con JWT, roles y BCrypt. Los filtros/controladores restringen modificaciones, y la interfaz refleja esos permisos sin reemplazar la autorización del backend. MySQL conserva usuarios, pacientes, franjas, turnos y eventos; las operaciones críticas usan transacciones y bloqueos pesimistas. El código usa la zona `America/Argentina/Buenos_Aires` para reglas de negocio; no se calculan días civiles desde el huso local del navegador.
+
+El código conserva `TipoExcepcionAgenda.APERTURA` y el campo `origen=EXCEPCION_APERTURA` **solo para interpretar datos antiguos**. No hay endpoint de creación de aperturas; `HorarioConsultorio.esReservablePorHorario` no habilita nuevas reservas por ese origen. Los turnos históricos no se borran.
+
+## Diagrama de reserva (resumido)
 
 ```mermaid
 sequenceDiagram
-    actor operador as Personal del consultorio
-    participant frontend as Frontend
-    participant api as TurnoController
-    participant servicio as TurnoService
-    participant bd as MySQL
-    operador->>frontend: Seleccionar paciente y franja
-    frontend->>api: POST /api/turnos con JWT
-    api->>servicio: Crear turno dentro de transacción
-    servicio->>bd: Consultar paciente y bloquear franja
-    bd-->>servicio: Paciente y franja
-    alt Franja válida y disponible
-        servicio->>bd: Guardar turno, ocupar franja y registrar eventos
-        bd-->>servicio: Transacción confirmada
-        servicio-->>api: TurnoResponse
-        api-->>frontend: HTTP 201
-        frontend-->>operador: Confirmación y actualización de agenda
-    else Conflicto de disponibilidad
-        servicio-->>api: ConflictException
-        api-->>frontend: HTTP 409
-        frontend-->>operador: Solicitar otro horario
+    actor Personal
+    participant UI as Frontend
+    participant API as TurnoController
+    participant S as TurnoService
+    participant DB as MySQL
+    Personal->>UI: Seleccionar paciente y franja
+    UI->>API: POST /api/turnos (JWT)
+    API->>S: Crear turno
+    S->>DB: Bloquear y validar disponibilidad
+    alt Libre y válido
+      S->>DB: Guardar turno, franja y eventos
+      API-->>UI: 201 Turno creado
+    else Ocupado, cerrado o inválido
+      API-->>UI: Error de negocio / conflicto
     end
 ```
 
-Se representa el alta sobre una misma franja. El bloqueo por profesional y la consulta por intervalo cubren también franjas distintas y la generación. Las pruebas incluyen reservas superpuestas entre IDs diferentes. Generación, cierres y reserva comparten el bloqueo del profesional. El orden de bloqueos por profesional/turno/franja coordina generación, reserva y cancelación sin retirar compromisos.
+## Calidad y límites
 
-## Generación por mes con duración fija
-
-GeneracionMensual sólo selecciona el mes y llama a POST /agenda/generar-franjas; no hay previsualización ni confirmación para cambiar duración. AgendaService selecciona la regla más reciente vigente por día, aplica 40, respeta cierres y conserva intervalos existentes. Elimina sólo franjas futuras libres de otras duraciones sin referencias de Turno/TurnoEvento. Ante cualquier otro solapamiento revierte la operación completa y conserva historia. El límite mensual y la anticipación son validaciones independientes.
-
-Se eliminó el circuito de regeneración y su migración. La consulta de pacientes para reprogramar por suspensión del consultorio permanece implementada.
-
-## Seguridad y tiempo
-
-Spring Security exige autenticación y roles. JwtService firma HMAC con clave externa; contraseñas BCrypt; usuario y autoridades se cargan desde BD para requests autenticados. El cliente persiste sesión en localStorage. La autorización sigue la [matriz de cuatro roles](roles-permisos.md), con rutas explícitas y denegación por defecto. El JWT incluye rol y huella de credencial: un cambio de rol/contraseña o una desactivación invalida el acceso anterior. No hay refresh token ni lista de sesiones para cierre remoto individual. Seguridad devuelve JSON con 401 para sesión inválida y 403 para permiso insuficiente; el despacho de errores no queda bloqueado por autorización.
-
-Las fechas de negocio son LocalDate/LocalTime/LocalDateTime sin offset en JSON y representan hora civil de Buenos Aires. `TiempoAgenda` obtiene fecha/hora explícitamente en America/Argentina/Buenos_Aires para reglas, eventos y timestamps, sin depender de la zona de la JVM; tiene una variante con Clock para probar instantes fijos. JDBC/Jackson mantienen la zona Argentina. `frontend/src/lib/fechas.ts` calcula hoy en esa zona, interpreta los horarios sin offset de la API como UTC-3 y respeta offsets explícitos. Las fechas civiles se desplazan con operaciones UTC sin cambiar su día; los horarios se muestran en Buenos Aires. Cambiar la zona del navegador o servidor no debe adelantar el día. La corrección no reescribe fechas ya persistidas.
-
-## Decisiones registradas
-
-| ID | Decisión | Estado y consecuencia |
-|---|---|---|
-| ADR-01 | Materializar franjas en MySQL | Implementado; generar antes de reservar, sin cálculo completo al consultar |
-| ADR-02 | Conservar identidad del turno al mover | Implementado; REPROGRAMACION es evento, no estado del turno |
-| ADR-03 | Mantener duración configurable, inicial 40 | Reemplazada por duración fija de 40 por pedido del responsable; conservar citas anteriores |
-| ADR-04 | Un profesional operativo | Implementado; se usa el primero activo, sin selector multi-profesional |
-| ADR-05 | Selección múltiple mediante contrato existente | Implementado; guardado por día no atómico, UI conserva pendientes ante fallo |
-| ADR-06 | Documentación versionada junto al código | README por módulo y documentos técnicos vigentes en docs; versiones anteriores consultables en Git |
-
-## Mantenibilidad y evolución
-
-TurnoService pasó de 6 a 5 colaboradores inyectados. DisponibilidadService concentra validación/reserva/liberación, bloqueo del profesional y persistencia de franjas con 5; AgendaConsultaService consulta excepciones y pendientes con 2. AgendaService conserva 7 y sigue siendo candidato a separar generación/excepciones. No se infiere calidad desde un promedio de imports: mantener responsabilidades claras y transacciones completas.
-
-La lista de afectados usa fetch joins y un DTO con contacto, evitando consultas por paciente. La página Reprogramaciones reutiliza TurnoDialog y tiene su propio estado de guardado; no depende de que la agenda diaria esté cargada. Un endpoint de agenda por rango para reducir peticiones semanales continúa pendiente. Ver [mantenimiento](mantenimiento-contribucion.md) y [pendientes](pendientes-riesgos.md).
+La consulta semanal/rango agrupa operaciones y la generación mensual evita SELECT repetidos por franja. La evaluación de índices, N+1, p95/p99 y escenarios de carga queda sujeta a mediciones; no se atribuyen tiempos de respuesta sin evidencia. No se rediseña la base ni se añaden patrones innecesarios para este MVP. La etapa de Testing formalizará los casos de aceptación.

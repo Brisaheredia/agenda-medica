@@ -1,6 +1,6 @@
 # Frontend de Agenda Médica
 
-Interfaz React para personal del consultorio. Código en `frontend/`, dentro del repositorio. Actualizado con colores y reprogramaciones, 17 de octubre de 2026.
+Interfaz React para personal del consultorio. Código en `frontend/`, dentro del repositorio. Actualizado con alcance final y modularización, 29 de octubre de 2026.
 
 ## Ejecutar
 
@@ -30,10 +30,10 @@ npm run preview
 
 | Ruta | Pantalla | Función |
 |---|---|---|
-| `/` | Agenda | Día/semana, reserva y acciones de turno |
+| `/` | Agenda | Día/semana/rango, reserva y acciones de turno |
 | `/pacientes` | Pacientes | Búsqueda, alta, edición y baja lógica |
-| `/disponibilidad` | Disponibilidad | Configuración, días y generación por mes con duración fija de 40 |
-| `/bloqueos` | Bloqueos y excepciones | Cierre, apertura y día no laborable manual |
+| `/disponibilidad` | Disponibilidad | Horario fijo en consulta y generación mensual de franjas de 40 minutos |
+| `/bloqueos` | Suspensiones | Cierre parcial o total y día no laborable manual |
 | `/reprogramaciones` | Reprogramaciones | Pacientes afectados, contacto y cambio de horario manual |
 | `/auditoria` | Auditoría | Últimos eventos; sólo ADMIN |
 | `/usuarios` | Usuarios y roles | Alta, rol, estado y contraseña; sólo ADMIN |
@@ -48,13 +48,11 @@ El login se muestra al no existir sesión, sin ruta `/login` independiente. La n
 - HTTP 401 cierra sesión; HTTP 403 muestra falta de permisos. `permisos.ts` concentra la matriz de la interfaz; la API vuelve a autorizar cada operación. Ver [roles y permisos](../docs/roles-permisos.md).
 - “Hoy” aparece en el centro sólo para la fecha actual; los controles laterales muestran fechas adyacentes. En otros días aparece “Volver a hoy”.
 - `lib/fechas.ts` determina “hoy” y presenta los horarios en Buenos Aires. Las fechas civiles se operan sin depender de la zona del navegador. `FechaInput` muestra día/mes/año en español y la generación mensual ofrece meses en español sin usar calendarios nativos.
-- Disponibilidad ofrece casillas por día, “Lunes a viernes”, “Toda la semana” y “Limpiar”. Se propone 08:00–20:00 como formulario nuevo, no como lectura de plantillas existentes.
-- La duración es fija en 40 minutos: no hay campo editable ni se envía una duración desde el cliente. Sólo se guarda el horizonte de reserva.
-- Guardar varios días realiza una petición por día, secuencialmente. No es una única transacción: si falla, se informan éxitos parciales y quedan seleccionados los pendientes.
-- GeneracionMensual habilita un mes por operación. El backend conserva reservas e historial; al terminar se actualiza el calendario. No hay cambio de duración ni regeneración asociada. “Próximo horario libre” muestra la primera alternativa.
-
-Ambas pantallas usan el mismo calendario semanal: dos peticiones por día más una consulta de excepciones por semana (15 en total). Los colores se resuelven en `lib/agendaVisual.ts`; `LeyendaAgenda` los explica sin depender sólo del color. Reprogramaciones consulta un DTO con contacto, sin pedir un paciente por fila. Mantener esta particularidad visible en análisis de rendimiento. Ver [arquitectura](../docs/arquitectura.md) y [manual](../docs/manual-usuario.md).
-
-Disponibilidad presenta días/horarios a la izquierda, configuración y generación a la derecha, y el calendario debajo. No repite avisos de duración. La anticipación inicial es de 45 días; la configuración persistida que devuelve la API es la fuente para reservar y generar. `BadgeReprogramacion` muestra la procedencia del consultorio según el indicador persistido de TurnoResponse, sin deducirla de textos ingresados.
+- Disponibilidad muestra el horario fijo de lunes a viernes, 08:00–20:00, con 40 minutos por turno; no ofrece editar días, vigencias ni duración.
+- `GeneracionMensual` habilita un mes por operación: mes actual (desde hoy) o cualquiera de los tres meses futuros completos. Generación y reserva comparten ese límite.
+- Las suspensiones se revisan antes de confirmarse; no hay opción de apertura extraordinaria. Las acciones muestran información sin depender solo de colores.
+- Semana y Rango usan `DiaCalendarioAgenda` para representar días y franjas con las mismas reglas visuales, manteniendo navegación propia. Ambos consumen el endpoint por rango, evitando las 15 peticiones originales de Semana.
+- `api.ts` centraliza JWT y errores; `permisos.ts` controla lo visible, mientras el backend autoriza cada operación. Reprogramaciones consulta contactos en un DTO sin una consulta por paciente.
+- La marca de procedencia de reprogramación se obtiene del backend, no se deduce de motivos escritos por los operadores.
 
 `useReprogramaciones` comparte los pendientes entre el menú y la pantalla de contactos. El menú muestra un contador titilante cuando hay pendientes. Refresca al operar la agenda, bloquear atención, volver a la ventana y cada 30 segundos mientras está visible; aborta solicitudes y limpia temporizadores al cambiar de sesión/profesional. Sólo consulta para roles con acceso a contactos. Un fallo transitorio conserva el último resultado y se informa en Reprogramaciones.

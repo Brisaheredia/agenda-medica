@@ -7,11 +7,11 @@ Matriz solicitada para los cuatro roles. La autorización se aplica en `Security
 | Consultar agenda y disponibilidad | Sí | Sí | Sí | Sí |
 | Registrar, editar o desactivar pacientes | Sí | No | Sí | No |
 | Asignar, cancelar y reprogramar turnos | Sí | No | Sí | Sí |
-| Modificar horarios, generar franjas y crear aperturas | Sí | Sí | No | No |
+| Habilitar horarios del mes (horario fijo) | Sí | Sí | No | No |
 | Bloquear días o períodos de atención | Sí | Sí | No | No |
 | Registrar atendido o ausente | Sí | Sí | Sí | No |
 | Gestionar usuarios, roles y contraseñas | Sí | No | No | No |
-| Configurar anticipación máxima | Sí | No | No | No |
+| Cambiar anticipación o horario habitual | No | No | No | No |
 | Consultar auditoría | Sí | No | No | No |
 | Consultar pacientes y contactos para reprogramación | Sí | Sí | Sí | No |
 

@@ -1,6 +1,6 @@
 # Contrato de API
 
-Contrato actualizado el 17 de octubre de 2026 con consultas de excepciones y reprogramaciones. Base `/api`, JSON UTF-8. URL de ejemplo basada en el valor por defecto del proyecto: `http://localhost:8080`. Sustituir host y puerto por los efectivos de cada entorno; el contrato no exige un puerto particular. OpenAPI generado en `/v3/api-docs` y Swagger en `/swagger-ui.html` complementan esta descripción.
+Contrato revisado el 29 de octubre de 2026 según el alcance validado con Salvador. El DOCX inicial es referencia de análisis, no el alcance final. Base `/api`, JSON UTF-8. URL de ejemplo basada en el valor por defecto del proyecto: `http://localhost:8080`. Sustituir host y puerto por los efectivos de cada entorno; el contrato no exige un puerto particular. OpenAPI generado en `/v3/api-docs` y Swagger en `/swagger-ui.html` complementan esta descripción.
 
 ## Autenticación y convenciones
 
@@ -35,12 +35,13 @@ Roles: **A**=ADMIN, **R**=RECEPCION, **M**=MEDICO, **O**=OBRAS_SOCIALES, **T**=c
 | GET | `/agenda/excepciones?profesionalId=1&desde=2026-10-19&hasta=2026-10-25` | T | 200 ExcepcionAgendaResumen[] |
 | GET | `/agenda/reprogramaciones-pendientes?profesionalId=1` | A,M,R | 200 TurnoAfectadoResponse[] |
 | POST | `/agenda/generar-franjas` | A,M | 200 GenerarFranjasResponse, aditiva y limitada a un mes |
-| POST | `/agenda/excepciones` | A,M | 201 ExcepcionAgendaResponse |
+| POST | `/agenda/bloqueos/previsualizacion` | A,M | 200 PrevisualizacionBloqueoResponse (sin escritura) |
 | POST | `/agenda/bloqueos` | A,M | 201 ExcepcionAgendaResponse |
 | GET | `/configuracion/agenda` | T | 200 ConfiguracionAgendaResponse |
 | GET | `/turnos?profesionalId=1&fecha=2026-10-19` | T | 200 TurnoResponse[] |
 | GET | `/turnos/{id}` | T | 200 TurnoResponse |
 | POST | `/turnos` | A,R,O | 201 TurnoResponse |
+| GET | `/turnos/{id}/historial` | A,M,R | 200 TurnoHistorialResponse[] |
 | POST | `/turnos/{id}/cancelacion` | A,R,O | 200 TurnoResponse |
 | POST | `/turnos/{id}/reprogramacion` | A,R,O | 200 TurnoResponse |
 | POST | `/turnos/{id}/atencion` | A,M,R | 200 TurnoResponse, sin cuerpo de entrada |
@@ -64,7 +65,7 @@ POST y PUT utilizan el mismo cuerpo completo:
 {"dni":"DNI_FICTICIO","nombre":"Paciente","apellido":"Ejemplo","telefono":"","email":"paciente@example.test"}
 ```
 
-DNI obligatorio, máximo 20; nombre/apellido obligatorios, máximo 100 cada uno; teléfono opcional hasta 50; email opcional con formato de email y máximo 150. Se normalizan espacios; DNI duplicado produce conflicto de negocio. Buscar sin query devuelve hasta 20 activos después de filtrar en memoria; DNI exacto tiene precedencia; de lo contrario se busca apellido, hasta 20 ordenados. No hay búsqueda por contacto ni paginación pública.
+DNI obligatorio, máximo 20; nombre/apellido obligatorios, máximo 100 cada uno; teléfono opcional hasta 50; email opcional con formato de email y máximo 150. Se normalizan espacios; DNI duplicado produce conflicto de negocio. Buscar sin query devuelve hasta 20 activos limitados desde SQL. Se contempla DNI exacto y coincidencia parcial de apellido, teléfono y email; no hay paginación pública.
 
 ### Configuración (contrato histórico)
 
@@ -82,7 +83,7 @@ No se ofrece edición de plantillas semanales en este MVP. El horario es de lune
 
 Fechas obligatorias y dentro de un mismo mes. La ventana habilitable incluye el mes actual y los **tres siguientes completos**; para el mes actual, la interfaz parte de hoy. El backend impide generar más allá del fin del tercer mes siguiente. La generación usa los días fijos lunes a viernes, de 08:00 a 20:00, con franjas de 40 minutos, respetando cierres y conservando los turnos e historial. Respuesta `{creadas, existentes, omitidasPorCierre}`; repetir la operación no crea duplicados.
 
-### Cierre, bloqueo y apertura
+### Suspensión de atención (cierre o bloqueo)
 
 Para cerrar una fecha o intervalo se requieren dos etapas (RF-10 / RN-07).
 
@@ -104,15 +105,9 @@ POST `/agenda/bloqueos` recibe, luego de la previsualización:
 {"profesionalId":1,"fecha":"2026-10-20","horaInicio":"10:00","horaFin":"12:00","motivo":"Suspensión de atención","turnosAfectadosEsperados":[12,15]}
 ```
 
-Ambas horas null/omitidas representan día completo; deben enviarse juntas si se usa intervalo. Fecha no pasada y motivo opcional hasta 255. El bloqueo se convierte en excepción CIERRE.
+Ambas horas null/omitidas representan día completo; deben enviarse juntas si se usa intervalo. **Solo se admiten cierres de lunes a viernes**; sábados y domingos se rechazan con **400 Bad Request**, tanto en la previsualización como en la confirmación. Fecha no pasada y motivo opcional hasta 255. El bloqueo se convierte en excepción CIERRE.
 
-POST `/agenda/excepciones` usa el mismo núcleo más tipo y duración:
-
-```json
-{"profesionalId":1,"fecha":"2026-10-24","horaInicio":"08:00","horaFin":"12:00","tipo":"APERTURA","duracionMin":40,"motivo":"Atención extraordinaria"}
-```
-
-En este endpoint solo se admite APERTURA; cualquier CIERRE debe pasar por la previsualización y confirmación de `/api/agenda/bloqueos`. APERTURA exige ambas horas; duracionMin es opcional y sólo admite 40. Los cierres conservan compromisos y sus afectados siguen disponibles en Reprogramaciones después de guardar.
+No existe un endpoint para **crear aperturas extraordinarias**. `GET /agenda/excepciones` permanece para consultar cierres y registros antiguos. Los datos históricos `APERTURA` no se eliminan; no habilitan nuevas reservas fuera del horario habitual. La respuesta de cierre conserva `franjasCreadas=0` por compatibilidad.
 
 ### Turnos
 
@@ -136,7 +131,7 @@ Motivo obligatorio no vacío, máximo 500. Origen PACIENTE o CONSULTORIO; omitid
 {"franjaId":11,"motivo":"Nuevo horario coordinado"}
 ```
 
-Destino obligatorio y distinto del actual; motivo opcional máximo 500; requiere turno activo o cancelado con origen CONSULTORIO, y destino válido. Una cancelación CONSULTORIO reprogramada pasa a RESERVADO y limpia sus campos actuales de cancelación; el evento anterior se conserva. `reprogramadoPorConsultorio` es un booleano persistido que se activa al mover un turno cancelado por el consultorio o afectado por un cierre en su horario anterior. Se conserva en movimientos posteriores y no se activa por un cambio voluntario del paciente; se devuelve también a Obras sociales. Atención/ausencia no requieren cuerpo y sólo se admiten a partir del inicio del turno.
+Destino obligatorio y distinto del actual; motivo de reprogramación obligatorio, no vacío y de hasta 500 caracteres; requiere turno activo o cancelado con origen CONSULTORIO, y destino válido. Una cancelación CONSULTORIO reprogramada pasa a RESERVADO y limpia sus campos actuales de cancelación; el evento anterior se conserva. `reprogramadoPorConsultorio` es un booleano persistido que se activa al mover un turno cancelado por el consultorio o afectado por un cierre en su horario anterior. Se conserva en movimientos posteriores y no se activa por un cambio voluntario del paciente; se devuelve también a Obras sociales. Atención/ausencia no requieren cuerpo y sólo se admiten a partir del inicio del turno.
 
 ### Usuarios
 
@@ -173,7 +168,7 @@ Spring Security responde JSON `{message}` con 401 ante sesión ausente/inválida
 
 La consulta de excepciones requiere profesionalId, desde y hasta (inclusive); rechaza hasta anterior a desde. Pendientes devuelve activos afectados por cierres y cancelados con origen CONSULTORIO, ordenados por inicio y sin duplicar por cierres solapados. Incluye fechas pasadas aún sin resolver y excluye cancelados por paciente o sin origen. No necesita una consulta por paciente. La lista con contactos sólo está disponible para A,M,R. O puede reprogramar desde la agenda; no recibe motivos de consulta/cancelación en TurnoResponse y al crear se ignora motivoConsulta. O sólo puede cancelar con origen PACIENTE (o null, que equivale a PACIENTE); CONSULTORIO devuelve 403.
 
-No existen GET de plantillas/conflictos, historial de eventos por turno, agenda arbitraria por rango, búsqueda de usuarios por email, alta de profesional, confirmación explícita, notificaciones ni portal público. Distinguirlos de operaciones previstas por el SRS. El [registro de pendientes](pendientes-riesgos.md) indica diferencias y prioridades.
+No existe edición de plantillas, alta pública de profesional, confirmación explícita de turno, notificaciones ni portal del paciente. Sí existe historial por turno (`GET /turnos/{id}/historial`) y consulta arbitraria de agenda (`GET /agenda/rango`). La consulta de excepciones es de lectura; las nuevas escrituras solo permiten cierres. Distinguir las funciones implementadas de las previstas en el análisis inicial. El [registro de pendientes](pendientes-riesgos.md) indica diferencias y prioridades.
 
 ### Agenda por rango (RF-11)
 

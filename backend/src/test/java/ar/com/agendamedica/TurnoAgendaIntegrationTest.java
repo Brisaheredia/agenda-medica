@@ -6,10 +6,8 @@ import ar.com.agendamedica.domain.entity.Profesional;
 import ar.com.agendamedica.domain.enums.EstadoFranja;
 import ar.com.agendamedica.domain.enums.EstadoTurno;
 import ar.com.agendamedica.domain.enums.OrigenCancelacion;
-import ar.com.agendamedica.domain.enums.TipoExcepcionAgenda;
 import ar.com.agendamedica.dto.CancelarTurnoRequest;
 import ar.com.agendamedica.dto.CrearTurnoRequest;
-import ar.com.agendamedica.dto.ExcepcionAgendaRequest;
 import ar.com.agendamedica.dto.ReprogramarTurnoRequest;
 import ar.com.agendamedica.dto.TurnoResponse;
 import ar.com.agendamedica.exception.BadRequestException;
@@ -130,11 +128,6 @@ class TurnoAgendaIntegrationTest {
         assertThrows(ConflictException.class, () -> usuarios.cambiarRol(admin.id(), ar.com.agendamedica.domain.enums.RolUsuario.MEDICO));
     }
 
-    @BeforeEach
-    void configuracionInicial() {
-        configuracion.actualizar(new ConfiguracionAgendaRequest(40, 90));
-    }
-
     @Test
     void dobleReservaConcurrenteSoloPermiteUnTurno() throws Exception {
         Profesional profesional = crearProfesional();
@@ -251,15 +244,9 @@ class TurnoAgendaIntegrationTest {
         TurnoResponse turno = turnoService.crear(
                 new CrearTurnoRequest(paciente.getId(), ocupada.getId(), "Control"));
 
-        var respuesta = agendaService.crearExcepcion(new ExcepcionAgendaRequest(
-                profesional.getId(),
-                fecha,
-                LocalTime.of(9, 0),
-                LocalTime.of(10, 0),
-                TipoExcepcionAgenda.CIERRE,
-                null,
-                "Capacitación"
-        ));
+        var respuesta = agendaService.crearBloqueo(new BloqueoAgendaRequest(
+                profesional.getId(), fecha, LocalTime.of(9, 0), LocalTime.of(10, 0),
+                "Capacitación", java.util.List.of(turno.id())));
 
         assertEquals(1, respuesta.franjasBloqueadas());
         assertTrue(respuesta.turnosAfectados().contains(turno.id()));
@@ -311,7 +298,8 @@ class TurnoAgendaIntegrationTest {
         LocalDate fecha = LocalDate.now().plusDays(17);
         Franja franja = crearFranja(profesional, fecha.atTime(9, 0));
         TurnoResponse turno = turnoService.crear(new CrearTurnoRequest(paciente.getId(), franja.getId(), "Control"));
-        agendaService.crearExcepcion(new ExcepcionAgendaRequest(profesional.getId(), fecha, null, null, TipoExcepcionAgenda.CIERRE, null, "Urgencia"));
+        agendaService.crearBloqueo(new BloqueoAgendaRequest(
+                profesional.getId(), fecha, null, null, "Urgencia", java.util.List.of(turno.id())));
         turnoService.cancelar(turno.id(), new CancelarTurnoRequest("No quiere otro turno", OrigenCancelacion.PACIENTE));
         assertTrue(consultas.pendientes(profesional.getId()).isEmpty());
         assertEquals(OrigenCancelacion.PACIENTE, turnoService.obtener(turno.id()).origenCancelacion());
@@ -385,21 +373,15 @@ class TurnoAgendaIntegrationTest {
     }
 
     @Test
-    void duracionFijaRechazaCambiosYPermiteGuardarSoloHorizonte() {
-        var profesional = crearProfesional(); var fecha = LocalDate.now().plusDays(5);
-        assertThrows(BadRequestException.class, () -> configuracion.actualizar(new ConfiguracionAgendaRequest(30, 90)));
-        assertEquals(40, configuracion.actualizar(new ConfiguracionAgendaRequest(null, 60)).duracionEstandarMin());
-        assertThrows(BadRequestException.class, () -> agendaService.crearPlantilla(new PlantillaDisponibilidadRequest(
-                profesional.getId(), fecha.getDayOfWeek(), LocalTime.of(8, 0), LocalTime.of(20, 0), 30, fecha, null)));
-        assertThrows(BadRequestException.class, () -> agendaService.crearExcepcion(new ExcepcionAgendaRequest(
-                profesional.getId(), fecha, LocalTime.of(8, 0), LocalTime.of(12, 0), TipoExcepcionAgenda.APERTURA, 30, "Prueba")));
+    void duracionFijaYHorarioHabitualNoConfigurables() {
+        assertEquals(40, configuracion.obtener().getDuracionEstandarMin());
+        assertTrue(ar.com.agendamedica.domain.HorarioConsultorio.atiende(LocalDate.of(2026, 11, 2)));
+        assertFalse(ar.com.agendamedica.domain.HorarioConsultorio.atiende(LocalDate.of(2026, 11, 1)));
     }
 
     @Test
     void noBorraNiModificaTurnoAntiguoCuandoImpideGenerarCuarenta() {
         var profesional = crearProfesional(); var paciente = crearPaciente(); var fecha = LocalDate.now().plusDays(7);
-        agendaService.crearPlantilla(new PlantillaDisponibilidadRequest(profesional.getId(), fecha.getDayOfWeek(),
-                LocalTime.of(8, 0), LocalTime.of(12, 0), null, fecha, null));
         var franja = crearFranja(profesional, fecha.atTime(8, 0));
         franja.setFin(franja.getInicio().plusMinutes(30)); franja.setEstado(EstadoFranja.OCUPADA); franjaRepository.saveAndFlush(franja);
         var turno = new ar.com.agendamedica.domain.entity.Turno(); turno.setProfesional(profesional); turno.setPaciente(paciente);
@@ -427,13 +409,16 @@ class TurnoAgendaIntegrationTest {
     }
 
     @Test
-    void generacionMensualEsFinitaCercaDeMedianocheYNoAceptaDosMeses() {
-        var profesional = crearProfesional(); var fecha = LocalDate.now().plusDays(9);
-        agendaService.crearPlantilla(new PlantillaDisponibilidadRequest(profesional.getId(), fecha.getDayOfWeek(),
-                LocalTime.of(23, 0), LocalTime.of(23, 59), null, fecha, null));
+    void generacionMensualUsaHorarioFijoYRechazaDosMeses() {
+        var profesional = crearProfesional();
+        LocalDate candidata = LocalDate.now().plusDays(9);
+        while (!ar.com.agendamedica.domain.HorarioConsultorio.atiende(candidata)) {
+            candidata = candidata.plusDays(1);
+        }
+        final LocalDate fecha = candidata;
         assertTimeoutPreemptively(java.time.Duration.ofSeconds(5), () ->
-                assertEquals(1, agendaService.generarFranjas(new GenerarFranjasRequest(profesional.getId(), fecha, fecha)).creadas()));
-        assertEquals(fecha.atTime(23, 40), agendaService.agendaDiaria(profesional.getId(), fecha).getFirst().fin());
+                assertEquals(18, agendaService.generarFranjas(new GenerarFranjasRequest(profesional.getId(), fecha, fecha)).creadas()));
+        assertEquals(fecha.atTime(8, 40), agendaService.agendaDiaria(profesional.getId(), fecha).getFirst().fin());
         var mes = java.time.YearMonth.from(fecha);
         assertThrows(BadRequestException.class, () -> agendaService.generarFranjas(new GenerarFranjasRequest(
                 profesional.getId(), mes.atDay(1), mes.plusMonths(1).atDay(1))));

@@ -41,13 +41,6 @@ public class AgendaController {
         return agendaService.generarFranjas(request);
     }
 
-    @PostMapping("/excepciones")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ExcepcionAgendaResponse crearExcepcion(
-            @Valid @RequestBody ExcepcionAgendaRequest request) {
-        return agendaService.crearExcepcion(request);
-    }
-
     @PostMapping("/bloqueos/previsualizacion")
     public PrevisualizacionBloqueoResponse previsualizarBloqueo(
             @Valid @RequestBody BloqueoAgendaRequest request) {

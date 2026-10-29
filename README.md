@@ -2,7 +2,7 @@
 
 Aplicación web para centralizar pacientes, disponibilidad y turnos del consultorio del Dr. Salvador Amado. Documentación actualizada con colores y reprogramaciones el **17 de octubre de 2026**.
 
-El sistema permite reservar, cancelar y reprogramar turnos, consultar agenda diaria y semanal, gestionar horarios y registrar atención o ausencia. El núcleo está implementado; la aceptación integral y los pendientes indicados abajo todavía deben cerrarse.
+El sistema permite reservar, cancelar y reprogramar turnos, consultar agenda diaria, semanal y por rango, habilitar los meses dentro del horario fijo y registrar atención o ausencia. El núcleo está implementado; la aceptación integral y los pendientes indicados abajo todavía deben cerrarse.
 
 ## Organización y lectura
 
@@ -29,9 +29,9 @@ La documentación vigente se versiona en este repositorio junto al código. El R
 
 ## Alcance confirmado
 
-Un profesional, de lunes a viernes de **08:00 a 20:00**, con **40 minutos de duración fija**. No se puede cambiar la duración desde el frontend ni la API. Horarios y plantillas se deben cargar; esta decisión de negocio no implica que la BD ya tenga todas las franjas.
+Un profesional, de lunes a viernes de **08:00 a 20:00**, con **40 minutos de duración fija**. No se puede cambiar la duración desde el frontend ni la API. Los días y horarios no son editables: el consultorio habilita franjas por mes hasta el final del tercer mes futuro.
 
-Se incluyen pacientes, disponibilidad, turnos, cancelación, reprogramación manual, cierres/aperturas, atención/ausencia y auditoría básica. Reprogramaciones muestra los pacientes afectados por suspensiones del consultorio con sus datos de contacto, y permite asignarles otro horario manualmente. No se incluyen historia clínica, recetas, pagos, facturación, autogestión, recordatorios automáticos ni reprogramación automática.
+Se incluyen pacientes, disponibilidad, turnos, cancelación, reprogramación manual, cierres de atención, atención/ausencia y auditoría básica. Reprogramaciones muestra los pacientes afectados por suspensiones del consultorio con sus datos de contacto, y permite asignarles otro horario manualmente. No se incluyen historia clínica, recetas, pagos, facturación, autogestión, recordatorios automáticos ni reprogramación automática.
 
 ## Stack y acceso local
 
@@ -51,7 +51,7 @@ Seguir [instalación](docs/instalacion-configuracion.md) para alinear los puerto
 
 Se verificó la compilación del frontend y se ejecutaron nueve pruebas unitarias y catorce de integración del backend con MySQL descartable, incluidas reserva y reprogramación concurrentes. La validación visual en navegador, la aceptación integral y las pruebas de carga siguen pendientes.
 
-Se habilitan horarios por mes con duración fija de 40 minutos, validación de intervalos y conservación de citas/historia. Se retiraron el cambio de duración y la migración mensual asociada. Continúa pendiente la definición funcional de permisos y la aceptación integral. Los permisos existentes se mantienen hasta esa definición. **No existe un modo demo activo**. Detalle y prioridades en [pendientes](docs/pendientes-riesgos.md).
+Se habilitan horarios por mes con duración fija de 40 minutos, validación de intervalos y conservación de citas/historia. Se retiraron la edición del horario habitual, las aperturas extraordinarias y la migración mensual asociada. La autorización por roles está implementada; su verificación formal y la aceptación integral quedan pendientes. **No existe un modo demo activo**. Detalle y prioridades en [pendientes](docs/pendientes-riesgos.md).
 
 El [índice de documentación](docs/README.md) reúne las guías por audiencia y los diagramas Mermaid se mantienen como texto en sus documentos.
 

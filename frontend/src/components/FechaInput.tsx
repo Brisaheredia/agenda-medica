@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { finDeMes, meses } from "../lib/fechas";
+import { esDiaDeAtencion, finDeMes, meses } from "../lib/fechas";
 
 type Props = {
   value: string;
@@ -8,6 +8,7 @@ type Props = {
   max?: string;
   required?: boolean;
   disabled?: boolean;
+  soloDiasHabiles?: boolean;
   "aria-label"?: string;
 };
 
@@ -17,7 +18,7 @@ function partesDe(fecha: string) {
 }
 
 /** Selector de fecha civil en español, independiente del idioma del navegador. */
-export function FechaInput({ value, onChange, min, max, required, disabled, "aria-label": nombre = "Fecha" }: Props) {
+export function FechaInput({ value, onChange, min, max, required, disabled, soloDiasHabiles = false, "aria-label": nombre = "Fecha" }: Props) {
   const [partes, setPartes] = useState(() => partesDe(value));
   const diaInput = useRef<HTMLSelectElement>(null);
   useEffect(() => setPartes(partesDe(value)), [value]);
@@ -37,8 +38,20 @@ export function FechaInput({ value, onChange, min, max, required, disabled, "ari
     if (/^\d{4}$/.test(siguientes.anio) && Number(siguientes.anio) > 0 && siguientes.mes && siguientes.dia) {
       const ultimo = Number(finDeMes(`${siguientes.anio}-${siguientes.mes}`).slice(8));
       siguientes.dia = String(Math.min(Number(siguientes.dia), ultimo)).padStart(2, "0");
+      // Si cambia el mes o el año y el día pasa a ser fin de semana,
+      // elegimos el siguiente hábil del mes (o el anterior si no queda otro).
+      if (soloDiasHabiles && campo !== "dia") {
+        let numero = Number(siguientes.dia);
+        while (numero <= ultimo && !esDiaDeAtencion(`${siguientes.anio}-${siguientes.mes}-${String(numero).padStart(2, "0")}`)) numero++;
+        if (numero > ultimo) {
+          numero = Number(siguientes.dia) - 1;
+          while (numero > 0 && !esDiaDeAtencion(`${siguientes.anio}-${siguientes.mes}-${String(numero).padStart(2, "0")}`)) numero--;
+        }
+        siguientes.dia = String(numero).padStart(2, "0");
+      }
       const elegida = `${siguientes.anio}-${siguientes.mes}-${siguientes.dia}`;
-      if ((!min || elegida >= min) && (!max || elegida <= max)) onChange(elegida);
+      if ((!min || elegida >= min) && (!max || elegida <= max) &&
+        (!soloDiasHabiles || esDiaDeAtencion(elegida))) onChange(elegida);
     } else if (!siguientes.anio && !siguientes.mes && !siguientes.dia) {
       onChange("");
     }
@@ -51,7 +64,8 @@ export function FechaInput({ value, onChange, min, max, required, disabled, "ari
       <option value="">Día</option>
       {Array.from({ length: cantidadDias }, (_, indice) => {
         const dia = String(indice + 1).padStart(2, "0");
-        return <option key={dia} value={dia}>{indice + 1}</option>;
+        return <option key={dia} value={dia}
+          disabled={!!soloDiasHabiles && !!mesCompleto && !esDiaDeAtencion(`${partes.anio}-${partes.mes}-${dia}`)}>{indice + 1}</option>;
       })}
     </select>
     <select aria-label={`${nombre}: mes`} required={required || !!partes.dia || !!partes.anio}

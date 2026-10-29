@@ -30,8 +30,8 @@ public final class HorarioConsultorio {
         return minutosDesdeApertura % ConfiguracionAgenda.DURACION_TURNO_MIN == 0;
     }
 
-    // Una apertura excepcional se mantiene como excepción explícita, no como cambio del horario base.
+    // La vigencia de una apertura antigua no habilita nuevas reservas fuera del horario acordado.
     public static boolean esReservablePorHorario(Franja franja) {
-        return "EXCEPCION_APERTURA".equals(franja.getOrigen()) || esFranjaHabitual(franja);
+        return esFranjaHabitual(franja);
     }
 }

@@ -61,7 +61,6 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.POST,
                                 "/api/agenda/generar-franjas",
-                                "/api/agenda/excepciones",
                                 "/api/agenda/bloqueos",
                                 "/api/agenda/bloqueos/previsualizacion")
                         .hasAnyRole("ADMIN", "MEDICO")

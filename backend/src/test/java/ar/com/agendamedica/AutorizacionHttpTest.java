@@ -81,20 +81,16 @@ class AutorizacionHttpTest {
                 new Operacion("GET", "/api/agenda/disponibles?profesionalId=1", null, 200, TODOS),
                 new Operacion("GET", "/api/agenda/excepciones?profesionalId=1&desde=2099-01-01&hasta=2099-01-31", null, 200, TODOS),
                 new Operacion("GET", "/api/agenda/reprogramaciones-pendientes?profesionalId=1", null, 200, RESULTADOS),
-                new Operacion("POST", "/api/agenda/plantillas", """
-                        {"profesionalId":1,"diaSemana":"MONDAY","horaInicio":"08:00","horaFin":"20:00","vigenciaDesde":"2099-01-01"}
-                        """, 201, HORARIOS),
                 new Operacion("POST", "/api/agenda/generar-franjas", """
                         {"profesionalId":1,"desde":"2099-01-01","hasta":"2099-01-31"}
                         """, 200, HORARIOS),
-                new Operacion("POST", "/api/agenda/excepciones", """
-                        {"profesionalId":1,"fecha":"2099-01-05","tipo":"CIERRE","motivo":"Prueba"}
-                        """, 201, HORARIOS),
-                new Operacion("POST", "/api/agenda/bloqueos", """
+                new Operacion("POST", "/api/agenda/bloqueos/previsualizacion", """
                         {"profesionalId":1,"fecha":"2099-01-05","motivo":"Prueba"}
+                        """, 200, HORARIOS),
+                new Operacion("POST", "/api/agenda/bloqueos", """
+                        {"profesionalId":1,"fecha":"2099-01-05","motivo":"Prueba","turnosAfectadosEsperados":[]}
                         """, 201, HORARIOS),
                 new Operacion("GET", "/api/configuracion/agenda", null, 200, TODOS),
-                new Operacion("PUT", "/api/configuracion/agenda", "{\"horizonteReservaDias\":90}", 200, ADMIN),
                 new Operacion("GET", "/api/turnos?profesionalId=1&fecha=2099-01-05", null, 200, TODOS),
                 new Operacion("GET", "/api/turnos/1", null, 200, TODOS),
                 new Operacion("POST", "/api/turnos", "{\"pacienteId\":1,\"franjaId\":1}", 201, TURNOS),

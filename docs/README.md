@@ -1,6 +1,6 @@
 # Índice de documentación
 
-Documentación vigente del código con colores y reprogramaciones, actualizada el 17 de octubre de 2026. Se mantiene junto a la implementación y se revisa en cada cambio funcional.
+Documentación revisada el 29 de octubre de 2026 tras acotar el alcance acordado con Salvador y retirar las aperturas extraordinarias. Se mantiene junto a la implementación y se revisa en cada cambio funcional.
 
 | Audiencia o necesidad | Documento |
 |---|---|

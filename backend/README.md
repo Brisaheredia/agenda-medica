@@ -1,6 +1,6 @@
 # Backend de Agenda Médica
 
-API REST de pacientes, disponibilidad, turnos, usuarios y auditoría. Código en `backend/`, dentro del repositorio. Actualizado con origen de cancelación y reprogramaciones, 17 de octubre de 2026.
+API REST de pacientes, disponibilidad, turnos, usuarios y auditoría. Código en `backend/`, dentro del repositorio. Actualizado con la configuración fija y los cierres del alcance acordado, 29 de octubre de 2026.
 
 ## Requisitos y ejecución
 
@@ -34,7 +34,7 @@ La reserva bloquea una Franja con `PESSIMISTIC_WRITE` dentro de una transacción
 
 ## Configuración y datos iniciales
 
-`ConfiguracionAgenda` usa ID 1, duración fija de 40 minutos y horizonte inicial de 45 días. Sólo el horizonte es configurable. Si no hay fila, GET devuelve valores iniciales sin insertarlos; PUT crea o actualiza. La columna previa de duración se conserva por compatibilidad: la API siempre expone 40 y rechaza otros valores; al guardar se persiste 40 sin reescribir historia.
+`HorarioConsultorio` define días y horas fijos: lunes a viernes, 08:00–20:00 y 40 minutos. La generación y la reserva habilitan el mes actual más tres meses calendario futuros completos. La fila `ConfiguracionAgenda` conserva campos anteriores (duración y horizonte en días) solo por compatibilidad de lectura; esos campos no controlan la ventana activa ni ofrecen edición en la API.
 
 `TiempoAgenda` calcula fecha y hora de negocio en America/Argentina/Buenos_Aires, independientemente de la zona de la JVM. Los timestamps y validaciones usan esta referencia; el JSON conserva los horarios civiles sin offset. Las pruebas de medianoche cubren el cambio de fecha a las 03:00 UTC.
 

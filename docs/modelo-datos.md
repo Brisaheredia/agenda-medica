@@ -11,7 +11,7 @@ Modelo lógico derivado de las diez entidades JPA actuales. MySQL conserva confi
 | Profesional / profesionales | ID, nombre, apellido, matrícula única, activo y marcas de tiempo. |
 | ConfiguracionAgenda / configuracion_agenda | ID fijo 1, duracion_estandar_min, horizonte_reserva_dias. Duración fija 40; horizonte inicial 45 si falta la fila. La columna de duración se conserva por compatibilidad. |
 | PlantillaDisponibilidad / plantillas_disponibilidad | Profesional, día de semana, inicio/fin, duracion_min, vigencia_desde/hasta. |
-| ExcepcionAgenda / excepciones_agenda | Profesional, fecha, horas opcionales, tipo APERTURA/CIERRE, motivo. |
+| ExcepcionAgenda / excepciones_agenda | Profesional, fecha, horas opcionales, tipo CIERRE; APERTURA se conserva solo para leer datos históricos, no para nuevas operaciones. |
 | Franja / franjas | Profesional, inicio/fin concretos, estado, origen y version. |
 | Turno / turnos | Paciente, profesional, franja, copia de inicio/fin, estado, motivo_consulta, origen_cancelacion nullable (PACIENTE/CONSULTORIO), motivo_cancelacion nullable, created_at y updated_at. |
 | TurnoEvento / turno_eventos | Turno, tipo, fecha, usuario opcional, franja_anterior_id/nueva_id y detalle. |
@@ -39,7 +39,7 @@ erDiagram
     }
 ```
 
-ConfiguracionAgenda es una fila independiente. El actor de TurnoEvento es una relación opcional existente en el modelo; su asignación en el flujo actual sigue pendiente. Varias reservas históricas pueden referenciar la misma franja, aunque sólo una debería estar activa.
+ConfiguracionAgenda es una fila independiente. El actor de TurnoEvento se informa para eventos nuevos; los registros históricos previos pueden tener `usuario_id` nulo. Varias reservas históricas pueden referenciar la misma franja, aunque sólo una debería estar activa.
 
 ## Restricciones e índices
 

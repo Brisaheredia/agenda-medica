@@ -1,6 +1,6 @@
 # Pruebas y aceptación
 
-Esta guía separa pruebas existentes, comprobaciones realizadas y casos que faltan. Actualizado con colores y reprogramaciones el 17 de octubre de 2026. Una funcionalidad no se considera aprobada sólo por existir en código ni por haber compilado.
+Esta guía separa pruebas existentes, comprobaciones realizadas y casos pendientes. Revisión de alcance: 29 de octubre de 2026. **Los resultados enumerados más abajo son históricos y no prueban el commit actual.** Se actualizaron referencias puntuales de pruebas existentes a los métodos y rutas vigentes. **No se ejecutó ni aprobó la suite** sobre el cambio actual; su evaluación completa y ampliación corresponde a la entrega formal de Testing. No se ejecutó una suite integral nueva para estos cambios.
 
 ## Ejecutar las comprobaciones disponibles
 
@@ -40,10 +40,10 @@ Clase `backend/src/test/java/ar/com/agendamedica/TurnoAgendaIntegrationTest.java
 | noReprogramaCancelacionSolicitadaPorPaciente | Rechaza reactivación y conserva destino libre |
 | dosReprogramacionesConcurrentesDelMismoTurnoNoDejanFranjasHuerfanas | Serializa cambios del mismo turno y deja sólo su destino final ocupado |
 | generaCuarentaAunqueLaPlantillaSeaAntiguaYLimpiaSoloLibresSinHistoria | Genera 18 horarios de 40, limpia legado libre sin historial y repite sin duplicar |
-| duracionFijaRechazaCambiosYPermiteGuardarSoloHorizonte | Rechaza 30 en configuración, plantilla y apertura; permite guardar sólo horizonte |
+| duracionFijaRechazaCambiosYPermiteGuardarSoloHorizonte | **Obsoleto**: invoca configuración/plantillas/aperturas retiradas; adaptar a horario fijo. |
 | noBorraNiModificaTurnoAntiguoCuandoImpideGenerarCuarenta | Mantiene cita antigua e intervalo original ante conflicto, sin cambios parciales |
 | reservasDeCuarentaEnFranjasDiferentesSuperpuestasSeSerializan | Un éxito y un conflicto entre dos IDs con intervalos superpuestos |
-| generacionMensualEsFinitaCercaDeMedianocheYNoAceptaDosMeses | Límite de medianoche y rechazo de generación de varios meses |
+| generacionMensualEsFinitaCercaDeMedianocheYNoAceptaDosMeses | **Obsoleto en parte**: el ejemplo usa horas 23:00 y plantillas editables. Conservar la verificación de un solo mes y el límite temporal, adaptando a 08:00–20:00. |
 | usuariosPersistenCuartoRolYRevocanSesionAlCambiarCredenciales | Persiste OBRAS_SOCIALES, BCrypt, cambios de contraseña/rol, invalida JWT y protege último administrador |
 
 Estos escenarios llaman servicios. `AutorizacionHttpTest` agrega pruebas de autorización con filtros/controladores y JWT reales para los cuatro roles, servicios simulados y sin acceso a datos del consultorio. Ver [roles y permisos](roles-permisos.md). DisponibilidadServiceTest agrega seis pruebas sobre liberación, cierre parcial y destino cerrado. AgendaConsultaServiceTest agrega tres sobre contactos, cierres duplicados, cancelación individual y rango inválido. No hay medición de cobertura porcentual.
@@ -66,7 +66,7 @@ Estos escenarios llaman servicios. `AutorizacionHttpTest` agrega pruebas de auto
 | Generación cerca de medianoche | Iteración reemplazada por LocalDateTime y límite; prueba mensual cerca de medianoche aprobada |
 | Pruebas E2E, carga, navegadores y restauración | Sin acta aprobada |
 
-La nueva evidencia corresponde al árbol de trabajo con colores/reprogramaciones del 17/10/2026, posterior a 8fc8bc2. Las pruebas de negocio y permisos se ejecutan con servicios simulados o datos ficticios en contenedores; la configuración de cuentas solicitada se aplica por separado a la instalación local y no modifica pacientes ni turnos. El resultado del CI remoto no fue consultado.
+La evidencia anterior corresponde a revisiones anteriores del 17/10/2026, no al árbol actual tras los retiros y refactorizaciones. Las pruebas de negocio y permisos se ejecutan con servicios simulados o datos ficticios en contenedores; la configuración de cuentas solicitada se aplica por separado a la instalación local y no modifica pacientes ni turnos. El resultado del CI remoto no fue consultado.
 
 ## Casos de aceptación por completar
 
@@ -75,15 +75,16 @@ Usar una base descartable con un profesional activo y pacientes ficticios. Las f
 | Caso | Procedimiento y resultado exigido |
 |---|---|
 | CA-01 | Arrancar desde clon limpio, crear ADMIN y consultar profesional/configuración según guía |
-| CA-02 | Verificar duración fija 40 y horizonte inicial 45; guardar otro horizonte, recargar y comprobar; rechazar duración 30 |
-| CA-03 | Marcar lunes–viernes 08:00–20:00, guardar y habilitar una semana: 18 franjas por día sin cierres, ninguna de fin de semana |
-| CA-04 | Con API simulada fallar el tercer día: conservar pendientes y reintentar sin duplicar los dos éxitos previos |
+| CA-02 | Verificar regla fija lunes a viernes, 08:00–20:00, duración 40; sin edición de horario ni anticipación en días. |
+| CA-03 | Habilitar un mes con horario fijo: 18 franjas por día hábil, ninguna de fin de semana; repetir sin duplicar. |
+| CA-04 | Habilitar mes actual y cada uno de los tres meses siguientes completos; el cuarto mes futuro queda fuera de selección. |
 | CA-05 | Registrar paciente, buscar por DNI/apellido, editar, desactivar y verificar historial preservado |
 | CA-06 | Reservar, recargar, rechazar nueva reserva concurrente sobre la misma franja con conflicto controlado |
-| CA-07 | Intentar intervalos superpuestos creados por plantillas/aperturas; impedir compromiso simultáneo del profesional |
+| CA-07 | Intentar reservar dos franjas superpuestas o una franja antigua fuera del horario fijo: rechazar la reserva indebida. |
 | CA-08 | Cancelar turno sin cierre: conservar historial y liberar; cancelar dentro de cierre: mantener bloqueo |
 | CA-09 | Reprogramar a libre: mismo ID, origen/destino/actor; a ocupada: error y original intacto |
-| CA-10 | Cerrar un día ocupado: conservar turnos, listar pacientes/contactos, recuperar pendientes tras recarga y resolver uno a uno |
+| CA-10 | Previsualizar turnos afectados antes de confirmar cierre; conservar turnos, listar contactos, recuperar pendientes tras recarga y resolver uno a uno. |
+| CA-10B | Intentar previsualizar y confirmar una suspensión en sábado o domingo: rechazo 400, sin cierre registrado. El selector de fecha no ofrece esos días como seleccionables. |
 | CA-11 | Atender/ausente: rechazar antes del inicio y aceptar desde inicio según rol |
 | CA-12 | Verificar todas las filas de roles API, sesión vencida, credenciales incorrectas y errores 400/403 sin confundir causas |
 | CA-13 | Consultar disponibilidad desde fecha elegida, varias alternativas y rango; excluir pasado/cierres/ocupación |
@@ -91,7 +92,7 @@ Usar una base descartable con un profesional activo y pacientes ficticios. Las f
 | CA-15 | Restaurar respaldo en base separada y contrastar pacientes, franjas, turnos, eventos y auditoría |
 | CA-19 | Verificar rojo consultorio, naranja paciente, verde disponible, azul ocupado, gris sin horarios y domingo rojizo; conservar etiquetas y distinguir cancelaciones antiguas sin origen |
 | CA-16 | En 360 px y navegadores acordados, completar reserva y navegar fechas con teclado; Hoy sólo en fecha actual |
-| CA-17 | Generar 40 aun con plantillas antiguas de 30; limpiar sólo libres sin historial, conservar citas previas, rechazar reservas nuevas en franjas de otra duración y repetir sin duplicar. |
+| CA-17 | Generar 40 con datos antiguos incompatibles; preservar citas/historial y no ofrecer franjas fuera del horario habitual. |
 | CA-18 | Dos cambios simultáneos del mismo turno no dejan destinos ocupados sin compromiso ni eventos incompatibles |
 
 ## Pruebas de carga y salida

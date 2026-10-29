@@ -15,6 +15,12 @@ export function hoy(instante = new Date()) {
   return `${valor("year")}-${valor("month")}-${valor("day")}`;
 }
 
+// Un cierre de atención solo corresponde a días con atención habitual.
+export function esDiaDeAtencion(fecha: string) {
+  const dia = new Date(`${fecha}T12:00:00Z`).getUTCDay();
+  return dia !== 0 && dia !== 6;
+}
+
 // Las fechas de calendario se operan como fechas civiles, sin convertirlas a otra zona.
 export function moverDia(fecha: string, dias: number) {
   const dia = new Date(`${fecha}T12:00:00Z`);

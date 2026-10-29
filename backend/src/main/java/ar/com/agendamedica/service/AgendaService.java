@@ -117,113 +117,42 @@ public class AgendaService {
         if (request.turnosAfectadosEsperados() == null) {
             throw new BadRequestException("Revisá primero los turnos afectados antes de confirmar el cierre");
         }
-        return guardarExcepcion(new ExcepcionAgendaRequest(
-                request.profesionalId(),
-                request.fecha(),
-                request.horaInicio(),
-                request.horaFin(),
-                TipoExcepcionAgenda.CIERRE,
-                null,
-                request.motivo()
-        ), request.turnosAfectadosEsperados());
-    }
-
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public ExcepcionAgendaResponse crearExcepcion(ExcepcionAgendaRequest request) {
-        // Los cierres sólo se confirman por /bloqueos, después de revisar afectados.
-        if (request.tipo() == TipoExcepcionAgenda.CIERRE) {
-            throw new BadRequestException("Para crear cierres, usá la previsualización y confirmación de bloqueos");
-        }
-        return guardarExcepcion(request, null);
-    }
-
-    private ExcepcionAgendaResponse guardarExcepcion(ExcepcionAgendaRequest request,
-                                                     List<Long> turnosEsperados) {
-        validarDuracion(request.duracionMin());
+        // Se valida otra vez bajo el mismo bloqueo usado al asignar/reprogramar turnos.
         Profesional profesional = bloquearProfesional(request.profesionalId());
-
         validarFechaYHorario(request.fecha(), request.horaInicio(), request.horaFin());
 
-        // La misma exclusión mutua usada al reservar y reprogramar turnos evita
-        // altas simultáneas entre esta verificación y el guardado del cierre.
-        List<Long> turnosAfectados = List.of();
-        if (request.tipo() == TipoExcepcionAgenda.CIERRE) {
-            turnosAfectados = buscarTurnosAfectados(
-                    profesional.getId(), request.fecha(), request.horaInicio(), request.horaFin())
-                    .stream().map(Turno::getId).toList();
-            if (!turnosAfectados.equals(turnosEsperados)) {
-                throw new ConflictException("Los turnos afectados cambiaron. Volvé a revisar antes de confirmar el cierre");
-            }
+        List<Long> turnosAfectados = buscarTurnosAfectados(
+                profesional.getId(), request.fecha(), request.horaInicio(), request.horaFin())
+                .stream().map(Turno::getId).toList();
+        if (!turnosAfectados.equals(request.turnosAfectadosEsperados())) {
+            throw new ConflictException("Los turnos afectados cambiaron. Volvé a revisar antes de confirmar el cierre");
         }
 
-        ExcepcionAgenda excepcion = new ExcepcionAgenda();
-        excepcion.setProfesional(profesional);
-        excepcion.setFecha(request.fecha());
-        excepcion.setHoraInicio(request.horaInicio());
-        excepcion.setHoraFin(request.horaFin());
-        excepcion.setTipo(request.tipo());
-        excepcion.setMotivo(normalize(request.motivo()));
-        excepcion = excepcionRepository.save(excepcion);
+        ExcepcionAgenda cierre = new ExcepcionAgenda();
+        cierre.setProfesional(profesional);
+        cierre.setFecha(request.fecha());
+        cierre.setHoraInicio(request.horaInicio());
+        cierre.setHoraFin(request.horaFin());
+        cierre.setTipo(TipoExcepcionAgenda.CIERRE);
+        cierre.setMotivo(normalize(request.motivo()));
+        cierre = excepcionRepository.save(cierre);
 
-        int franjasCreadas = 0;
         int franjasBloqueadas = 0;
-
-        if (request.tipo() == TipoExcepcionAgenda.CIERRE) {
-            List<Franja> franjas = franjasDelDia(profesional.getId(), request.fecha());
-
-            for (Franja franja : franjas) {
-                if (!solapa(request, franja.getInicio().toLocalTime(), franja.getFin().toLocalTime())) {
-                    continue;
-                }
-
-                if (franja.getEstado() == EstadoFranja.LIBRE && !franja.getInicio().isBefore(TiempoAgenda.ahora())) {
-                    franja.setEstado(EstadoFranja.BLOQUEADA);
-                    franjaRepository.save(franja);
-                    franjasBloqueadas++;
-                }
+        for (Franja franja : franjasDelDia(profesional.getId(), request.fecha())) {
+            if (!solapa(request, franja.getInicio().toLocalTime(), franja.getFin().toLocalTime())) {
+                continue;
             }
-
-        } else {
-            if (request.horaInicio() == null || request.horaFin() == null) {
-                throw new BadRequestException(
-                        "Una apertura requiere horaInicio y horaFin");
-            }
-
-            int duracion = configuracionService.obtener().getDuracionEstandarMin();
-            LocalDateTime limite = request.fecha().atTime(request.horaFin());
-            for (LocalDateTime inicio = request.fecha().atTime(request.horaInicio());
-                 !inicio.plusMinutes(duracion).isAfter(limite); inicio = inicio.plusMinutes(duracion)) {
-                LocalDateTime fin = inicio.plusMinutes(duracion);
-                if (!inicio.isAfter(TiempoAgenda.ahora())) continue;
-                if (franjaRepository.existsByProfesionalIdAndInicioLessThanAndFinGreaterThan(
-                        profesional.getId(), fin, inicio)) {
-                    throw new ConflictException("La apertura se superpone con horarios existentes. Elegí un intervalo que no se superponga");
-                }
-                Franja franja = new Franja();
-                franja.setProfesional(profesional);
-                franja.setInicio(inicio);
-                franja.setFin(fin);
-                franja.setOrigen("EXCEPCION_APERTURA");
+            if (franja.getEstado() == EstadoFranja.LIBRE && !franja.getInicio().isBefore(TiempoAgenda.ahora())) {
+                franja.setEstado(EstadoFranja.BLOQUEADA);
                 franjaRepository.save(franja);
-                franjasCreadas++;
+                franjasBloqueadas++;
             }
         }
 
-        auditoriaService.registrar(
-                "CREAR_EXCEPCION_AGENDA",
-                "ExcepcionAgenda",
-                excepcion.getId(),
-                "tipo=" + excepcion.getTipo()
-                        + ", fecha=" + excepcion.getFecha()
-                        + ", turnosAfectados=" + turnosAfectados
-        );
-
-        return ExcepcionAgendaResponse.from(
-                excepcion,
-                franjasCreadas,
-                franjasBloqueadas,
-                turnosAfectados
-        );
+        auditoriaService.registrar("CREAR_EXCEPCION_AGENDA", "ExcepcionAgenda", cierre.getId(),
+                "tipo=CIERRE, fecha=" + cierre.getFecha() + ", turnosAfectados=" + turnosAfectados);
+        // franjasCreadas=0 se mantiene por compatibilidad con el DTO de respuesta.
+        return ExcepcionAgendaResponse.from(cierre, 0, franjasBloqueadas, turnosAfectados);
     }
 
     private boolean duracionCorrecta(Franja franja) {
@@ -231,13 +160,10 @@ public class AgendaService {
                 .equals(java.time.Duration.ofMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN));
     }
 
-    private void validarDuracion(Integer duracion) {
-        if (duracion != null && duracion != ConfiguracionAgenda.DURACION_TURNO_MIN) {
-            throw new BadRequestException("La duración de los turnos es fija: 40 minutos");
-        }
-    }
-
     private void validarFechaYHorario(LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
+        if (!HorarioConsultorio.atiende(fecha)) {
+            throw new BadRequestException("El consultorio no atiende sábados ni domingos; elegí un día de lunes a viernes");
+        }
         if (fecha.isBefore(TiempoAgenda.hoy())) {
             throw new BadRequestException("No se pueden crear excepciones en fechas pasadas");
         }
@@ -256,7 +182,7 @@ public class AgendaService {
         return turnoRepository.findAfectadosPorCierre(profesionalId, ESTADOS_ACTIVOS, desde, hasta);
     }
 
-    private boolean solapa(ExcepcionAgendaRequest request, LocalTime inicio, LocalTime fin) {
+    private boolean solapa(BloqueoAgendaRequest request, LocalTime inicio, LocalTime fin) {
         if (request.horaInicio() == null || request.horaFin() == null) {
             return true;
         }

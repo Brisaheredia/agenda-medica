@@ -2,6 +2,16 @@
 
 Registro de cambios relevantes inspeccionados, no historial exhaustivo de cada commit ni acta de liberación productiva.
 
+## 29 de octubre de 2026 — Alcance definitivo y modularidad
+
+- Se conserva el horario habitual confirmado (lunes a viernes, 08:00–20:00, 40 minutos) y la habilitación del mes actual y tres meses calendario futuros completos, definida internamente.
+- Se retiró el flujo de **apertura extraordinaria** de la interfaz y del POST de API. Los registros APERTURA históricos siguen siendo legibles; no habilitan nuevas reservas fuera del horario fijo.
+- `AgendaService` mantiene cierres con previsualización y confirmación transaccional; no se eliminan compromisos ni eventos previos.
+- `PlanificacionHorariosService` concentra la generación mensual y `DiaCalendarioAgenda` permite reutilizar representación de días entre Semana y Rango.
+- Se actualizó la documentación de RF/RNF, API, arquitectura, manual, permisos y trazabilidad para distinguir análisis inicial y alcance acordado. Se retocaron referencias obsoletas de pruebas existentes, sin ejecutar la suite formal.
+
+Las referencias a anticipación en días, aperturas o plantillas editables que siguen más abajo corresponden a **hitos históricos** del proyecto, no al contrato vigente.
+
 ## Cuentas de desarrollo en instalaciones independientes
 
 Con perfil `dev`, cada backend crea en su propia BD las cuentas de prueba faltantes para los cuatro roles. Las credenciales pueden configurarse por entorno y las cuentas existentes conservan contraseña, rol y estado. La inicialización puede deshabilitarse y no se activa fuera de `dev`. Se documentan pasos y claves públicas de prueba para el equipo. Validación: 197 pruebas backend aprobadas, incluida la creación e ingreso de los cuatro roles en MySQL nuevo descartable.

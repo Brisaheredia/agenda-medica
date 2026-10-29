@@ -3,6 +3,7 @@ import { detalleError } from "../api";
 import { hoy } from "../types";
 import { Icon } from "../components/Icon";
 import { FechaInput } from "../components/FechaInput";
+import { esDiaDeAtencion, moverDia } from "../lib/fechas";
 
 type TurnoEnBloqueo = {
   turnoId: number;
@@ -26,12 +27,17 @@ type Props = {
   onGuardado?: () => Promise<void>;
 };
 
+function siguienteDiaDeAtencion(fecha: string) {
+  let siguiente = fecha;
+  while (!esDiaDeAtencion(siguiente)) siguiente = moverDia(siguiente, 1);
+  return siguiente;
+}
+
 export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }: Props) {
-  const [fecha, setFecha] = useState(hoy());
+  const [fecha, setFecha] = useState(() => siguienteDiaDeAtencion(hoy()));
   const [horaInicio, setHoraInicio] = useState("");
   const [horaFin, setHoraFin] = useState("");
   const [motivo, setMotivo] = useState("");
-  const [esApertura, setEsApertura] = useState(false);
   const [esFeriado, setEsFeriado] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -41,6 +47,10 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
   async function guardar(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!puedeGestionar || !profesionalId || busy) return;
+    if (!esDiaDeAtencion(fecha)) {
+      setError("El consultorio no atiende sábados ni domingos; elegí un día de lunes a viernes.");
+      return;
+    }
     setBusy(true);
     setError("");
     setResultado(null);
@@ -52,7 +62,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
       motivo: motivo.trim() || null,
     };
     try {
-      if (!esApertura && !previsualizacion) {
+      if (!previsualizacion) {
         // Primera etapa: no modifica la agenda.
         const previa = await api<PrevisualizacionBloqueo>(
           "/api/agenda/bloqueos/previsualizacion",
@@ -62,13 +72,12 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
         return;
       }
 
-      const path = esApertura ? "/api/agenda/excepciones" : "/api/agenda/bloqueos";
-      const payload = esApertura
-        ? { ...body, tipo: "APERTURA" }
-        : { ...body, turnosAfectadosEsperados: previsualizacion!.turnosAfectados.map((t) => t.turnoId) };
-      const response = await api<Resultado>(path, {
+      const response = await api<Resultado>("/api/agenda/bloqueos", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...body,
+          turnosAfectadosEsperados: previsualizacion!.turnosAfectados.map((t) => t.turnoId),
+        }),
       });
       setResultado(response);
       setPrevisualizacion(null);
@@ -88,7 +97,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
         <div className="page-heading">
           <div>
             <p className="eyebrow">AGENDA</p>
-            <h1>Bloqueos y excepciones</h1>
+            <h1>Suspensiones de atención</h1>
           </div>
         </div>
         <div className="alert error" role="alert">
@@ -102,9 +111,9 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
       <div className="page-heading">
         <div>
           <p className="eyebrow">CONFIGURACIÓN DEL CONSULTORIO</p>
-          <h1 id="blocks-title">Bloqueos y excepciones</h1>
+          <h1 id="blocks-title">Suspensiones de atención</h1>
           <p className="muted">
-            Cerrá horarios puntuales o agregá una apertura extraordinaria.
+            Suspendé un día completo o un intervalo; los turnos afectados se conservan para reprogramarlos.
           </p>
         </div>
         <span className="page-label">
@@ -119,9 +128,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
       )}
       {resultado && (
         <div className="alert success" role="status">
-          {esApertura
-            ? `Se agregaron ${resultado.franjasCreadas} franjas de atención.`
-            : `Se bloquearon ${resultado.franjasBloqueadas} franjas.`}
+          {`Se bloquearon ${resultado.franjasBloqueadas} franjas.`}
           {resultado.turnosAfectados.length > 0 && (
             <span>
               {" "}
@@ -140,10 +147,9 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
             >
               <button
                 type="button"
-                className={!esApertura ? "filter active" : "filter"}
-                aria-pressed={!esApertura}
+                className={!esFeriado ? "filter active" : "filter"}
+                aria-pressed={!esFeriado}
                 onClick={() => {
-                  setEsApertura(false);
                   setEsFeriado(false);
                   setResultado(null);
                   setPrevisualizacion(null);
@@ -153,27 +159,9 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
               </button>
               <button
                 type="button"
-                className={esApertura ? "filter active" : "filter"}
-                aria-pressed={esApertura}
-                onClick={() => {
-                  setEsApertura(true);
-                  setEsFeriado(false);
-                  setResultado(null);
-                  setPrevisualizacion(null);
-                  if (!horaInicio) {
-                    setHoraInicio("08:00");
-                    setHoraFin("12:00");
-                  }
-                }}
-              >
-                Apertura extraordinaria
-              </button>
-              <button
-                type="button"
                 className={esFeriado ? "filter active" : "filter"}
                 aria-pressed={esFeriado}
                 onClick={() => {
-                  setEsApertura(false);
                   setEsFeriado(true);
                   setHoraInicio("");
                   setHoraFin("");
@@ -186,15 +174,15 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
               </button>
             </div>
             <p className="muted block-help">
-              {esApertura
-                ? "La apertura agrega horarios de atención para esta fecha."
-                : "El bloqueo cierra la fecha completa o solo el rango horario elegido. Conservamos los turnos y sus pacientes aparecen en Reprogramaciones para coordinar otro horario."}
+              El bloqueo cierra la fecha completa o solo el rango horario elegido. Conservamos los turnos y sus pacientes aparecen en Reprogramaciones para coordinar otro horario.
             </p>
+            <p className="muted block-help">Solo se pueden suspender días de atención: lunes a viernes.</p>
             <div className="availability-fields">
               <label>
                 Fecha
                 <FechaInput
-                  aria-label="Fecha del bloqueo o apertura"
+                  aria-label="Fecha del bloqueo"
+                  soloDiasHabiles
                   min={hoy()}
                   required
                   value={fecha}
@@ -232,9 +220,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
                   }
                 }}
               />
-              {esApertura
-                ? "Usar horario del día completo"
-                : "Bloquear el día completo"}
+              Bloquear el día completo
             </label>
             {!!horaInicio && (
               <div className="availability-fields">
@@ -266,12 +252,7 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
 
               </div>
             )}
-            {esApertura && !horaInicio && (
-              <p className="alert error">
-                Para una apertura extraordinaria, indicá el horario.
-              </p>
-            )}
-            {!esApertura && previsualizacion && (
+            {previsualizacion && (
               <div className="block-preview" role="status">
                 <strong>
                   {previsualizacion.cantidadTurnosAfectados === 0
@@ -304,16 +285,14 @@ export function BloqueosPage({ api, profesionalId, puedeGestionar, onGuardado }:
               </div>
             )}
             <button
-              className={!esApertura && previsualizacion ? "danger" : "primary"}
-              disabled={!profesionalId || busy || (esApertura && !horaInicio)}
+              className={previsualizacion ? "danger" : "primary"}
+              disabled={!profesionalId || busy}
             >
               {busy
                 ? "Procesando…"
-                : esApertura
-                  ? "Crear apertura"
-                  : previsualizacion
-                    ? "Confirmar cierre de agenda"
-                    : "Revisar turnos afectados"}
+                : previsualizacion
+                  ? "Confirmar cierre de agenda"
+                  : "Revisar turnos afectados"}
             </button>
           </fieldset>
         </form>

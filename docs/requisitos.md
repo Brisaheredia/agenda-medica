@@ -1,85 +1,71 @@
-# Requisitos y alcance
+# Alcance y requisitos — Agenda Médica
 
-Base: DOCX inicial, correo del equipo al doctor y confirmaciones del responsable del proyecto. Fuentes en [referencias](referencias/README.md). Estado actualizado el 17 de octubre de 2026 con colores y reprogramaciones; “implementado en código” no significa aceptación integral aprobada.
+**Estado de referencia:** 29 de octubre de 2026, sobre el código de la rama `Gisele` (base `1c2b38e`, más el retiro de aperturas extraordinarias).
 
-## Contexto y decisiones confirmadas
+## Fuentes y decisión de alcance
 
-Problema: agenda distribuida/manual, horarios liberados que no se reutilizan y compromisos superpuestos. Solución: una agenda web centralizada operada por el consultorio para un profesional.
+La [especificación inicial](referencias/README.md) fue un ejercicio de relevamiento amplio. **No es el conjunto completo de funcionalidades comprometidas para esta entrega.** El equipo envió una propuesta acotada al doctor Salvador, quien confirmó el diagnóstico, informó los horarios y aceptó conservar los turnos afectados por suspensiones. El intercambio queda como fuente del alcance (ver referencias). Las decisiones internas —como generar hasta tres meses futuros completos— son reglas de implementación, **no solicitudes textuales de Salvador**.
 
-- Días y horario comunicados: lunes a viernes, 08:00–20:00.
-- Duración fija: 40 minutos por decisión final del responsable. Reemplaza el acuerdo anterior de duración configurable. El backend impone la regla y el frontend la informa.
-- El consultorio registra pacientes y opera reservas.
-- Una cancelación libera sólo si no hay bloqueo aplicable.
-- Una suspensión conserva compromisos y requiere listar pacientes/contactos para reprogramación manual.
-- Se excluyen historia clínica, recetas, pagos/facturación, autogestión, mensajería automática y reprogramación automática. Sin operación multi-profesional ni múltiples sedes.
+## Necesidad del consultorio y versión comprometida
 
-## Actores y glosario
+El consultorio utiliza una agenda manual/dispersa: las cancelaciones desaprovechan horarios disponibles y la asignación por distintos canales ocasiona superposiciones. La solución es una **aplicación web centralizada**, administrada por el consultorio para un solo profesional, con:
 
-Administración configura, mantiene y opera; Recepción gestiona pacientes, turnos y resultados; Médico consulta, modifica horarios, bloquea atención y registra resultados; Obras sociales consulta agenda/disponibilidad y gestiona turnos de pacientes existentes con datos mínimos. El paciente es destinatario de la cita, sin cuenta pública. Se implementa la [matriz de roles](roles-permisos.md) solicitada posteriormente al documento inicial.
+- Registro y consulta de los datos mínimos de pacientes para identificación y contacto.
+- Atención habitual fija **lunes a viernes de 08:00 a 20:00**, turnos de **40 minutos**.
+- Generación de franjas mensuales; por decisión técnica, se permite el mes actual y **los tres meses calendario siguientes completos**. Un cierre impide ofrecer sus franjas.
+- Consulta de disponibilidad; asignación y cancelación de turnos. Un horario cancelado vuelve a estar disponible **solo si no está bloqueado**.
+- Prevención de dobles reservas y compromisos superpuestos, incluso con operaciones concurrentes.
+- Suspensión de días o franjas: **advertencia previa**, conservación de los turnos y contactos afectados y reprogramación manual uno a uno. Solo se permiten cierres de lunes a viernes; en fines de semana no hay atención habitual que suspender.
 
-Una **plantilla** es una regla semanal con vigencia. Una **franja** es un intervalo concreto persistido. Un **turno** es el compromiso del paciente sobre una franja. Una **excepción** cierra o abre una fecha. **Horizonte** es la anticipación máxima de reserva.
+El paciente no se registra ni solicita turnos por una interfaz pública. Quedan fuera historia clínica, recetas, facturación/pagos, recordatorios, portal del paciente, automatización de reprogramaciones, gestión de plantillas con vigencia, aperturas extraordinarias, reportes por período, sedes o profesionales múltiples.
 
-## Catálogo funcional
+## Funcionalidades complementarias ya implementadas
 
-Se conservan los IDs del documento de origen. La prioridad refleja el acuerdo actual; los elementos de fases futuras no se convierten automáticamente en obligaciones de esta entrega.
+Autenticación por usuarios/roles, consulta diaria/semanal/por rango, estados atendido/ausente, historial de movimientos y auditoría básica. Algunas exceden el mínimo del correo y se conservaron por utilidad, trazabilidad y porque ya estaban desarrolladas; **no se presentan como pedidos explícitos del cliente** ni justifican nuevas ampliaciones.
 
-| ID | Requisito | Prioridad y estado |
-|---|---|---|
-| RF-01 | Credenciales individuales y sesión | MVP; implementado en código |
-| RF-02 | Crear, consultar, editar y buscar pacientes | MVP; parcial: DNI/apellido, sin contacto |
-| RF-03 | Definir días/horas y duración estándar | MVP; selección múltiple y duración fija 40 en generación/apertura |
-| RF-04 | Generar franjas según reglas/horizonte | MVP; un mes por operación, generación de 40 y conservación de compromisos |
-| RF-05 | Agenda diaria con libres/ocupadas/bloqueadas | MVP; implementado en código |
-| RF-06 | Reservar paciente activo en franja libre | MVP; validación por intervalo y bloqueo del profesional |
-| RF-07 | Cancelar con actor, fecha y motivo | MVP; distingue origen y respeta cierres; actor de TurnoEvento pendiente |
-| RF-08 | Reprogramar con identidad e historial | MVP; identidad y bloqueo de turno implementados; actor de evento pendiente |
-| RF-09 | Bloquear período futuro | MVP; cierre por fecha/horas implementado, límites pendientes |
-| RF-10 | Mostrar afectados antes de confirmar | Fase 2 original; previsualización pendiente, contactos disponibles tras suspensión |
-| RF-11 | Consultar por día, semana y rango | MVP; día/semana presentes, rango arbitrario pendiente |
-| RF-12 | Registrar atendido/ausente | MVP; implementado para Administración, Médico y Recepción |
-| RF-13 | Mostrar historial de un turno | Fase 2; eventos almacenados sin consulta específica |
-| RF-14 | Sugerir próximos libres desde fecha | MVP; diálogo de reprogramación lista alternativas desde fecha; búsqueda rápida de reserva muestra la primera |
-| RF-15 | Registrar aperturas y cierres | MVP; duración fija 40 y rechazo de superposiciones; cierre prevalece |
-| RF-16 | Cambiar plantilla con vigencia | Fase 2; hay vigencias, no reemplazo integral |
-| RF-17 | Listar afectados y resolver uno a uno | Implementado en código: pendientes con contacto y reprogramación individual; aceptación visual pendiente |
-| RF-18 | Notificaciones | Excluido; Fase 3 original |
-| RF-19 | Portal de paciente | Excluido; Fase 3 original |
-| RF-20 | Auditoría crítica con usuario/fecha | MVP; general presente, actor de TurnoEvento pendiente |
-| RF-21 | Reportes por período | Fase 2; no implementado |
-| RF-22 | Configurar duración y horizonte | MVP; horizonte persistido y duración fija 40 según decisión actual |
-| RF-23 | Cargar días no laborables | MVP; cierre manual, turnos conservados y liberación protegida |
-| RF-24 | Impedir doble reserva concurrente | MVP; misma franja protegida, test de concurrencia aprobado en MySQL de prueba |
+## RF originales: correspondencia con el alcance acotado
 
-## Reglas de negocio verificables
+Se mantienen los identificadores del documento inicial para facilitar la trazabilidad. Las prioridades **no** se heredan automáticamente del borrador inicial.
 
-| Reglas del origen | Comportamiento requerido |
+| RF | Situación en esta versión |
 |---|---|
-| RN-01, RN-15 | Un turno activo por franja; revalidar dentro de la transacción |
-| RN-02, RN-03, RN-12 | Inicio/fin válidos, reserva futura y zona consistente |
-| RN-04, RN-05 | Combinar plantilla/excepción; cierre prevalece |
-| RN-06, RN-07 | Conservar compromisos y advertir afectados |
-| RN-08, RN-19 | Liberar sólo sin bloqueo; no mover a franja cerrada/ocupada |
-| RN-09, RN-11 | Guardar historial; no borrar turnos; registrar usuario, fecha, origen/destino y motivo |
-| RN-10, RN-20 | Paciente previo y datos mínimos para identificar/contactar |
-| RN-13, RN-14 | Horizonte configurable; duración fija 40 por decisión posterior al documento inicial |
-| RN-16, RN-17, RN-18 | Autorizar cambios, exigir motivo de cancelación y resultado sólo desde el inicio |
+| RF-01 | Implementado: acceso de usuarios del consultorio. |
+| RF-02 | Implementado: alta, edición, consulta y búsqueda por DNI, apellido, teléfono o email. |
+| RF-03 | Fuera del alcance como editor de días/horarios; horario habitual fijo. |
+| RF-04 | Implementado de forma acotada: franjas de 40 minutos según horario fijo y cierres. |
+| RF-05 | Implementado: agenda diaria. |
+| RF-06 | Implementado: asignación de turno libre a paciente registrado. |
+| RF-07 | Implementado: cancelación con fecha, origen, motivo y trazabilidad. |
+| RF-08 | Implementado: reprogramación manual con historial. |
+| RF-09 | Implementado: bloqueos parciales o por día completo. |
+| RF-10 | Implementado: previsualización de afectados antes del cierre. |
+| RF-11 | Implementado como complemento: día, semana y rango de hasta 90 días. |
+| RF-12 | Implementado como complemento: atendido/ausente. |
+| RF-13 | Implementado como complemento: historial consultable del turno. |
+| RF-14 | Implementado: búsqueda de alternativas futuras disponibles. |
+| RF-15 | **Alcance reducido a cierres**; no se crean aperturas extraordinarias. |
+| RF-16 | Excluido: reemplazo/administración de plantillas con vigencia. |
+| RF-17 | Implementado: lista de afectados y reprogramación manual individual. |
+| RF-18 | Excluido: notificaciones automáticas. |
+| RF-19 | Excluido: portal del paciente. |
+| RF-20 | Implementado como complemento: auditoría de operaciones críticas. |
+| RF-21 | Excluido: reportes por período. |
+| RF-22 | Excluido como configuración editable; duración fija y límite de tres meses futuros. La BD conserva campos históricos por compatibilidad. |
+| RF-23 | Cubierto con cierre manual de un día no laborable; sin calendario automático de feriados. |
+| RF-24 | Protección implementada mediante validación transaccional y bloqueo de la agenda. |
 
-RN-07 exige aviso previo de afectados, mientras RF-10 lo prioriza en Fase 2. Registrar una decisión sobre previsualización; la lista operativa posterior sí fue solicitada actualmente. RF-08 deja motivo opcional en código aunque RN-09 enumera motivo como dato del evento; acordar obligatoriedad sin ocultar la diferencia.
+## Reglas de negocio vigentes
 
-## Duración fija y generación mensual
+- Una franja admite a lo sumo un turno activo; se revalida disponibilidad al confirmar, dentro de la transacción (RN-01 y RN-15).
+- No se asignan turnos pasados ni fuera del horario fijo y la ventana de reserva; inicio/fin deben ser consistentes (RN-02, RN-03, RN-12).
+- Los cierres prevalecen sobre la disponibilidad y no borran ni liberan automáticamente los turnos comprometidos (RN-05, RN-06, RN-07).
+- La cancelación de un turno libera la franja salvo cierre/bloqueo; una reprogramación conserva identidad y evento con usuario, momento, horario original/nuevo y motivo (RN-08, RN-09, RN-11, RN-19).
+- Paciente registrado previamente, solo datos necesarios y modificación de agenda sujeta a autorización (RN-10, RN-16, RN-20).
+- Los cambios de estado atendido/ausente requieren haber llegado al inicio del turno (RN-18).
+- Las reglas sobre **plantillas editables** y **horizonte en días configurable** del análisis inicial no gobiernan esta versión (RN-04, RN-13, RN-14 en su forma inicial). Aquí se aplican la disponibilidad fija y la ventana de meses calendario.
 
-La última decisión del responsable fija los turnos en 40 minutos y descarta el cambio de duración, su previsualización y la migración mensual. Se habilita un mes por vez dentro de la anticipación máxima. No se cancelan ni reprograman pacientes automáticamente al generar. Las franjas futuras libres de otra duración se limpian sólo si no tienen citas ni eventos históricos; cualquier otro solapamiento revierte la operación sin perder datos. La reprogramación por suspensión del consultorio permanece vigente.
+## RNF: objetivos de calidad y evidencia
 
-## Convenciones visuales confirmadas
+Los RNF-01 a RNF-20 del documento de referencia se conservan como **objetivos para evaluar** donde corresponda, no como resultados ya demostrados. El código tiene autorización, BCrypt, modularidad en capas, transacciones e índices. **No hay mediciones aprobadas** de latencia p95, volumen de 100.000 pacientes, cobertura E2E, compatibilidad total de navegadores, HTTPS o restauración de copias de seguridad. No afirmar que se cumplieron sin evidencia. Estado y método de verificación: [trazabilidad](trazabilidad.md) y [pruebas](pruebas-aceptacion.md).
 
-Rojo para suspensión del consultorio, naranja para cancelación del paciente, verde para horarios disponibles, azul para ocupados y gris claro para fechas sin horarios/pasados o cancelaciones históricas sin origen. Domingo con fondo rojizo. La etiqueta textual aclara el estado; la prioridad de un encabezado mixto se describe en el manual.
-
-La suspensión de días corresponde a Administración y Médico según la [matriz solicitada](roles-permisos.md). Recepción coordina pacientes y reprogramaciones, pero no modifica horarios ni bloquea días.
-
-## Calidad y aceptación
-
-Objetivos del documento inicial: reserva en hasta 5 interacciones principales; percentil 95 de agenda menor a 1 s con 20 usuarios; DNI exacto menor a 500 ms con 100.000 pacientes; recuperación tras reinicio; hash adaptativo; autorización y HTTPS; datos mínimos; auditoría; modularidad; pruebas críticas; Chrome/Edge/Firefox; uso a 360 px; claves/índices; respaldo/restauración; logs suficientes y API JSON/OpenAPI.
-
-Son **objetivos a verificar**, sin mediciones aprobadas en esta revisión. La matriz completa de los 20 RNF y su evidencia está en [trazabilidad](trazabilidad.md). El fan-out bajo es un objetivo adicional del equipo: revisar responsabilidades y colaboradores, no sólo cantidad de imports.
-
-El MVP se acepta al demostrar el circuito completo de pacientes, horario, reserva, cancelación/reprogramación e integridad, y el tratamiento manual de pacientes afectados acordado. Criterios, casos y evidencias en [pruebas](pruebas-aceptacion.md). No declarar terminado mientras existan defectos P1 que impidan ese circuito.
+La validación funcional preliminar del equipo no sustituye la etapa formal de Testing. En la entrega de Implementación se presentan el código, la gestión del proyecto y las decisiones de diseño documentadas.
