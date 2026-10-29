@@ -1,5 +1,7 @@
 package ar.com.agendamedica.service;
 
+import ar.com.agendamedica.domain.HorarioConsultorio;
+import ar.com.agendamedica.domain.enums.EstadoFranja;
 import ar.com.agendamedica.dto.AgendaDiaRangoResponse;
 import ar.com.agendamedica.dto.ExcepcionAgendaResumen;
 import ar.com.agendamedica.dto.FranjaResponse;
@@ -54,6 +56,7 @@ public class AgendaRangoService {
         var finExclusivo = hasta.plusDays(1).atStartOfDay();
         Map<LocalDate, List<FranjaResponse>> franjasPorDia = franjas
                 .findPorRango(profesionalId, inicio, finExclusivo).stream()
+                .filter(f -> f.getEstado() != EstadoFranja.LIBRE || HorarioConsultorio.esReservablePorHorario(f))
                 .map(FranjaResponse::from)
                 .collect(Collectors.groupingBy(f -> f.inicio().toLocalDate()));
         Map<LocalDate, List<TurnoResponse>> turnosPorDia = turnos

@@ -252,7 +252,6 @@ export default function App() {
     <DisponibilidadPage
       profesionalId={profesional?.id}
       puedeGestionarHorarios={permisos.gestionarHorarios}
-      puedeConfigurar={permisos.administrar}
       verContactos={permisos.verContactos}
       busy={busy}
       api={api}

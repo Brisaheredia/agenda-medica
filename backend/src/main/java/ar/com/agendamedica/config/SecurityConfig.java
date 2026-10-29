@@ -58,11 +58,8 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/auditoria/**", "/api/usuarios/**")
                         .hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/configuracion/agenda")
-                        .hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.POST,
-                                "/api/agenda/plantillas",
                                 "/api/agenda/generar-franjas",
                                 "/api/agenda/excepciones",
                                 "/api/agenda/bloqueos",

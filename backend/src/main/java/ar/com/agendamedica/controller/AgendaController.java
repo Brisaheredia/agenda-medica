@@ -35,13 +35,6 @@ public class AgendaController {
         return agendaService.disponibles(profesionalId, desde);
     }
 
-    @PostMapping("/plantillas")
-    @ResponseStatus(HttpStatus.CREATED)
-    public PlantillaDisponibilidadResponse crearPlantilla(
-            @Valid @RequestBody PlantillaDisponibilidadRequest request) {
-        return agendaService.crearPlantilla(request);
-    }
-
     @PostMapping("/generar-franjas")
     public GenerarFranjasResponse generarFranjas(
             @Valid @RequestBody GenerarFranjasRequest request) {

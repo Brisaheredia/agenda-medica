@@ -1,12 +1,8 @@
 package ar.com.agendamedica.controller;
 
-import ar.com.agendamedica.dto.ConfiguracionAgendaRequest;
 import ar.com.agendamedica.dto.ConfiguracionAgendaResponse;
 import ar.com.agendamedica.service.ConfiguracionAgendaService;
-import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,8 +20,4 @@ public class ConfiguracionAgendaController {
         return ConfiguracionAgendaResponse.from(service.obtener());
     }
 
-    @PutMapping
-    public ConfiguracionAgendaResponse actualizar(@Valid @RequestBody ConfiguracionAgendaRequest request) {
-        return service.actualizar(request);
-    }
 }

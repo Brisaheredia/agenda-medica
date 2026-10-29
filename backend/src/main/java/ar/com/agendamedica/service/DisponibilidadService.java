@@ -2,6 +2,7 @@ package ar.com.agendamedica.service;
 
 import ar.com.agendamedica.time.TiempoAgenda;
 
+import ar.com.agendamedica.domain.HorarioConsultorio;
 import ar.com.agendamedica.domain.entity.Franja;
 import ar.com.agendamedica.domain.entity.Profesional;
 import ar.com.agendamedica.domain.enums.EstadoFranja;
@@ -67,8 +68,11 @@ public class DisponibilidadService {
         if (franja.getInicio().isBefore(ahora)) {
             throw new BadRequestException("No se puede reservar una franja en el pasado");
         }
-        if (franja.getInicio().isAfter(ahora.plusDays(configuracion.obtener().getHorizonteReservaDias()))) {
-            throw new BadRequestException("La franja excede el horizonte de reserva configurado");
+        if (franja.getInicio().toLocalDate().isAfter(configuracion.ultimoDiaHabilitable())) {
+            throw new BadRequestException("No se puede reservar más allá de los tres meses siguientes");
+        }
+        if (!HorarioConsultorio.esReservablePorHorario(franja)) {
+            throw new ConflictException("Ese horario no pertenece al horario habitual de atención");
         }
         if (franja.getEstado() != EstadoFranja.LIBRE || estaCerrada(franja)) {
             throw new ConflictException("El horario está ocupado o cerrado por el consultorio");

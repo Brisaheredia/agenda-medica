@@ -34,12 +34,10 @@ Roles: **A**=ADMIN, **R**=RECEPCION, **M**=MEDICO, **O**=OBRAS_SOCIALES, **T**=c
 | GET | `/agenda/rango?profesionalId=1&desde=2026-10-19&hasta=2026-10-25` | T | 200 AgendaDiaRangoResponse[]; hasta 90 días inclusivos |
 | GET | `/agenda/excepciones?profesionalId=1&desde=2026-10-19&hasta=2026-10-25` | T | 200 ExcepcionAgendaResumen[] |
 | GET | `/agenda/reprogramaciones-pendientes?profesionalId=1` | A,M,R | 200 TurnoAfectadoResponse[] |
-| POST | `/agenda/plantillas` | A,M | 201 PlantillaDisponibilidadResponse |
 | POST | `/agenda/generar-franjas` | A,M | 200 GenerarFranjasResponse, aditiva y limitada a un mes |
 | POST | `/agenda/excepciones` | A,M | 201 ExcepcionAgendaResponse |
 | POST | `/agenda/bloqueos` | A,M | 201 ExcepcionAgendaResponse |
 | GET | `/configuracion/agenda` | T | 200 ConfiguracionAgendaResponse |
-| PUT | `/configuracion/agenda` | A | 200 ConfiguracionAgendaResponse |
 | GET | `/turnos?profesionalId=1&fecha=2026-10-19` | T | 200 TurnoResponse[] |
 | GET | `/turnos/{id}` | T | 200 TurnoResponse |
 | POST | `/turnos` | A,R,O | 201 TurnoResponse |
@@ -68,31 +66,21 @@ POST y PUT utilizan el mismo cuerpo completo:
 
 DNI obligatorio, máximo 20; nombre/apellido obligatorios, máximo 100 cada uno; teléfono opcional hasta 50; email opcional con formato de email y máximo 150. Se normalizan espacios; DNI duplicado produce conflicto de negocio. Buscar sin query devuelve hasta 20 activos después de filtrar en memoria; DNI exacto tiene precedencia; de lo contrario se busca apellido, hasta 20 ordenados. No hay búsqueda por contacto ni paginación pública.
 
-### Configuración
+### Configuración (contrato histórico)
 
-```json
-{"duracionEstandarMin":40,"horizonteReservaDias":90}
-```
+`GET /api/configuracion/agenda` continúa devolviendo `duracionEstandarMin` y `horizonteReservaDias` por compatibilidad con versiones anteriores, pero **la anticipación en días ya no controla la generación ni la reserva**. La aplicación utiliza un límite fijo: mes actual más los tres meses calendario siguientes completos. No se ofrece edición de anticipación en la interfaz.
 
-Duración fija de 40; horizonte entero de 1 a 365. GET devuelve siempre 40 y el horizonte persistido (90 si no existe). PUT permite omitir duracionEstandarMin o enviar 40; otro valor devuelve 400. Sólo se configura el horizonte. La columna de duración anterior se conserva por compatibilidad y se normaliza a 40 al guardar, sin reescribir citas ni franjas históricas.
+### Horario fijo del consultorio
 
-### Plantilla semanal
-
-```json
-{"profesionalId":1,"diaSemana":"MONDAY","horaInicio":"08:00","horaFin":"20:00","duracionMin":40,"vigenciaDesde":"2026-10-19","vigenciaHasta":null}
-```
-
-Día enum MONDAY…SUNDAY; campos obligatorios salvo vigenciaHasta; duracionMin opcional y restringida a 40. Fin posterior a inicio y vigenciaHasta no anterior a vigenciaDesde. duracionMin es opcional por compatibilidad; si se envía debe ser 40. Otro valor devuelve 400. La plantilla nueva siempre guarda 40. El frontend de selección múltiple realiza una llamada por día; no existe endpoint de lote.
+No se ofrece edición de plantillas semanales en este MVP. El horario es de lunes a viernes, de 08:00 a 20:00, en franjas de 40 minutos. Los cierres puntuales se gestionan mediante bloqueos.
 
 ### Generación
 
 ```json
-{"profesionalId":1,"desde":"2026-10-19","hasta":"2026-10-23"}
+{"profesionalId":1,"desde":"2026-11-01","hasta":"2026-11-30"}
 ```
 
-Contrato anterior aditivo: fechas obligatorias, dentro del mismo mes y horizonte. Usa el estándar guardado; omite pasado y cierres, conserva intervalos exactamente iguales y rechaza cualquier otra superposición con 409. Respuesta `{creadas, existentes, omitidasPorCierre}`. La operación conserva compromisos e historial; no hay circuito de cambio de duración.
-
-La generación utiliza el horario vigente más reciente por día y siempre 40 minutos. Antes de crear retira únicamente franjas futuras LIBRES de otra duración que no tengan referencias en Turno ni TurnoEvento. Todo ocurre en una transacción con bloqueo del profesional; ante una superposición con datos preservados responde 409 y revierte cambios. No cancela ni mueve turnos.
+Fechas obligatorias y dentro de un mismo mes. La ventana habilitable incluye el mes actual y los **tres siguientes completos**; para el mes actual, la interfaz parte de hoy. El backend impide generar más allá del fin del tercer mes siguiente. La generación usa los días fijos lunes a viernes, de 08:00 a 20:00, con franjas de 40 minutos, respetando cierres y conservando los turnos e historial. Respuesta `{creadas, existentes, omitidasPorCierre}`; repetir la operación no crea duplicados.
 
 ### Cierre, bloqueo y apertura
 

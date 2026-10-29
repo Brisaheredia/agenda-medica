@@ -34,12 +34,10 @@ export function finDeMes(mes: string) {
   return dia.toISOString().slice(0, 10);
 }
 
-export function rangoDelMes(mes: string, fechaHoy: string, horizonteDias: number) {
-  const limite = moverDia(fechaHoy, horizonteDias);
-  const fin = finDeMes(mes);
+export function rangoDelMes(mes: string, fechaHoy: string) {
   return {
     desde: `${mes}-01` < fechaHoy ? fechaHoy : `${mes}-01`,
-    hasta: fin > limite ? limite : fin,
+    hasta: finDeMes(mes),
   };
 }
 

@@ -2,7 +2,7 @@
 
 Guía para Administración, Médico, Recepción y Obras sociales. Para instalar la aplicación, utilizar [instalación](instalacion-configuracion.md).
 
-El horario acordado es lunes a viernes de **08:00 a 20:00**, con turnos de **40 minutos fijos**. La duración no se edita. La anticipación máxima para reservar sigue siendo configurable.
+El horario acordado es lunes a viernes de **08:00 a 20:00**, con turnos de **40 minutos fijos**. No se edita en este MVP. **Se puede habilitar el mes en curso (desde hoy) y los tres meses calendario siguientes completos.**
 
 ## Acceso y permisos
 
@@ -12,45 +12,17 @@ La [matriz de roles y permisos](roles-permisos.md) detalla cada operación. Todo
 
 Los menús y botones se adaptan al rol. Obras sociales selecciona pacientes existentes con datos mínimos, sin alta ni edición, y reprograma desde la agenda; no consulta contactos ni motivos de consulta. Si la sesión vence o Administración cambia el rol o contraseña, volver a ingresar.
 
-## Preparar la agenda por primera vez
+## Habilitar horarios del mes
 
-Entrar en **Disponibilidad** con Administración o Médico para definir días y generar horarios. Todos los roles pueden consultar el calendario. Sólo Administración ve y modifica la configuración de anticipación máxima.
+Entrar en **Disponibilidad** con Administración o Médico. La pantalla muestra el horario habitual fijo y permite habilitar los horarios de un mes. Los demás roles pueden consultar el calendario.
 
-Primero aparecen los días y horarios a la izquierda. A la derecha están la configuración de anticipación y, debajo, la habilitación del mes. El calendario queda al final para revisar el resultado. En pantallas pequeñas las secciones se apilan.
+1. Elegir el mes en **Habilitar horarios del mes**. Están disponibles el mes actual y los tres meses siguientes. Por ejemplo, en octubre: octubre (desde hoy), noviembre, diciembre y enero.
+2. Pulsar **Habilitar horarios**. Se informa cuántos horarios se crearon, ya existían o se omitieron por cierres.
+3. Consultar el calendario semanal para ver el resultado.
 
-### Guardar configuración
+Los meses futuros se habilitan **del día 1 hasta el último día**; el mes actual, desde la fecha de hoy. Se generan franjas de 40 minutos, de lunes a viernes de 08:00 a 20:00, respetando cierres. Repetir la operación no debe duplicar horarios. Los turnos existentes y su historial se conservan.
 
-1. Abrir **Configuración de agenda**, en la columna derecha.
-2. Elegir la **Anticipación máxima para reservar**: inicialmente **45 días**, configurable entre 1 y 365.
-3. Pulsar **Guardar configuración** y esperar confirmación.
-
-La configuración editable es la anticipación máxima. La duración de 40 minutos es una regla fija; no existe cambio de duración ni regeneración por ese motivo.
-
-Los selectores muestran día, mes y año en español. Para una fecha opcional, **Limpiar** la quita. “Hoy” y los horarios se interpretan siempre en la zona de Buenos Aires, aunque el dispositivo use otra zona horaria.
-
-### Elegir días y horario
-
-1. En **1. Días y horario de atención**, pulsar **Lunes a viernes**. También se puede marcar o desmarcar cada día; **Toda la semana** incluye sábado y domingo, y **Limpiar** quita todos.
-2. Verificar **Desde 08:00** y **Hasta 20:00**. Son horarios editables del formulario.
-3. Elegir **Vigente desde** y, si corresponde, **Vigente hasta**.
-4. Pulsar **Guardar horario para 5 días**. El número cambia con la selección.
-
-Un horario común se guarda para los días elegidos. Para horarios distintos, realizar otra carga con los días correspondientes. Si se informa un error parcial, los días guardados ya fueron registrados: quedan seleccionados sólo los pendientes para reintentar. No volver a marcar los guardados para ese mismo intento.
-
-La pantalla todavía no lista las reglas existentes ni permite editarlas/eliminarlas. No repetir una carga para “ver qué pasa”: primero consultar a soporte si ya se configuró ese período.
-
-### Habilitar el mes
-
-1. Guardar los días y horarios de atención.
-2. En **2. Habilitar horarios del mes**, elegir el mes. Se habilita hasta el límite de anticipación configurado, aunque termine a mitad del mes.
-3. Pulsar **Habilitar horarios**. Se informa cuántos se crearon, ya existían o se omitieron por cierres.
-4. Consultar la semana habilitada; el calendario se actualiza al finalizar.
-
-Se procesa un mes por vez. La anticipación configurada es un límite, no una generación automática. El mes se muestra en español y, si el horizonte termina antes de fin de mes, sólo se habilitan fechas hasta ese límite. Todos los horarios nuevos duran 40 minutos; 08:00–20:00 produce 18 por día sin cierres. Repetir no duplica horarios ni cambia turnos asignados.
-
-Al habilitar el período se retiran únicamente franjas futuras de otra duración que estén LIBRES y sin turnos ni eventos históricos. Si un horario antiguo tiene compromisos o historial y se superpone con la grilla, se informa conflicto y se revierte toda la operación; no se borran citas ni se cancelan pacientes automáticamente. Las reservas antiguas conservan sus tiempos registrados, pero una franja de otra duración no admite reservas nuevas. No hace falta la migración mensual propuesta anteriormente.
-
-La agenda diaria y semanal oculta las franjas libres de otra duración que no tienen un turno vigente. Las reservas, cancelaciones y bloqueos siguen visibles; este filtro de pantalla no elimina registros de la BD.
+Para suspender atención en una fecha concreta se utiliza **Bloqueos y excepciones**, no una modificación de los horarios habituales. La ventana de generación y la de reserva tienen el mismo límite de tres meses futuros completos.
 
 ## Registrar y buscar pacientes
 
