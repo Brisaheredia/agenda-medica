@@ -27,7 +27,10 @@ import org.springframework.transaction.annotation.Isolation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AgendaService {
@@ -83,13 +86,13 @@ public class AgendaService {
         var compromisos = turnoRepository.findByProfesionalIdAndEstadoInAndInicioLessThanAndFinGreaterThan(
                 profesionalId, ESTADOS_ACTIVOS, limite, inicioBusqueda);
         return franjaRepository
-                .findByProfesionalIdAndEstadoAndInicioGreaterThanEqualOrderByInicioAsc(
+                .findByProfesionalIdAndEstadoAndInicioBetweenOrderByInicioAsc(
                         profesionalId,
                         EstadoFranja.LIBRE,
-                        inicioBusqueda)
+                        inicioBusqueda,
+                        limite)
                 .stream()
                 .filter(this::duracionCorrecta)
-                .filter(franja -> !franja.getInicio().isAfter(limite))
                 .filter(franja -> cierres.stream().noneMatch(cierre -> cierre.afecta(franja.getInicio(), franja.getFin())))
                 .filter(franja -> compromisos.stream().noneMatch(t -> franja.getInicio().isBefore(t.getFin())
                         && franja.getFin().isAfter(t.getInicio())))
@@ -150,6 +153,19 @@ public class AgendaService {
                 .filter(f -> f.getInicio().isAfter(TiempoAgenda.ahora()) && !duracionCorrecta(f)).toList();
         franjaRepository.deleteAll(obsoletas);
         franjaRepository.flush();
+
+        // Las franjas generadas por el sistema no cruzan de un día a otro.
+        // Se consulta una sola vez el mes y se reutiliza el conjunto de cada día.
+        // Así no repetimos SELECT por cada horario ni consultas exists por franja.
+        var franjasPorDia = franjaRepository.findPorRango(
+                        profesional.getId(),
+                        request.desde().atStartOfDay(),
+                        request.hasta().plusDays(1).atStartOfDay())
+                .stream().collect(Collectors.groupingBy(
+                        f -> f.getInicio().toLocalDate(),
+                        HashMap::new,
+                        Collectors.toCollection(ArrayList::new)));
+
         int creadas = 0, existentes = 0, omitidas = 0;
         for (LocalDate fecha = request.desde(); !fecha.isAfter(request.hasta()); fecha = fecha.plusDays(1)) {
             final var dia = fecha;
@@ -160,26 +176,29 @@ public class AgendaService {
                             .thenComparing(PlantillaDisponibilidad::getId)).orElse(null);
             if (regla == null) continue;
             var limite = fecha.atTime(regla.getHoraFin());
+            var franjasExistentesDelDia = franjasPorDia.computeIfAbsent(fecha, d -> new ArrayList<>());
             for (var inicio = fecha.atTime(regla.getHoraInicio());
                  !inicio.plusMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN).isAfter(limite);
                  inicio = inicio.plusMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN)) {
                 var fin = inicio.plusMinutes(ConfiguracionAgenda.DURACION_TURNO_MIN);
                 if (!inicio.isAfter(TiempoAgenda.ahora())) continue;
                 final var inicioFranja = inicio;
-                var iguales = franjasDelDia(profesional.getId(), fecha).stream()
+                var iguales = franjasExistentesDelDia.stream()
                         .anyMatch(f -> f.getInicio().equals(inicioFranja) && f.getFin().equals(fin));
                 if (estaCerrada(cierres, fecha, inicio.toLocalTime(), fin.toLocalTime())) {
                     omitidas++;
                 } else if (iguales) {
                     existentes++;
-                } else if (franjaRepository.existsByProfesionalIdAndInicioLessThanAndFinGreaterThan(profesional.getId(), fin, inicio)) {
+                } else if (franjasExistentesDelDia.stream().anyMatch(f ->
+                        f.getInicio().isBefore(fin) && f.getFin().isAfter(inicioFranja))) {
                     throw new ConflictException("Hay horarios incompatibles con turnos o historial. Se conservaron todos los datos; gestioná esos horarios antes de habilitar el mes");
                 } else {
                     Franja franja = new Franja();
                     franja.setProfesional(profesional);
                     franja.setInicio(inicio);
                     franja.setFin(fin);
-                    franjaRepository.save(franja);
+                    franja = franjaRepository.save(franja);
+                    franjasExistentesDelDia.add(franja);
                     creadas++;
                 }
             }
