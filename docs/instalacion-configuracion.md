@@ -128,3 +128,13 @@ El perfil dev prepara cuatro cuentas, un profesional y dos pacientes de ejemplo;
 | 403 inesperado | Rol y token; también revisar parámetros faltantes y logs del backend |
 
 No se garantiza arranque desde un clon limpio hasta completar las pruebas de aceptación y provisión señaladas en [pendientes](pendientes-riesgos.md).
+
+## Cambio de esquema: obras sociales (noviembre de 2026)
+
+La versión actual incorpora la tabla `obras_sociales` y la FK opcional `pacientes.obra_social_id` para pacientes nuevos o existentes. **Respaldar la BD** si contiene información importante.
+
+- En desarrollo, con `DDL_AUTO=update` ya configurado, iniciar el backend para que Hibernate agregue tabla y columna. No ejecutar después el SQL manual sobre el esquema ya actualizado.
+- Si `DDL_AUTO=none` o `validate` y el esquema todavía no tiene esas estructuras, aplicar **una sola vez** `backend/sql/2026-11-02-obras-sociales.sql` antes de iniciar el backend. No aplicar sobre un esquema donde la columna ya existe.
+- Los pacientes antiguos quedan como particulares/sin obra social hasta que Recepción/Administración edite su ficha. No se cargan obras sociales de ejemplo automáticamente.
+
+La aplicación no se encuentra publicada en Internet para este TPI: para probarla deben iniciarse MySQL, el backend y el frontend en el equipo local, siguiendo el resto de esta guía.

@@ -44,7 +44,7 @@ export function HistorialTurnoDialog({ turno, api, close }: {
   return <Modal title="Historial del turno" busy={false} close={close}>
     <div className="stack turno-history">
       <div className="slot-summary">
-        <div><strong>{turno.paciente}</strong><span>Turno #{turno.id}</span></div>
+        <div><strong>{turno.paciente}</strong><span>Turno #{turno.id}</span>{turno.obraSocialNombre && <span>Obra social: {turno.obraSocialNombre}</span>}</div>
       </div>
       {cargando && <p className="muted" role="status">Cargando historial…</p>}
       {error && <div className="alert error" role="alert">

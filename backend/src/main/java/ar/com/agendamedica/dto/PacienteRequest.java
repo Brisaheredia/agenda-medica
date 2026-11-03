@@ -9,5 +9,6 @@ public record PacienteRequest(
         @NotBlank @Size(max = 100) String nombre,
         @NotBlank @Size(max = 100) String apellido,
         @Size(max = 50) String telefono,
-        @Email @Size(max = 150) String email
+        @Email @Size(max = 150) String email,
+        Long obraSocialId
 ) {}

@@ -1,6 +1,6 @@
 # Arquitectura y decisiones de diseño
 
-**Revisión:** 29/10/2026, versión posterior a modularización y retiro de aperturas extraordinarias. Las decisiones del análisis inicial que se descartaron se conservan en Git y en el [documento fuente](referencias/README.md).
+**Revisión:** 03/11/2026, posterior a modularización, retiro de aperturas y ampliación acotada de pacientes/obras sociales. Las decisiones del análisis inicial que se descartaron se conservan en Git y en el [documento fuente](referencias/README.md).
 
 ## Vista de componentes
 
@@ -26,7 +26,7 @@ El backend es un monolito por capas, con frontend independiente. Los controlador
 | `AgendaConsultaService` | Consultar suspensiones y pacientes pendientes de reprogramación. |
 | `AgendaRangoService` | Consulta por período con un conjunto acotado de lecturas, evitando una llamada SQL por día. |
 | `TurnoService` / `DisponibilidadService` | Ciclo de vida del turno, revalidación de intervalos, transacciones y estados de franjas. |
-| `PacienteService` | Datos mínimos de pacientes, búsquedas y baja lógica. |
+| `PacienteService` / `ObraSocialService` | Alta/búsqueda de pacientes, asociación opcional a una obra social, catálogo y baja lógica con permisos diferenciados. |
 | `AuditoriaService` | Registro de operaciones críticas. |
 | `App.tsx`, `api.ts`, `useAgenda` | Navegación/sesión, HTTP y estado de agenda en React. |
 | `CalendarioSemanalAgenda`, `CalendarioRangoAgenda`, `DiaCalendarioAgenda` | Cada vista controla su navegación; comparten representación de días, horarios y cierres. |
@@ -45,9 +45,13 @@ Las viejas tablas/campos de plantillas y horizonte en días pueden seguir en el 
 
 **Cancelación:** conserva el registro del turno y su historial. Libera franja si corresponde; los cierres prevalecen. Distingue cancelación solicitada por paciente de la originada en el consultorio.
 
-**Reprogramación:** conserva el ID del turno, valida destino, registra actor, motivo, horario anterior y nuevo; al mover turnos afectados por cierres conserva la trazabilidad de la suspensión.
+**Reprogramación:** conserva el ID del turno, valida destino, registra actor, motivo, horario anterior y nuevo; al mover turnos afectados por cierres conserva la trazabilidad de la suspensión. Obras Sociales sólo puede cambiar turnos activos no afectados por cierres. La recuperación de suspensiones está reservada a Recepción/Administración.
 
 **Suspensión:** la pantalla primero llama `POST /api/agenda/bloqueos/previsualizacion`, que devuelve afectados **sin escribir**. En `POST /api/agenda/bloqueos` el servicio bloquea al profesional, comprueba que los mismos turnos sigan afectados y, si es así, registra un cierre y bloquea franjas libres. Si hay cambios concurrentes, responde 409 y se exige otra revisión. Los compromisos se mantienen para reprogramarlos después. Los feriados se representan como cierres manuales, no como un servicio especial.
+
+## Actualización entre operadores
+
+Recepción y Obras Sociales consultan una única API y BD. `useAgenda` desencadena una nueva lectura al recuperar foco o visibilidad y cada 30 segundos con la pestaña visible; el contador de revisión se pasa también a las vistas de Semana y Rango. No hay publicación instantánea por WebSocket: la confirmación siempre vuelve a validar la franja en el backend y debe rechazar conflictos.
 
 ## Seguridad y persistencia
 

@@ -1,6 +1,6 @@
 # Agenda Médica
 
-Aplicación web para centralizar pacientes, disponibilidad y turnos del consultorio del Dr. Salvador Amado. Documentación actualizada con colores y reprogramaciones el **17 de octubre de 2026**.
+Aplicación web para centralizar pacientes, disponibilidad y turnos del consultorio del Dr. Salvador Amado. Documentación de alcance y permisos actualizada el **3 de noviembre de 2026**.
 
 El sistema permite reservar, cancelar y reprogramar turnos, consultar agenda diaria, semanal y por rango, habilitar los meses dentro del horario fijo y registrar atención o ausencia. El núcleo está implementado; la aceptación integral y los pendientes indicados abajo todavía deben cerrarse.
 
@@ -31,7 +31,13 @@ La documentación vigente se versiona en este repositorio junto al código. El R
 
 Un profesional, de lunes a viernes de **08:00 a 20:00**, con **40 minutos de duración fija**. No se puede cambiar la duración desde el frontend ni la API. Los días y horarios no son editables: el consultorio habilita franjas por mes hasta el final del tercer mes futuro.
 
-Se incluyen pacientes, disponibilidad, turnos, cancelación, reprogramación manual, cierres de atención, atención/ausencia y auditoría básica. Reprogramaciones muestra los pacientes afectados por suspensiones del consultorio con sus datos de contacto, y permite asignarles otro horario manualmente. No se incluyen historia clínica, recetas, pagos, facturación, autogestión, recordatorios automáticos ni reprogramación automática.
+Se incluyen pacientes (con obra social opcional), disponibilidad, turnos, cancelación, reprogramación manual, cierres de atención, atención/ausencia y auditoría básica. Reprogramaciones muestra los pacientes afectados por suspensiones del consultorio con sus datos de contacto, y permite asignarles otro horario manualmente. No se incluyen historia clínica, recetas, pagos, facturación, autogestión, recordatorios automáticos ni reprogramación automática.
+
+## Agenda compartida y actores
+
+Recepción y Obras Sociales consultan la misma agenda. Ambos pueden buscar y registrar pacientes, asignar y cancelar turnos por solicitud del paciente; sólo Administración y Recepción editan/desactivan pacientes. Al registrar un paciente se puede elegir una obra social existente o agregar una desde el mismo formulario, sin obligatoriedad para pacientes particulares. El dato se muestra en turnos sólo cuando está cargado.
+
+Obras Sociales no ve ni envía el motivo de consulta, no accede al directorio completo ni a los contactos privados del listado de pendientes, y **no puede resolver reprogramaciones causadas por suspensión del consultorio**. Esas reprogramaciones se hacen desde Recepción o Administración. La agenda se vuelve a consultar al regresar a la pestaña y cada 30 segundos mientras está visible: no es sincronización instantánea; el backend siempre comprueba ocupación al confirmar.
 
 ## Stack y acceso local
 
@@ -49,7 +55,7 @@ Seguir [instalación](docs/instalacion-configuracion.md) para alinear los puerto
 
 ## Estado y límites
 
-Se verificó la compilación del frontend y se ejecutaron nueve pruebas unitarias y catorce de integración del backend con MySQL descartable, incluidas reserva y reprogramación concurrentes. La validación visual en navegador, la aceptación integral y las pruebas de carga siguen pendientes.
+Existen comprobaciones anteriores de compilación y pruebas del backend, incluidas reserva y reprogramación concurrentes; **esos resultados son históricos y no certifican los parches de noviembre**. La validación visual en navegador, la aceptación integral y las pruebas de carga siguen pendientes.
 
 Se habilitan horarios por mes con duración fija de 40 minutos, validación de intervalos y conservación de citas/historia. Se retiraron la edición del horario habitual, las aperturas extraordinarias y la migración mensual asociada. La autorización por roles está implementada; su verificación formal y la aceptación integral quedan pendientes. **No existe un modo demo activo**. Detalle y prioridades en [pendientes](docs/pendientes-riesgos.md).
 

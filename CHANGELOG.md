@@ -1,5 +1,15 @@
 # Cambios documentados
 
+## 2–3 de noviembre de 2026 — Pacientes, obras sociales y agenda compartida
+
+- Obras Sociales puede registrar pacientes desde la asignación de turnos; no puede editar ni desactivar registros existentes.
+- Se incorpora el catálogo de obras sociales: elección opcional en el formulario y alta de una nueva sin abandonar la pantalla. `pacientes.obra_social_id` es opcional y no se guarda una obra social por turno.
+- Las vistas de agenda diaria, semanal y por rango se actualizan al recuperar foco/visibilidad y aproximadamente cada 30 segundos mientras la aplicación está visible; la reserva se vuelve a validar en el backend.
+- Obras Sociales puede cambiar turnos activos no afectados por cierres, pero **no** recuperar cancelaciones del consultorio ni turnos en jornadas suspendidas; Recepción y Administración conservan esas operaciones.
+- Los turnos muestran la obra social cuando existe y se omite el mensaje «Sin motivo informado» cuando no hay motivo de consulta; Obras Sociales no recibe motivos privados.
+- Se agregaron pruebas de autorización y reserva concurrente entre Recepción y Obras Sociales. La existencia de pruebas no implica que se hayan ejecutado sobre este cambio. La suspensión de jornada fue comprobada manualmente por el equipo, sin acta formal de esta versión.
+
+
 Registro de cambios relevantes inspeccionados, no historial exhaustivo de cada commit ni acta de liberación productiva.
 
 ## 29 de octubre de 2026 — Alcance definitivo y modularidad

@@ -173,6 +173,66 @@ class TurnoAgendaIntegrationTest {
     }
 
     @Test
+    void dosPacientesDistintosNoObtienenLaMismaFranja() throws Exception {
+        Profesional profesional = crearProfesional();
+        Paciente pacienteA = crearPaciente();
+        Paciente pacienteB = crearPaciente();
+        Franja franja = crearFranja(profesional,
+                LocalDateTime.now().plusDays(27).withHour(9).withMinute(0).withSecond(0).withNano(0));
+
+        String sufijo = UUID.randomUUID().toString();
+        var cuentaRecepcion = new ar.com.agendamedica.domain.entity.Usuario();
+        cuentaRecepcion.setEmail("recepcion-" + sufijo + "@example.test");
+        cuentaRecepcion.setPasswordHash("hash-de-prueba");
+        cuentaRecepcion.setRol(ar.com.agendamedica.domain.enums.RolUsuario.RECEPCION);
+        usuarioRepository.saveAndFlush(cuentaRecepcion);
+        var cuentaObra = new ar.com.agendamedica.domain.entity.Usuario();
+        cuentaObra.setEmail("obra-" + sufijo + "@example.test");
+        cuentaObra.setPasswordHash("hash-de-prueba");
+        cuentaObra.setRol(ar.com.agendamedica.domain.enums.RolUsuario.OBRAS_SOCIALES);
+        usuarioRepository.saveAndFlush(cuentaObra);
+
+        CountDownLatch inicio = new CountDownLatch(1);
+        AtomicInteger exitos = new AtomicInteger();
+        AtomicInteger conflictos = new AtomicInteger();
+        AtomicReference<Throwable> inesperado = new AtomicReference<>();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        java.util.List<Paciente> pacientes = java.util.List.of(pacienteA, pacienteB);
+        java.util.List<ar.com.agendamedica.domain.entity.Usuario> cuentas = java.util.List.of(cuentaRecepcion, cuentaObra);
+        for (int i = 0; i < pacientes.size(); i++) {
+            Paciente paciente = pacientes.get(i);
+            var cuenta = cuentas.get(i);
+            executor.submit(() -> {
+                try {
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                            new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                                    cuenta.getEmail(), null,
+                                    java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                            "ROLE_" + cuenta.getRol().name()))));
+                    inicio.await();
+                    turnoService.crear(new CrearTurnoRequest(paciente.getId(), franja.getId(), null));
+                    exitos.incrementAndGet();
+                } catch (ConflictException e) {
+                    conflictos.incrementAndGet();
+                } catch (Throwable e) {
+                    inesperado.compareAndSet(null, e);
+                } finally {
+                    org.springframework.security.core.context.SecurityContextHolder.clearContext();
+                }
+            });
+        }
+        inicio.countDown();
+        executor.shutdown();
+        assertTrue(executor.awaitTermination(20, TimeUnit.SECONDS));
+        assertNull(inesperado.get(), () -> "Error inesperado: " + inesperado.get());
+        assertEquals(1, exitos.get());
+        assertEquals(1, conflictos.get());
+        assertEquals(1, turnoRepository.findAll().stream()
+                .filter(t -> t.getFranja().getId().equals(franja.getId()) && t.getEstado() == EstadoTurno.RESERVADO)
+                .count());
+    }
+
+    @Test
     void cancelarLiberaLaFranjaYRegistraEvento() {
         Profesional profesional = crearProfesional();
         Paciente paciente = crearPaciente();

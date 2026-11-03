@@ -9,6 +9,8 @@ export const nombresRol: Record<Rol, string> = {
 export function permisosDe(rol: Rol | undefined) {
   return {
     gestionarPacientes: rol === "ADMIN" || rol === "RECEPCION",
+    crearPacientes: rol === "ADMIN" || rol === "RECEPCION" || rol === "OBRAS_SOCIALES",
+    recuperarSuspendidos: rol === "ADMIN" || rol === "RECEPCION",
     gestionarTurnos: rol === "ADMIN" || rol === "RECEPCION" || rol === "OBRAS_SOCIALES",
     gestionarHorarios: rol === "ADMIN" || rol === "MEDICO",
     registrarResultados: rol === "ADMIN" || rol === "MEDICO" || rol === "RECEPCION",

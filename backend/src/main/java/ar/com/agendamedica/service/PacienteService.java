@@ -19,10 +19,13 @@ import java.util.Locale;
 public class PacienteService {
     private final PacienteRepository pacienteRepository;
     private final AuditoriaService auditoriaService;
+    private final ObraSocialService obraSocialService;
 
-    public PacienteService(PacienteRepository pacienteRepository, AuditoriaService auditoriaService) {
+    public PacienteService(PacienteRepository pacienteRepository, AuditoriaService auditoriaService,
+                           ObraSocialService obraSocialService) {
         this.pacienteRepository = pacienteRepository;
         this.auditoriaService = auditoriaService;
+        this.obraSocialService = obraSocialService;
     }
 
     @Transactional
@@ -121,6 +124,8 @@ public class PacienteService {
         paciente.setApellido(request.apellido().trim());
         paciente.setTelefono(normalize(request.telefono()));
         paciente.setEmail(normalize(request.email()));
+        paciente.setObraSocial(request.obraSocialId() == null
+                ? null : obraSocialService.obtenerEntidad(request.obraSocialId()));
     }
 
     private String normalize(String value) {

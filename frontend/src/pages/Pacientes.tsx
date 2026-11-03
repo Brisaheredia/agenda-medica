@@ -12,6 +12,7 @@ const vacio: NuevoPaciente = {
   apellido: "",
   telefono: "",
   email: "",
+  obraSocialId: null,
 };
 
 export function PacientesPage({
@@ -75,6 +76,7 @@ export function PacientesPage({
       apellido: paciente.apellido,
       telefono: paciente.telefono ?? "",
       email: paciente.email ?? "",
+      obraSocialId: paciente.obraSocialId ?? null,
     });
     setError("");
     setModal(true);
@@ -203,6 +205,7 @@ export function PacientesPage({
                 <th>Paciente</th>
                 <th>DNI</th>
                 <th>Contacto</th>
+                <th>Obra social</th>
                 {puedeGestionar && <th>Acciones</th>}
               </tr>
             </thead>
@@ -226,6 +229,7 @@ export function PacientesPage({
                       <span className="muted">Sin datos de contacto</span>
                     )}
                   </td>
+                  <td>{p.obraSocialNombre ?? "Particular / sin obra social"}</td>
                   {puedeGestionar && (
                     <td className="patient-actions">
                       <button
@@ -267,6 +271,7 @@ export function PacientesPage({
           close={() => setModal(false)}
         >
           <PacienteForm
+            api={api}
             value={form}
             busy={mutando}
             error={error}

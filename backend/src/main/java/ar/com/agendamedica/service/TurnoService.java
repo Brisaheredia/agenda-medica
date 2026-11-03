@@ -21,6 +21,9 @@ import ar.com.agendamedica.exception.ResourceNotFoundException;
 import ar.com.agendamedica.repository.TurnoEventoRepository;
 import ar.com.agendamedica.repository.TurnoRepository;
 import ar.com.agendamedica.repository.FranjaRepository;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
@@ -132,6 +135,13 @@ public class TurnoService {
         Turno turno = obtenerParaModificar(id);
         boolean canceladoPorConsultorio = turno.getEstado() == EstadoTurno.CANCELADO
                 && turno.getOrigenCancelacion() == OrigenCancelacion.CONSULTORIO;
+        // Obras Sociales puede mover turnos activos, pero no recuperar suspensiones del consultorio.
+        Authentication usuario = SecurityContextHolder.getContext().getAuthentication();
+        boolean esObraSocial = usuario != null && usuario.getAuthorities().stream()
+                .anyMatch(autoridad -> "ROLE_OBRAS_SOCIALES".equals(autoridad.getAuthority()));
+        if (esObraSocial && (canceladoPorConsultorio || disponibilidad.estaCerrada(turno.getFranja()))) {
+            throw new AccessDeniedException("La reprogramación por suspensión corresponde al consultorio");
+        }
         if (!canceladoPorConsultorio) validarTurnoActivo(turno);
 
         Long franjaAnteriorId = turno.getFranja().getId();

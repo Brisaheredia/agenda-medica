@@ -1,13 +1,14 @@
 # Modelo de datos y estados
 
-Modelo lógico derivado de las diez entidades JPA actuales. MySQL conserva configuración, pacientes, reglas, franjas y compromisos. Los nombres y restricciones se basan en las entidades revisadas el 17 de octubre de 2026; no existe un esquema versionado por migraciones.
+Modelo lógico derivado de las **once** entidades JPA actuales, incluida ObraSocial. MySQL conserva configuración, pacientes, reglas, franjas y compromisos. Los nombres y restricciones se basan en las entidades revisadas el 17 de octubre de 2026; no existe un esquema versionado por migraciones.
 
 ## Entidades
 
 | Entidad / tabla | Campos y responsabilidad |
 |---|---|
 | Usuario / usuarios | ID, email único, password_hash, rol, activo, created_at, updated_at. Cuenta operativa. |
-| Paciente / pacientes | ID, DNI único, nombre, apellido, teléfono/email opcionales, activo y marcas de tiempo. |
+| Paciente / pacientes | ID, DNI único, nombre, apellido, teléfono/email opcionales, `obra_social_id` nullable, activo y marcas de tiempo. |
+| ObraSocial / obras_sociales | ID, nombre único (máximo 120 caracteres). Catálogo opcional para vincular pacientes. |
 | Profesional / profesionales | ID, nombre, apellido, matrícula única, activo y marcas de tiempo. |
 | ConfiguracionAgenda / configuracion_agenda | ID fijo 1, duracion_estandar_min, horizonte_reserva_dias. Duración fija 40; horizonte inicial 45 si falta la fila. La columna de duración se conserva por compatibilidad. |
 | PlantillaDisponibilidad / plantillas_disponibilidad | Profesional, día de semana, inicio/fin, duracion_min, vigencia_desde/hasta. |
@@ -25,6 +26,7 @@ Las entidades relacionadas por JPA utilizan claves foráneas. Turno referencia u
 erDiagram
     Usuario o|--o{ Auditoria : realiza
     Usuario o|--o{ TurnoEvento : actorOpcional
+    ObraSocial o|--o{ Paciente : figuraEn
     Paciente ||--o{ Turno : tiene
     Profesional ||--o{ PlantillaDisponibilidad : define
     Profesional ||--o{ ExcepcionAgenda : recibe
@@ -43,7 +45,7 @@ ConfiguracionAgenda es una fila independiente. El actor de TurnoEvento se inform
 
 ## Restricciones e índices
 
-- DNI de paciente, email de usuario y matrícula profesional son únicos.
+- DNI de paciente, email de usuario, matrícula profesional y nombre de obra social son únicos. `pacientes.obra_social_id` es una referencia opcional a `obras_sociales.id`; varios pacientes pueden usar la misma obra social.
 - Franja tiene unicidad `(profesional_id, inicio)` y versión optimista. Las mutaciones se coordinan con bloqueo pesimista del profesional y validación de intervalos.
 - Turno se indexa por profesional/inicio, paciente y estado; no tiene `@Version`, pero sus modificaciones usan PESSIMISTIC_WRITE. Las franjas de reprogramación se bloquean en orden ascendente de ID.
 - Plantilla y excepción se indexan por profesional/vigencia y profesional/fecha respectivamente.
@@ -100,8 +102,14 @@ El esquema usa fecha/hora civil de Buenos Aires sin offset. `TiempoAgenda` fija 
 
 No se requiere la migración mensual: se retiraron vigente, inicio_vigente y el reemplazo de índices propuestos para cambios de duración. Si se llegó a aplicar ese script anterior sin regenerar meses, sus columnas adicionales pueden permanecer; la aplicación no las utiliza.
 
-Actualmente se usa `ddl-auto=update` para desarrollo y create-drop en test. Este cambio agrega dos columnas nullable; el [SQL aditivo](../backend/sql/2026-10-17-origen-cancelacion.sql) sirve para esquemas previos con DDL manual y sólo si las columnas faltan. No se migran motivos/orígenes por conjetura: cancelaciones anteriores permanecen sin origen conocido. Antes de producción incorporar migraciones revisadas, respaldo/restauración y una prueba de actualización desde una base anterior. No ejecutar SQL de corrección masiva sobre datos reales sin una migración y validación específicas.
+Actualmente se usa `ddl-auto=update` para desarrollo y create-drop en test. El cambio histórico de cancelaciones agregó dos columnas nullable; el [SQL aditivo](../backend/sql/2026-10-17-origen-cancelacion.sql) sirve para esquemas previos con DDL manual y sólo si las columnas faltan. No se migran motivos/orígenes por conjetura: cancelaciones anteriores permanecen sin origen conocido. Antes de producción incorporar migraciones revisadas, respaldo/restauración y una prueba de actualización desde una base anterior. No ejecutar SQL de corrección masiva sobre datos reales sin una migración y validación específicas.
 
 ## Procedencia de una reprogramación
 
 `turnos.reprogramado_por_consultorio` es booleano, inicialmente false. Se activa al reprogramar por cancelación CONSULTORIO o cierre que afectaba al horario de origen, y conserva esa procedencia. No depende del motivo libre ni se borra al limpiar los campos actuales de cancelación. El [SQL aditivo](../backend/sql/2026-10-17-reprogramado-consultorio.sql) agrega la columna si falta y permite recuperar marcas antiguas sólo cuando existe una cancelación CONSULTORIO explícita seguida por un evento REPROGRAMACION. Los cierres antiguos sin causa inequívoca registrada no se infieren. Con ddl-auto=update, Hibernate agrega la columna al reiniciar; el UPDATE de recuperación se puede ejecutar por separado.
+
+## Obra social actual del paciente (noviembre de 2026)
+
+El modelo incorpora `obras_sociales` y una FK opcional `pacientes.obra_social_id`. No hay relación entre cada turno y una obra social diferente, ni historial de cambios de afiliación. Los pacientes previos conservan `obra_social_id = NULL` hasta que se actualice su ficha. `PacienteResponse`/`PacienteSeleccionResponse` exponen ID y nombre opcionales; `TurnoResponse` expone el nombre de la obra social del paciente.
+
+Para BD existentes: con `DDL_AUTO=update`, Hibernate puede incorporar tabla y columna al iniciar en desarrollo. Con DDL manual se suministra `backend/sql/2026-11-02-obras-sociales.sql`. **No ejecutar manualmente el SQL si Hibernate ya aplicó esas mismas modificaciones**. Hacer respaldo antes de modificar una BD con datos.

@@ -1,6 +1,6 @@
 # Índice de documentación
 
-Documentación revisada el 29 de octubre de 2026 tras acotar el alcance acordado con Salvador y retirar las aperturas extraordinarias. Se mantiene junto a la implementación y se revisa en cada cambio funcional.
+Documentación de alcance revisada el 29 de octubre de 2026 y actualizada el 3 de noviembre con pacientes, obras sociales, permisos y agenda compartida. Se mantiene junto a la implementación y se revisa en cada cambio funcional.
 
 | Audiencia o necesidad | Documento |
 |---|---|

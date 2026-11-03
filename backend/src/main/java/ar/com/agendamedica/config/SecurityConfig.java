@@ -76,8 +76,8 @@ public class SecurityConfig {
                                 "/api/turnos/*/reprogramacion")
                         .hasAnyRole("ADMIN", "RECEPCION", "OBRAS_SOCIALES")
 
-                        .requestMatchers(HttpMethod.POST, "/api/pacientes")
-                        .hasAnyRole("ADMIN", "RECEPCION")
+                        .requestMatchers(HttpMethod.POST, "/api/pacientes", "/api/obras-sociales")
+                        .hasAnyRole("ADMIN", "RECEPCION", "OBRAS_SOCIALES")
                         .requestMatchers(HttpMethod.PUT, "/api/pacientes/**")
                         .hasAnyRole("ADMIN", "RECEPCION")
                         .requestMatchers(HttpMethod.DELETE, "/api/pacientes/**")
@@ -85,6 +85,8 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.GET, "/api/turnos/*/historial")
                         .hasAnyRole("ADMIN", "MEDICO", "RECEPCION")
+                        .requestMatchers(HttpMethod.GET, "/api/obras-sociales")
+                        .hasAnyRole("ADMIN", "MEDICO", "RECEPCION", "OBRAS_SOCIALES")
                         .requestMatchers(HttpMethod.GET, "/api/pacientes/seleccion")
                         .hasAnyRole("ADMIN", "MEDICO", "RECEPCION", "OBRAS_SOCIALES")
                         .requestMatchers(HttpMethod.GET,

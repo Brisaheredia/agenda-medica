@@ -10,7 +10,7 @@ Abrir la dirección entregada por soporte, ingresar email y contraseña y pulsar
 
 La [matriz de roles y permisos](roles-permisos.md) detalla cada operación. Todos consultan agenda y disponibilidad. Administración y Recepción gestionan pacientes; también asignan, cancelan y reprograman, al igual que Obras sociales. Médico y Administración habilitan los meses y pueden suspender atención; el horario habitual es fijo. Administración, Médico y Recepción registran atendido/ausente. Sólo Administración gestiona usuarios y auditoría.
 
-Los menús y botones se adaptan al rol. Obras sociales selecciona pacientes existentes con datos mínimos, sin alta ni edición, y reprograma desde la agenda; no consulta contactos ni motivos de consulta. Si la sesión vence o Administración cambia el rol o contraseña, volver a ingresar.
+Los menús y botones se adaptan al rol. Obras Sociales puede buscar pacientes con datos mínimos y **crear uno nuevo al asignar un turno**, pero no editar/desactivar pacientes ya cargados ni consultar contactos completos. Tampoco puede reprogramar turnos afectados por suspensiones del consultorio. No consulta motivos de consulta. Si la sesión vence o Administración cambia el rol o contraseña, volver a ingresar.
 
 ## Habilitar horarios del mes
 
@@ -28,13 +28,13 @@ Para suspender atención en una fecha concreta se utiliza **Suspensiones de aten
 
 Entrar en **Pacientes**. Buscar por DNI completo, apellido, teléfono o email y pulsar **Buscar**. **Limpiar** vuelve al listado inicial; no se muestra todo el padrón en una sola carga.
 
-**Nuevo paciente** abre el formulario: DNI, nombre y apellido obligatorios; teléfono y email opcionales. Registrar contacto cuando se necesite coordinar cambios. Un DNI ya existente produce conflicto. Para corregir datos, pulsar **Editar**; **Desactivar** pide confirmación y conserva el historial. Un paciente inactivo deja de aparecer en búsqueda y no puede recibir una reserva nueva.
+**Nuevo paciente** abre el formulario: DNI, nombre y apellido obligatorios; teléfono y email opcionales, y **obra social opcional**. Registrar contacto cuando se necesite coordinar cambios. Un DNI ya existente produce conflicto. Para corregir datos, pulsar **Editar**; **Desactivar** pide confirmación y conserva el historial. Un paciente inactivo deja de aparecer en búsqueda y no puede recibir una reserva nueva.
 
-También se puede dar de alta un paciente desde **Asignar turno**; al guardarlo queda seleccionado para esa reserva.
+También se puede dar de alta un paciente desde **Asignar turno**; al guardarlo queda seleccionado para esa reserva. **Obras Sociales realiza el alta desde este flujo** (no desde el listado completo de Pacientes). En el selector **Obra social** se puede elegir una existente, dejar **Sin obra social / particular** o pulsar **+ Agregar nueva obra social…**, escribir su nombre y guardarla sin salir del formulario; queda seleccionada automáticamente.
 
 ## Consultar y navegar la agenda
 
-En **Agenda**, elegir **Día**, **Semana** o **Rango** (hasta 90 días). En día, el centro muestra **Hoy** sólo si la fecha seleccionada es la actual; los botones laterales muestran las fechas anterior y siguiente. En otra fecha aparece **Volver a hoy**. El selector permite ir directamente a una fecha y **Actualizar** vuelve a consultar los datos.
+En **Agenda**, elegir **Día**, **Semana** o **Rango** (hasta 90 días). En día, el centro muestra **Hoy** sólo si la fecha seleccionada es la actual; los botones laterales muestran las fechas anterior y siguiente. En otra fecha aparece **Volver a hoy**. El selector permite ir directamente a una fecha y **Actualizar** vuelve a consultar los datos. Además, al volver a la pestaña o ventana, y aproximadamente cada **30 segundos** mientras esté visible, se consulta nuevamente la agenda (día, semana o rango). No es actualización instantánea entre navegadores: la reserva se comprueba otra vez al confirmar.
 
 La etiqueta **Reprogramado por el consultorio** identifica citas trasladadas después de una cancelación del consultorio o un cierre que afectaba al turno. Aparece en agenda diaria, semanal y en el diálogo del turno; se conserva al recargar y en movimientos posteriores. Un cambio voluntario del paciente no activa esta etiqueta.
 
@@ -56,7 +56,7 @@ El domingo tiene fondo rojizo. Cada horario conserva su estado aunque el día co
 
 1. Elegir una franja libre futura desde la lista o el selector **Horario disponible**.
 2. Buscar y seleccionar el paciente, o registrarlo como nuevo.
-3. Completar un motivo breve si corresponde; no usar este campo como historia clínica.
+3. Administración y Recepción pueden completar un **motivo de consulta opcional** si corresponde (no usarlo como historia clínica). Obras Sociales no dispone de ese campo.
 4. Pulsar **Confirmar turno** y esperar el resultado.
 
 Si otra persona ocupó la franja, el sistema informa conflicto y actualiza la agenda. Elegir otra alternativa; no considerar reservado un turno sin confirmación de guardado.
@@ -67,7 +67,7 @@ Si otra persona ocupó la franja, el sistema informa conflicto y actualiza la ag
 
 **Cancelar:** abrir la acción del turno activo, escribir motivo y elegir quién solicitó la cancelación. Si llamó el paciente, se muestra en naranja y libera el horario sólo cuando no existe un cierre. Si suspendió el médico/consultorio, se muestra en rojo, bloquea ese horario y agrega el paciente a Reprogramaciones. Los registros antiguos sin origen quedan grises; no se supone que los canceló el paciente.
 
-**Reprogramar:** abrir la acción del turno, elegir **Buscar horarios desde**, seleccionar entre las alternativas futuras dentro del horizonte y confirmar. El motivo de reprogramación es obligatorio. Se mantiene el mismo turno y se registra el cambio. Si el nuevo horario no puede reservarse, la operación debe conservar el compromiso original y mostrar el error.
+**Reprogramar:** abrir la acción del turno, elegir **Buscar horarios desde**, seleccionar entre las alternativas futuras dentro del horizonte y confirmar. Obras Sociales sólo puede reprogramar turnos activos no afectados por una suspensión; los pendientes por cierre/cancelación del consultorio corresponden a Recepción y Administración. El motivo de reprogramación es obligatorio. Se mantiene el mismo turno y se registra el cambio. Si el nuevo horario no puede reservarse, la operación debe conservar el compromiso original y mostrar el error.
 
 **Atendido o ausente:** Administración, Médico y Recepción pueden registrar el resultado una vez alcanzado el inicio del turno. Confirmar la acción en el diálogo. No se permite mover un turno ya ATENDIDO/AUSENTE por el flujo normal.
 
@@ -92,7 +92,7 @@ Cuando hay pendientes, **Reprogramaciones** muestra en el menú un contador rojo
 4. Pulsar **Reprogramar**, buscar desde una fecha y seleccionar una alternativa disponible.
 5. Confirmar: se conserva la identidad e historial y el turno desaparece de pendientes cuando queda fuera del cierre.
 
-La lista se recupera de la BD al volver a entrar; incluye turnos activos afectados por cierres y cancelaciones individuales con origen CONSULTORIO. Excluye cancelaciones del paciente y registros históricos cuyo origen no consta. No envía avisos ni reprograma automáticamente. Consultan Administración, Médico y Recepción; reprograman Administración y Recepción desde esta lista. Obras sociales reprograma desde la agenda sin acceso a los contactos de esta lista.
+La lista se recupera de la BD al volver a entrar; incluye turnos activos afectados por cierres y cancelaciones individuales con origen CONSULTORIO. Excluye cancelaciones del paciente y registros históricos cuyo origen no consta. No envía avisos ni reprograma automáticamente. Consultan Administración, Médico y Recepción; reprograman Administración y Recepción desde esta lista. Obras Sociales puede reprogramar turnos activos normales desde la agenda, pero no los afectados por una suspensión; tampoco accede a los contactos de esta lista.
 
 ## Auditoría y ayuda
 
@@ -108,3 +108,9 @@ Administración puede abrir **Auditoría**, actualizar y filtrar los últimos 10
 | Se necesita historial detallado del turno | Abrir **Historial** desde las acciones del turno; los eventos antiguos pueden carecer de usuario registrado |
 
 No existe modo demo activo en esta versión. Usar datos ficticios únicamente en una base de prueba identificada por soporte.
+
+## Obra social y motivo de consulta en el turno
+
+Si el paciente tiene una obra social registrada, su nombre se muestra en la agenda, ventanas de turno, historial y listado de reprogramaciones, según los permisos de cada pantalla. Si no tiene, no aparece una etiqueta vacía. La obra social se guarda en la ficha del **paciente**, no como cobertura diferente para cada turno.
+
+El texto «Sin motivo informado» ya no se muestra por defecto: **si el turno no tiene motivo de consulta, no se imprime esa línea**. Si fue ingresado por un rol autorizado, aparece identificado como «Motivo de consulta». No confundirlo con el motivo de cancelación o reprogramación.

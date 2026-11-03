@@ -12,6 +12,7 @@ const vacio: NuevoPaciente = {
   apellido: "",
   telefono: "",
   email: "",
+  obraSocialId: null,
 };
 export function BookingPanel({
   api,
@@ -77,7 +78,7 @@ export function BookingPanel({
   }
   async function guardarPaciente(e: React.FormEvent) {
     e.preventDefault();
-    if (!gestionarPacientes || creating.current) return;
+    if (creating.current) return;
     creating.current = true;
     setGuardando(true);
     setError("");
@@ -227,7 +228,7 @@ export function BookingPanel({
         )}
         <div className="field-heading">
           <label htmlFor="patient-search">Paciente</label>
-          {gestionarPacientes && <button
+          <button
             className="text-button"
             onClick={() => {
               setCrear(true);
@@ -236,7 +237,7 @@ export function BookingPanel({
           >
             <Icon name="plus" size={14} />
             Nuevo paciente
-          </button>}
+          </button>
         </div>
         <form
           className="search-row"
@@ -296,6 +297,7 @@ export function BookingPanel({
                   <small>
                     DNI {p.dni}
                     {p.telefono ? ` · ${p.telefono}` : ""}
+                    {p.obraSocialNombre ? ` · ${p.obraSocialNombre}` : ""}
                   </small>
                 </span>
                 {paciente?.id === p.id && <Icon name="check" size={16} />}
@@ -349,18 +351,19 @@ export function BookingPanel({
           </button>
         )}
       </fieldset>
-      {gestionarPacientes && crear && (
+      {crear && (
         <Modal
           title="Nuevo paciente"
           busy={guardando}
           close={() => setCrear(false)}
         >
           <PacienteForm
+            api={api}
             value={nuevo}
             busy={guardando}
-            intro="Al guardar, quedar? seleccionado para este turno."
+            intro="Al guardar, quedará seleccionado para este turno."
             error={error}
-            submitLabel={guardando ? "Guardando?" : "Guardar y seleccionar"}
+            submitLabel={guardando ? "Guardando…" : "Guardar y seleccionar"}
             onChange={(campo, value) => setNuevo({ ...nuevo, [campo]: value })}
             onSubmit={guardarPaciente}
           />

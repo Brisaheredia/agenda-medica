@@ -1,6 +1,6 @@
 # Pendientes y riesgos — alcance vigente
 
-**Actualizado:** 29/10/2026. Este registro distingue riesgos técnicos reales, verificación pendiente y funcionalidades explícitamente **fuera del alcance**. No se asignan fechas, responsables ni estados de pruebas sin evidencia.
+**Actualizado:** 03/11/2026. Este registro distingue riesgos técnicos reales, verificación pendiente y funcionalidades explícitamente **fuera del alcance**. No se asignan fechas, responsables ni estados de pruebas sin evidencia.
 
 ## Riesgos que pueden afectar la entrega
 
@@ -11,9 +11,15 @@
 | R-03 | Media | La documentación y referencias de pruebas conocidas se ajustaron al nuevo alcance. Verificar ejecución y cobertura de la suite actual durante la etapa formal de Testing. |
 | R-04 | Media | Revisar versiones de pruebas, compilación completa, restricciones de roles y concurrencia sobre el commit definitivo. La revisión estática no equivale a aceptación. |
 | R-05 | Baja en el TP / alta si se despliega | CORS permisivo de desarrollo, configuración de esquema, HTTPS y recuperación de respaldos deben revisarse antes de usar datos reales o desplegar públicamente. |
-| R-06 | Baja | Posible consulta adicional por turno en agenda diaria; medir N+1/costo SQL si el volumen crece. No justificar una reestructuración grande sin datos. |
+| R-06 | Baja | La relación obra social se guarda en paciente, no en cada turno. Si Salvador necesita afiliaciones o convenios distintos por reserva, sería otro requisito a validar. |
 
 ## Cambios funcionales ya incorporados (inspección de código)
+
+- Alta de pacientes desde Obras Sociales y selector/alta de obra social opcional dentro del formulario.
+- Actualización automática de agenda por foco/visibilidad y cada 30 segundos, sin WebSocket.
+- Restricción de reprogramaciones por suspensión para Obras Sociales y privacidad de motivos de consulta.
+- Visualización condicional de obra social y eliminación del mensaje «Sin motivo informado».
+
 
 - Búsqueda de pacientes por DNI, apellido, teléfono y email.
 - Previsualización y revalidación transaccional de afectados antes de un cierre.
@@ -29,3 +35,10 @@ Administración de plantillas, variaciones permanentes del horario habitual, ape
 ## Próximas actividades académicas
 
 Preparar documento de roles, tareas y herramientas con evidencias reales; revisar repositorio y empaquetado. Formalizar después la suite de Testing exigida por la cátedra, sin inventar resultados. Consultar [requisitos](requisitos.md), [trazabilidad](trazabilidad.md) y [pruebas](pruebas-aceptacion.md).
+
+## Verificaciones pendientes de los cambios de noviembre
+
+- Ejecutar las suites automáticas y guardar la salida de compilación, permisos y doble reserva entre Recepción y Obras Sociales.
+- Registrar capturas de alta de paciente y obra social desde el formulario, de la agenda en dos sesiones y de una operación rechazada por permisos.
+- El equipo reportó que la suspensión de jornada funciona en la comprobación manual; documentar evidencia en la etapa de Pruebas.
+- Consultar a Salvador, cuando corresponda, si necesita registrar **obra social por turno** en lugar de obra social actual del paciente y confirmar identidad visual tomada de su material.

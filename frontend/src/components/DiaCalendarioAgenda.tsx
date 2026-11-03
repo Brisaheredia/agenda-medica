@@ -97,6 +97,7 @@ export function DiaCalendarioAgenda({
               >
                 <strong>{hora(inicio)}{fin ? `–${hora(fin)}` : ""}</strong>
                 <span>{turno?.paciente ?? visual.etiqueta}</span>
+                {turno?.obraSocialNombre && <small>Obra social: {turno.obraSocialNombre}</small>}
                 {turno && <small>{visual.etiqueta}</small>}
                 {turno && <BadgeReprogramacion turno={turno} />}
               </li>

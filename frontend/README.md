@@ -1,6 +1,6 @@
 # Frontend de Agenda Médica
 
-Interfaz React para personal del consultorio. Código en `frontend/`, dentro del repositorio. Actualizado con alcance final y modularización, 29 de octubre de 2026.
+Interfaz React para personal del consultorio. Código en `frontend/`, dentro del repositorio. Actualizado con cambios de pacientes, obras sociales y actualización de agenda, 3 de noviembre de 2026.
 
 ## Ejecutar
 
@@ -31,7 +31,7 @@ npm run preview
 | Ruta | Pantalla | Función |
 |---|---|---|
 | `/` | Agenda | Día/semana/rango, reserva y acciones de turno |
-| `/pacientes` | Pacientes | Búsqueda, alta, edición y baja lógica |
+| `/pacientes` | Pacientes | Búsqueda, alta, edición y baja lógica para Administración/Recepción; selector opcional de obra social |
 | `/disponibilidad` | Disponibilidad | Horario fijo en consulta y generación mensual de franjas de 40 minutos |
 | `/bloqueos` | Suspensiones | Cierre parcial o total y día no laborable manual |
 | `/reprogramaciones` | Reprogramaciones | Pacientes afectados, contacto y cambio de horario manual |
@@ -54,5 +54,8 @@ El login se muestra al no existir sesión, sin ruta `/login` independiente. La n
 - Semana y Rango usan `DiaCalendarioAgenda` para representar días y franjas con las mismas reglas visuales, manteniendo navegación propia. Ambos consumen el endpoint por rango, evitando las 15 peticiones originales de Semana.
 - `api.ts` centraliza JWT y errores; `permisos.ts` controla lo visible, mientras el backend autoriza cada operación. Reprogramaciones consulta contactos en un DTO sin una consulta por paciente.
 - La marca de procedencia de reprogramación se obtiene del backend, no se deduce de motivos escritos por los operadores.
+- `PacienteForm` muestra un selector opcional de obra social y permite registrar una nueva; Obras Sociales puede dar de alta pacientes desde `BookingPanel`, pero no desde el listado de Pacientes.
+- `useAgenda` refresca al recuperar foco/visibilidad y cada 30 segundos mientras la pestaña está visible; `revision` dispara nuevas consultas en las vistas diaria, semanal y por rango. La actualización no es instantánea, y la API vuelve a validar al confirmar.
+- Obras Sociales no ve el campo de motivo de consulta ni puede recuperar turnos afectados por cierre. Si un turno no tiene motivo de consulta, no se imprime «Sin motivo informado». La obra social aparece sólo si el paciente tiene una.
 
 `useReprogramaciones` comparte los pendientes entre el menú y la pantalla de contactos. El menú muestra un contador titilante cuando hay pendientes. Refresca al operar la agenda, bloquear atención, volver a la ventana y cada 30 segundos mientras está visible; aborta solicitudes y limpia temporizadores al cambiar de sesión/profesional. Sólo consulta para roles con acceso a contactos. Un fallo transitorio conserva el último resultado y se informa en Reprogramaciones.

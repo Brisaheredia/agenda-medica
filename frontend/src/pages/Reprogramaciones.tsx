@@ -65,7 +65,7 @@ export function ReprogramacionesPage({ api, puedeGestionar, datos }: {
       {!cargando && visibles.length > 0 && <div className="table-scroll"><table className="pending-table">
         <thead><tr><th>Paciente</th><th>Contacto</th><th>Turno original</th><th>Motivo de suspensión</th><th>Acción</th></tr></thead>
         <tbody>{visibles.map((p) => <tr key={p.turno.id}>
-          <td><strong>{p.turno.paciente}</strong><span>DNI: {p.dni}</span></td>
+          <td><strong>{p.turno.paciente}</strong><span>DNI: {p.dni}</span>{p.turno.obraSocialNombre && <span>Obra social: {p.turno.obraSocialNombre}</span>}</td>
           <td>{p.telefono && <a href={`tel:${p.telefono}`}>{p.telefono}</a>}{p.email && <a href={`mailto:${p.email}`}>{p.email}</a>}{!p.telefono && !p.email && <span>Sin contacto registrado. Completalo en Pacientes.</span>}</td>
           <td>{fechaLarga(p.turno.inicio.slice(0, 10))}<span>{hora(p.turno.inicio)}–{hora(p.turno.fin)}</span></td>
           <td>{p.motivo || "Suspensión del consultorio"}</td>

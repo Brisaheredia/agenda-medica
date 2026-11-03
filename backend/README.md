@@ -40,7 +40,7 @@ La reserva bloquea una Franja con `PESSIMISTIC_WRITE` dentro de una transacción
 
 `BootstrapAdmin` crea un ADMIN sólo si no existe **ningún usuario** y se definieron email/contraseña de bootstrap. No modifica claves de usuarios existentes. Se ejecuta antes de `DevUsuariosSeeder`, que con perfil `dev` crea las cuentas faltantes de ADMIN, MEDICO, RECEPCION y OBRAS_SOCIALES desde `application-dev.properties`. Se pueden personalizar con variables `APP_DEV_*`; sólo guarda hashes y conserva credenciales, rol y estado de cuentas existentes. `APP_DEV_USERS_ENABLED=false` lo deshabilita. Ver [cuentas de prueba e instalación](../docs/instalacion-configuracion.md#cuentas-de-prueba-para-cada-integrante).
 
-El perfil `dev` también crea un profesional y dos pacientes de ejemplo; no crea franjas automáticamente. La agenda se habilita explícitamente por mes.
+El perfil `dev` también crea un profesional y dos pacientes de ejemplo; no crea franjas ni obras sociales automáticamente. La agenda se habilita explícitamente por mes.
 
 ## Compilación y pruebas
 
@@ -49,7 +49,7 @@ mvn -B test
 mvn -B package
 ```
 
-La integración requiere MySQL por Docker y define su propia clave JWT exclusiva de test. Hay diecisiete escenarios de integración, nueve pruebas unitarias de agenda, tres de zona horaria, seis de inicialización de cuentas y 162 pruebas HTTP de autorización para los cuatro roles; no usar opciones que omitan tests como evidencia de aprobación. Ver [pruebas](../docs/pruebas-aceptacion.md). No se incluyen Flyway/Liquibase ni endpoints de administración de profesionales. Para bases previas con DDL deshabilitado, revisar el [SQL aditivo](sql/2026-10-17-origen-cancelacion.sql); no ejecutarlo si ddl-auto=update ya creó las columnas. No se asigna un origen inventado a cancelaciones históricas.
+La integración requiere MySQL por Docker y define su propia clave JWT exclusiva de test. Hay diecisiete escenarios de integración, nueve pruebas unitarias de agenda, tres de zona horaria, seis de inicialización de cuentas y 162 pruebas HTTP de autorización para los cuatro roles; no usar opciones que omitan tests como evidencia de aprobación. Ver [pruebas](../docs/pruebas-aceptacion.md). No se incluyen Flyway/Liquibase ni endpoints de administración de profesionales. Para bases previas con DDL deshabilitado, revisar los SQL aditivos de [cancelación](sql/2026-10-17-origen-cancelacion.sql) y [obras sociales](sql/2026-11-02-obras-sociales.sql); no ejecutarlos si `ddl-auto=update` ya creó las estructuras. No se asigna un origen inventado a cancelaciones históricas.
 
 **Duración fija:** no hace falta la migración mensual propuesta anteriormente. El circuito de cambio de duración y su SQL fueron retirados. La generación limpia sólo franjas futuras libres de otra duración sin turnos/eventos asociados y revierte todo ante conflictos con datos que deban conservarse.
 
@@ -58,3 +58,9 @@ Los permisos se definen en `SecurityConfig` con denegación por defecto. ADMIN, 
 Contrato completo, códigos y ejemplos: [API](../docs/api.md). Antes de publicar: [operación](../docs/operacion-respaldo.md) y [pendientes](../docs/pendientes-riesgos.md).
 
 La procedencia de reprogramación se guarda en `turnos.reprogramado_por_consultorio` y se expone en TurnoResponse, sin consultas adicionales por cada turno. Revisar [migración y recuperación del historial](sql/2026-10-17-reprogramado-consultorio.sql) en bases previas. Sólo se activa ante suspensión del consultorio; cambios voluntarios del paciente no la activan.
+
+## Pacientes, obras sociales y permisos (noviembre de 2026)
+
+`ObraSocialController` expone GET `/api/obras-sociales` a los cuatro roles y POST a ADMIN, RECEPCION y OBRAS_SOCIALES. `PacienteRequest` admite `obraSocialId` opcional; los DTO de pacientes devuelven ID y nombre de obra social, y el de turnos el nombre cuando existe. Obras Sociales puede crear pacientes, pero no modificar ni desactivar los existentes. Los nombres duplicados de obra social se rechazan.
+
+`TurnoController` descarta `motivoConsulta` enviado por Obras Sociales y omite motivos privados en sus respuestas. `TurnoService` impide que ese rol recupere cancelaciones del consultorio o mueva turnos todavía afectados por un cierre (403); sí puede cambiar turnos activos normales. `TurnoServicePermisosTest` cubre estos límites y la integración agrega el caso de dos pacientes distintos compitiendo por la misma franja.

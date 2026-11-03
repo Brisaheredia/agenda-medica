@@ -1,12 +1,17 @@
 # Roles y permisos
 
-Matriz solicitada para los cuatro roles. La autorización se aplica en `SecurityConfig` antes de ejecutar los controladores; el frontend usa `src/permisos.ts` para mostrar las acciones correspondientes. Modificar React, localStorage o el claim de rol de un token no concede permisos.
+Matriz implementada para los cuatro roles (decisión del equipo, no todos los permisos fueron solicitados textualmente por Salvador). La autorización se aplica en `SecurityConfig` antes de ejecutar los controladores; el frontend usa `src/permisos.ts` para mostrar las acciones correspondientes. Modificar React, localStorage o el claim de rol de un token no concede permisos.
 
 | Operación | ADMIN | MEDICO | RECEPCION | OBRAS_SOCIALES |
 |---|---|---|---|---|
 | Consultar agenda y disponibilidad | Sí | Sí | Sí | Sí |
-| Registrar, editar o desactivar pacientes | Sí | No | Sí | No |
-| Asignar, cancelar y reprogramar turnos | Sí | No | Sí | Sí |
+| Registrar pacientes nuevos | Sí | No | Sí | Sí, desde Asignar turno |
+| Editar o desactivar pacientes | Sí | No | Sí | No |
+| Consultar catálogo de obras sociales | Sí | Sí | Sí | Sí |
+| Agregar una obra social desde el formulario | Sí | No | Sí | Sí |
+| Asignar y cancelar turnos por solicitud del paciente | Sí | No | Sí | Sí |
+| Reprogramar turnos activos sin suspensión | Sí | No | Sí | Sí |
+| Recuperar turnos cancelados por el consultorio o afectados por cierres | Sí | No | Sí | No |
 | Habilitar horarios del mes (horario fijo) | Sí | Sí | No | No |
 | Bloquear días o períodos de atención | Sí | Sí | No | No |
 | Registrar atendido o ausente | Sí | Sí | Sí | No |
@@ -15,7 +20,7 @@ Matriz solicitada para los cuatro roles. La autorización se aplica en `Security
 | Consultar auditoría | Sí | No | No | No |
 | Consultar pacientes y contactos para reprogramación | Sí | Sí | Sí | No |
 
-Obras sociales busca pacientes existentes por DNI completo o al menos tres caracteres del apellido en `/api/pacientes/seleccion`. Recibe ID, DNI, nombre, apellido y estado activo. No accede a teléfono, email, directorio completo ni motivos de consulta/cancelación de los turnos. Puede reprogramar desde la agenda. Sólo puede cancelar por solicitud del paciente; suspender atención del consultorio no corresponde a ese rol. Administración y Recepción conservan la cancelación individual por decisión del consultorio, para coordinar las reprogramaciones.
+Obras Sociales busca pacientes existentes con `/api/pacientes/seleccion` (DNI o búsqueda de al menos tres caracteres) y recibe ID, DNI, nombre, apellido, estado activo y obra social, si existe. No ve el directorio completo, teléfono ni email de los resultados de búsqueda ni motivos de consulta/cancelación de los turnos. Puede **registrar un paciente nuevo** desde Agenda → Asignar turno y elegir o crear una obra social. No puede editar ni desactivar pacientes existentes. Puede reprogramar turnos activos **no afectados por cierres**, pero no recuperar cancelaciones CONSULTORIO ni turnos activos dentro de jornadas suspendidas. Sólo puede cancelar con origen PACIENTE; no puede suspender atención. Recepción y Administración gestionan las recuperaciones por suspensión.
 
 ## Administración de cuentas
 
@@ -30,3 +35,7 @@ La API responde 401 ante ausencia de sesión, firma inválida, cuenta inactiva o
 ## Verificación
 
 `AutorizacionHttpTest` prueba los controladores y filtros reales con JWT y servicios de negocio simulados: matriz de los cuatro roles, anonimato, firma y rol alterados, revocación y datos mínimos. `TurnoAgendaIntegrationTest` verifica persistencia del cuarto rol, BCrypt, cambios de contraseña/rol, login y protección del último administrador en MySQL descartable. `npm test` comprueba menús, rutas y botones por rol con render de React; no sustituye una prueba visual en navegador.
+
+## Motivos y privacidad en la interfaz
+
+El **motivo de consulta** es un campo opcional que pueden usar Administración y Recepción al asignar. Obras Sociales no ve ese campo y, aunque lo envíe directamente a la API, el controlador lo descarta. Para ese rol el `TurnoResponse` tampoco devuelve motivos de consulta/cancelación; sí puede mostrar `obraSocialNombre`. Cuando no hay motivo de consulta, la agenda no imprime «Sin motivo informado». Los motivos de cancelación y reprogramación son conceptos diferentes y se rigen por sus propios formularios.

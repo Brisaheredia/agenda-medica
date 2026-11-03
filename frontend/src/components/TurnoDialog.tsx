@@ -90,6 +90,7 @@ export function TurnoDialog({
         <div className="slot-summary">
           <div>
             <strong>{turno.paciente}</strong>
+            {turno.obraSocialNombre && <span>Obra social: {turno.obraSocialNombre}</span>}
             <BadgeReprogramacion turno={turno} />
             <span>
               {fechaLarga(turno.inicio.slice(0, 10))} · {hora(turno.inicio)} hs

@@ -9,7 +9,9 @@ public record PacienteResponse(
         String apellido,
         String telefono,
         String email,
-        boolean activo
+        boolean activo,
+        Long obraSocialId,
+        String obraSocialNombre
 ) {
     public static PacienteResponse from(Paciente paciente) {
         return new PacienteResponse(
@@ -19,7 +21,9 @@ public record PacienteResponse(
                 paciente.getApellido(),
                 paciente.getTelefono(),
                 paciente.getEmail(),
-                paciente.isActivo()
+                paciente.isActivo(),
+                paciente.getObraSocial() == null ? null : paciente.getObraSocial().getId(),
+                paciente.getObraSocial() == null ? null : paciente.getObraSocial().getNombre()
         );
     }
 }

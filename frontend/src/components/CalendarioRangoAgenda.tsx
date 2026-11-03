@@ -9,11 +9,12 @@ import { DiaCalendarioAgenda } from "./DiaCalendarioAgenda";
 
 const DIAS_POR_PAGINA = 7;
 
-export function CalendarioRangoAgenda({ profesionalId, api, irAlDia, verContactos = true }: {
+export function CalendarioRangoAgenda({ profesionalId, api, irAlDia, revision = 0, verContactos = true }: {
   profesionalId?: number;
   api: Api;
   irAlDia: (fecha: string) => void;
   verContactos?: boolean;
+  revision?: number;
 }) {
   const [desde, setDesde] = useState(() => hoy());
   const [hasta, setHasta] = useState(() => moverDia(hoy(), 6));
@@ -37,7 +38,7 @@ export function CalendarioRangoAgenda({ profesionalId, api, irAlDia, verContacto
       .catch(e => { if (!abortado(e) && !controller.signal.aborted) { setError(detalleError(e)); setDias([]); } })
       .finally(() => { if (!controller.signal.aborted) setCargando(false); });
     return () => controller.abort();
-  }, [api, profesionalId, consulta]);
+  }, [api, profesionalId, consulta, revision]);
 
   function consultar() {
     if (!desde || !hasta) { setValidacion("Elegí las dos fechas."); return; }

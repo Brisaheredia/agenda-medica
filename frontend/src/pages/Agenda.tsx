@@ -28,6 +28,7 @@ type Props = {
   cargando: boolean;
   errorAgenda: string;
   setErrorAgenda: (value: string) => void;
+  revision: number;
   setRevision: (value: (n: number) => number) => void;
   setIntentoProfesional: (value: (n: number) => number) => void;
   franjas: Franja[];
@@ -39,6 +40,7 @@ type Props = {
   gestionar: boolean;
   cerrar: boolean;
   gestionarPacientes: boolean;
+  recuperarSuspendidos: boolean;
   verContactos: boolean;
   selected: Franja | null;
   setSelected: (value: Franja | null) => void;
@@ -62,6 +64,7 @@ export function AgendaPage(props: Props) {
     cargando,
     errorAgenda,
     setErrorAgenda,
+    revision,
     setRevision,
     setIntentoProfesional,
     franjas,
@@ -73,6 +76,7 @@ export function AgendaPage(props: Props) {
     gestionar,
     cerrar,
     gestionarPacientes,
+    recuperarSuspendidos,
     verContactos,
     selected,
     setSelected,
@@ -178,8 +182,8 @@ export function AgendaPage(props: Props) {
           </button>
         </div>
       </section>}
-      {vista === "semana" && profesional && <CalendarioSemanalAgenda profesionalId={profesionalId} api={api} verContactos={verContactos} irAlDia={(dia) => { cambiarFecha(dia); setVista("dia"); }} />}
-      {vista === "rango" && profesional && <CalendarioRangoAgenda profesionalId={profesionalId} api={api} verContactos={verContactos} irAlDia={(dia) => { cambiarFecha(dia); setVista("dia"); }} />}
+      {vista === "semana" && profesional && <CalendarioSemanalAgenda revision={revision} profesionalId={profesionalId} api={api} verContactos={verContactos} irAlDia={(dia) => { cambiarFecha(dia); setVista("dia"); }} />}
+      {vista === "rango" && profesional && <CalendarioRangoAgenda revision={revision} profesionalId={profesionalId} api={api} verContactos={verContactos} irAlDia={(dia) => { cambiarFecha(dia); setVista("dia"); }} />}
       {errorAgenda && (
         <div className="alert error" role="alert">
           <span>{errorAgenda}</span>
@@ -271,6 +275,7 @@ export function AgendaPage(props: Props) {
               filtro={filtro}
               selected={selected?.id}
               gestionar={gestionar}
+              recuperarSuspendidos={recuperarSuspendidos}
               cerrar={cerrar}
               busy={busy}
               select={setSelected}

@@ -4,7 +4,7 @@ Procedimiento propuesto para el responsable técnico. Los comandos de respaldo/r
 
 ## Operación diaria y responsabilidades
 
-Administración verifica días habilitados, duración y cierres; recepción mantiene contactos y compromisos; soporte mantiene servicios, configuración, respaldos y recuperación. El equipo debe asignar personas concretas y reemplazos antes de usar datos reales.
+Administración verifica días habilitados, duración y cierres; recepción mantiene contactos, obra social opcional y compromisos; soporte mantiene servicios, configuración, respaldos y recuperación. El equipo debe asignar personas concretas y reemplazos antes de usar datos reales.
 
 Al comenzar la jornada, comprobar acceso, profesional activo y agenda. Al suspender atención, conservar compromisos y coordinar reprogramación. Consultar Reprogramaciones para recuperar pacientes y contactos; coordinar manualmente antes de elegir el nuevo horario. Se excluyen cancelaciones del paciente. Los registros antiguos sin origen no se clasifican por conjetura.
 
@@ -59,3 +59,7 @@ No hay endpoint de health/Actuator ni despliegue automatizado documentado en el 
 ## Recuperación y cambio
 
 Antes de una actualización registrar versión y respaldo. Si falla, detener nuevas escrituras, evaluar si hubo cambio de datos/esquema y aplicar el plan específico de reversión. Revertir sólo binarios no revierte la BD. Avisar a operadores qué compromisos podrían haberse registrado durante el incidente; no recomponerlos mediante supuestos.
+
+## Base de datos al incorporar obras sociales
+
+Antes de introducir el catálogo en una instalación existente, hacer respaldo. El cambio agrega una tabla `obras_sociales` y una referencia nullable `pacientes.obra_social_id`; no modifica los turnos históricos. En entorno local con `DDL_AUTO=update`, Hibernate puede agregar las estructuras al iniciar; con actualización manual existe `backend/sql/2026-11-02-obras-sociales.sql`. **Elegir sólo una forma de aplicar el esquema** y comprobar si ya existe antes de intentar ejecutarla. Los registros anteriores quedan sin obra social hasta que se actualicen desde la interfaz.

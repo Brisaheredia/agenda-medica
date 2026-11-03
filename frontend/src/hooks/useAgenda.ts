@@ -28,6 +28,24 @@ export function useAgenda({
   const [filtro, setFiltro] = useState<Filtro>("TODOS");
   const pendingFranjaId = useRef<number | null>(null);
 
+  // La agenda es compartida: actualizar al regresar a la pestaña y cada 30 s si está visible.
+  useEffect(() => {
+    if (!habilitada || !sesionActiva || !profesional) return;
+    const refrescar = () => {
+      if (document.visibilityState === "visible") setRevision((actual) => actual + 1);
+    };
+    const alRecuperarFoco = () => refrescar();
+    const alCambiarVisibilidad = () => refrescar();
+    const intervalo = window.setInterval(refrescar, 30_000);
+    window.addEventListener("focus", alRecuperarFoco);
+    document.addEventListener("visibilitychange", alCambiarVisibilidad);
+    return () => {
+      window.clearInterval(intervalo);
+      window.removeEventListener("focus", alRecuperarFoco);
+      document.removeEventListener("visibilitychange", alCambiarVisibilidad);
+    };
+  }, [habilitada, sesionActiva, profesional]);
+
   const key = `${profesional?.id}/${fecha}/${revision}`;
   const ready =
     habilitada &&
@@ -41,7 +59,6 @@ export function useAgenda({
     const controller = new AbortController();
     setCargando(true);
     setErrorAgenda("");
-    setSelected(null);
     const query = `profesionalId=${profesional.id}&fecha=${fecha}`;
     Promise.all([
       api<Franja[]>(`/api/agenda?${query}`, { signal: controller.signal }),
@@ -53,6 +70,11 @@ export function useAgenda({
         setFranjas(franjasVisibles);
         setTurnos(turnosDelDia);
         setExcepciones(excepcionesDelDia);
+        // Si otro usuario tomó la franja que estaba seleccionada, retiramos la selección.
+        setSelected((actual) => {
+          if (!actual) return null;
+          return franjasVisibles.find((f) => f.id === actual.id && f.estado === "LIBRE") ?? null;
+        });
         if (pendingFranjaId.current !== null) {
           const seleccionada = franjasVisibles.find(
             (franja) => franja.id === pendingFranjaId.current,

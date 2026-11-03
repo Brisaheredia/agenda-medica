@@ -1,6 +1,6 @@
 # Alcance y requisitos — Agenda Médica
 
-**Estado de referencia:** 29 de octubre de 2026, sobre el código de la rama `Gisele` (base `1c2b38e`, más el retiro de aperturas extraordinarias).
+**Estado de referencia:** 3 de noviembre de 2026. Incluye cambios de pacientes, obras sociales y permisos preparados en la rama `Gisele`; la verificación formal sigue pendiente.
 
 ## Fuentes y decisión de alcance
 
@@ -8,12 +8,12 @@ La [especificación inicial](referencias/README.md) fue un ejercicio de relevami
 
 ## Necesidad del consultorio y versión comprometida
 
-El consultorio utiliza una agenda manual/dispersa: las cancelaciones desaprovechan horarios disponibles y la asignación por distintos canales ocasiona superposiciones. La solución es una **aplicación web centralizada**, administrada por el consultorio para un solo profesional, con:
+El consultorio utiliza una agenda manual/dispersa: Recepción y la persona que atiende Obras Sociales pueden registrar turnos en cuadernos distintos, por lo que se superponen horarios; además, una cancelación puede tardar en comunicarse y dejar un hueco desaprovechado. La solución es una **aplicación web centralizada**, administrada por el consultorio para un solo profesional, con:
 
-- Registro y consulta de los datos mínimos de pacientes para identificación y contacto.
+- Registro y consulta de pacientes para identificación y contacto; alta posible desde Recepción, Administración y desde el flujo de asignación de Obras Sociales. Obra social opcional seleccionable o agregable en el formulario, sin cobertura ni facturación.
 - Atención habitual fija **lunes a viernes de 08:00 a 20:00**, turnos de **40 minutos**.
 - Generación de franjas mensuales; por decisión técnica, se permite el mes actual y **los tres meses calendario siguientes completos**. Un cierre impide ofrecer sus franjas.
-- Consulta de disponibilidad; asignación y cancelación de turnos. Un horario cancelado vuelve a estar disponible **solo si no está bloqueado**.
+- Consulta de una agenda compartida por Recepción y Obras Sociales; asignación y cancelación de turnos. Un horario cancelado vuelve a estar disponible **solo si no está bloqueado**. Las pantallas refrescan al volver a enfocarlas y periódicamente, pero no garantizan actualización inmediata.
 - Prevención de dobles reservas y compromisos superpuestos, incluso con operaciones concurrentes.
 - Suspensión de días o franjas: **advertencia previa**, conservación de los turnos y contactos afectados y reprogramación manual uno a uno. Solo se permiten cierres de lunes a viernes; en fines de semana no hay atención habitual que suspender.
 
@@ -21,7 +21,7 @@ El paciente no se registra ni solicita turnos por una interfaz pública. Quedan 
 
 ## Funcionalidades complementarias ya implementadas
 
-Autenticación por usuarios/roles, consulta diaria/semanal/por rango, estados atendido/ausente, historial de movimientos y auditoría básica. Algunas exceden el mínimo del correo y se conservaron por utilidad, trazabilidad y porque ya estaban desarrolladas; **no se presentan como pedidos explícitos del cliente** ni justifican nuevas ampliaciones.
+Autenticación por usuarios/roles, consulta diaria/semanal/por rango, estados atendido/ausente, historial de movimientos y auditoría básica. El motivo de consulta es opcional y no puede ser enviado ni consultado por Obras Sociales; su ausencia no produce el mensaje «Sin motivo informado» en la agenda. Algunas exceden el mínimo del correo y se conservaron por utilidad, trazabilidad y porque ya estaban desarrolladas; **no se presentan como pedidos explícitos del cliente** ni justifican nuevas ampliaciones.
 
 ## RF originales: correspondencia con el alcance acotado
 
@@ -30,13 +30,13 @@ Se mantienen los identificadores del documento inicial para facilitar la trazabi
 | RF | Situación en esta versión |
 |---|---|
 | RF-01 | Implementado: acceso de usuarios del consultorio. |
-| RF-02 | Implementado: alta, edición, consulta y búsqueda por DNI, apellido, teléfono o email. |
+| RF-02 | Implementado: alta, edición, consulta y búsqueda por DNI, apellido, teléfono o email. Obras Sociales puede dar de alta, no editar/desactivar; la obra social del paciente es opcional. |
 | RF-03 | Fuera del alcance como editor de días/horarios; horario habitual fijo. |
 | RF-04 | Implementado de forma acotada: franjas de 40 minutos según horario fijo y cierres. |
 | RF-05 | Implementado: agenda diaria. |
 | RF-06 | Implementado: asignación de turno libre a paciente registrado. |
 | RF-07 | Implementado: cancelación con fecha, origen, motivo y trazabilidad. |
-| RF-08 | Implementado: reprogramación manual con historial. |
+| RF-08 | Implementado: reprogramación manual con historial. Obras Sociales sólo puede mover turnos activos que no estén afectados por una suspensión; recuperación de cancelados por el consultorio a cargo de Recepción/Administración. |
 | RF-09 | Implementado: bloqueos parciales o por día completo. |
 | RF-10 | Implementado: previsualización de afectados antes del cierre. |
 | RF-11 | Implementado como complemento: día, semana y rango de hasta 90 días. |
@@ -60,7 +60,7 @@ Se mantienen los identificadores del documento inicial para facilitar la trazabi
 - No se asignan turnos pasados ni fuera del horario fijo y la ventana de reserva; inicio/fin deben ser consistentes (RN-02, RN-03, RN-12).
 - Los cierres prevalecen sobre la disponibilidad y no borran ni liberan automáticamente los turnos comprometidos (RN-05, RN-06, RN-07).
 - La cancelación de un turno libera la franja salvo cierre/bloqueo; una reprogramación conserva identidad y evento con usuario, momento, horario original/nuevo y motivo (RN-08, RN-09, RN-11, RN-19).
-- Paciente registrado previamente, solo datos necesarios y modificación de agenda sujeta a autorización (RN-10, RN-16, RN-20).
+- Paciente registrado previamente (se puede crear durante la reserva), solo datos necesarios y modificación de agenda sujeta a autorización (RN-10, RN-16, RN-20). Se guarda como máximo una obra social actual opcional por paciente; no una afiliación por reserva ni un historial de coberturas.
 - Los cambios de estado atendido/ausente requieren haber llegado al inicio del turno (RN-18).
 - Las reglas sobre **plantillas editables** y **horizonte en días configurable** del análisis inicial no gobiernan esta versión (RN-04, RN-13, RN-14 en su forma inicial). Aquí se aplican la disponibilidad fija y la ventana de meses calendario.
 
@@ -69,3 +69,12 @@ Se mantienen los identificadores del documento inicial para facilitar la trazabi
 Los RNF-01 a RNF-20 del documento de referencia se conservan como **objetivos para evaluar** donde corresponda, no como resultados ya demostrados. El código tiene autorización, BCrypt, modularidad en capas, transacciones e índices. **No hay mediciones aprobadas** de latencia p95, volumen de 100.000 pacientes, cobertura E2E, compatibilidad total de navegadores, HTTPS o restauración de copias de seguridad. No afirmar que se cumplieron sin evidencia. Estado y método de verificación: [trazabilidad](trazabilidad.md) y [pruebas](pruebas-aceptacion.md).
 
 La validación funcional preliminar del equipo no sustituye la etapa formal de Testing. En la entrega de Implementación se presentan el código, la gestión del proyecto y las decisiones de diseño documentadas.
+
+## Decisiones complementarias y asuntos por validar
+
+- Los **cuatro roles** son una decisión del equipo para distinguir necesidades operativas. Obras Sociales busca pacientes con datos mínimos, puede dar de alta pacientes, usar la agenda, cancelar por origen PACIENTE y reprogramar turnos activos normales. No administra usuarios, contactos completos, historia del turno ni suspensiones del consultorio.
+- **Catálogo de obras sociales:** una obra social puede asociarse a varios pacientes; se puede crear una nueva desde el formulario. No se confirmó con Salvador si se necesita registrar la obra social *del turno* o sólo la *del paciente*: para este TPI se eligió lo segundo.
+- **Actualización de agenda:** el navegador vuelve a consultar al recuperar el foco, al regresar a la pestaña y cada 30 segundos mientras esté visible. No hay WebSocket ni sincronización inmediata; una reserva competidora se rechaza al confirmar.
+- **Diseño visual:** se tomaron colores y logo del material enviado por Salvador mientras estaba de vacaciones; la aprobación final de la identidad visual quedó pendiente.
+
+Estas decisiones no se atribuyen como pedidos textuales del cliente. La especificación inicial es una referencia, no una lista de funcionalidades obligatorias para este alcance.

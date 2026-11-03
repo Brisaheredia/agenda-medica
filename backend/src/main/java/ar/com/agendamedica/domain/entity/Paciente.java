@@ -17,6 +17,9 @@ public class Paciente {
     @Column(nullable = false, length = 100) private String apellido;
     @Column(length = 50) private String telefono;
     @Column(length = 150) private String email;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "obra_social_id")
+    private ObraSocial obraSocial;
     @Column(nullable = false) private boolean activo = true;
     @Column(name = "created_at", nullable = false, updatable = false) private LocalDateTime createdAt;
     @Column(name = "updated_at", nullable = false) private LocalDateTime updatedAt;
@@ -30,6 +33,8 @@ public class Paciente {
     public String getApellido(){return apellido;} public void setApellido(String apellido){this.apellido=apellido;}
     public String getTelefono(){return telefono;} public void setTelefono(String telefono){this.telefono=telefono;}
     public String getEmail(){return email;} public void setEmail(String email){this.email=email;}
+    public ObraSocial getObraSocial(){return obraSocial;}
+    public void setObraSocial(ObraSocial obraSocial){this.obraSocial=obraSocial;}
     public boolean isActivo(){return activo;} public void setActivo(boolean activo){this.activo=activo;}
     public LocalDateTime getCreatedAt(){return createdAt;} public LocalDateTime getUpdatedAt(){return updatedAt;}
 }

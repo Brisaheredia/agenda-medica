@@ -16,6 +16,8 @@ export type Paciente = {
   apellido: string;
   telefono?: string;
   email?: string;
+  obraSocialId?: number | null;
+  obraSocialNombre?: string | null;
   activo: boolean;
 };
 export type NuevoPaciente = {
@@ -24,7 +26,9 @@ export type NuevoPaciente = {
   apellido: string;
   telefono: string;
   email: string;
+  obraSocialId: number | null;
 };
+export type ObraSocial = { id: number; nombre: string };
 export type Franja = {
   id: number;
   profesionalId: number;
@@ -37,6 +41,7 @@ export type Turno = {
   id: number;
   pacienteId: number;
   paciente: string;
+  obraSocialNombre?: string | null;
   profesionalId: number;
   franjaId: number;
   inicio: string;

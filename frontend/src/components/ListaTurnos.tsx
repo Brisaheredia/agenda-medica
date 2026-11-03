@@ -10,6 +10,7 @@ export function Agenda({
   filtro,
   selected,
   gestionar,
+  recuperarSuspendidos,
   cerrar,
   busy,
   select,
@@ -22,6 +23,7 @@ export function Agenda({
   filtro: Filtro;
   selected: number | undefined;
   gestionar: boolean;
+  recuperarSuspendidos: boolean;
   cerrar: boolean;
   busy: boolean;
   select: (f: Franja) => void;
@@ -119,32 +121,44 @@ export function Agenda({
               </span>
               {turno && <BadgeReprogramacion turno={turno} />}
             </div>
-            <p>
-              {turno?.motivoConsulta ||
-                (visual.clase === "consultorio"
+            {turno ? (
+              <>
+                {turno.motivoConsulta?.trim() && (
+                  <p>Motivo de consulta: {turno.motivoConsulta}</p>
+                )}
+                {turno.obraSocialNombre && (
+                  <p className="muted">Obra social: {turno.obraSocialNombre}</p>
+                )}
+              </>
+            ) : (
+              <p>
+                {visual.clase === "consultorio"
                   ? "No disponible para asignar turnos."
                   : estado === "LIBRE"
-                  ? franja && reservable(franja)
-                    ? "Seleccioná este horario para asignar un turno."
-                    : visual.etiqueta
-                  : estado === "BLOQUEADA"
-                    ? "No disponible para asignar turnos."
-                    : "Sin motivo informado.")}
-            </p>
+                    ? franja && reservable(franja)
+                      ? "Seleccioná este horario para asignar un turno."
+                      : visual.etiqueta
+                    : estado === "BLOQUEADA"
+                      ? "No disponible para asignar turnos."
+                      : "Horario ocupado."}
+              </p>
+            )}
             {turno?.motivoCancelacion && <p>Motivo de cancelación: {turno.motivoCancelacion}</p>}
-            {turno && (historial || activo(turno) || (turno.estado === "CANCELADO" && turno.origenCancelacion === "CONSULTORIO" && gestionar)) && (
+            {turno && (historial || activo(turno) || (turno.estado === "CANCELADO" && turno.origenCancelacion === "CONSULTORIO" && recuperarSuspendidos)) && (
               <div className="appointment-actions">
                 {historial && <button className="text-button" disabled={busy} onClick={() => historial(turno)}>Historial</button>}
-                {turno.estado === "CANCELADO" && turno.origenCancelacion === "CONSULTORIO" && gestionar && <button className="text-button" disabled={busy} onClick={() => action(turno, "reprogramar")}>Reprogramar</button>}
+                {turno.estado === "CANCELADO" && turno.origenCancelacion === "CONSULTORIO" && recuperarSuspendidos && <button className="text-button" disabled={busy} onClick={() => action(turno, "reprogramar")}>Reprogramar</button>}
                 {activo(turno) && gestionar && (
                   <>
-                    <button
-                      className="text-button"
-                      disabled={busy}
-                      onClick={() => action(turno, "reprogramar")}
-                    >
-                      Reprogramar
-                    </button>
+                    {(recuperarSuspendidos || !cierreDelHorario(inicio, fin, excepciones)) && (
+                      <button
+                        className="text-button"
+                        disabled={busy}
+                        onClick={() => action(turno, "reprogramar")}
+                      >
+                        Reprogramar
+                      </button>
+                    )}
                     <button
                       className="text-button danger-text"
                       disabled={busy}

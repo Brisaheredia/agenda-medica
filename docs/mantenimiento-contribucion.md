@@ -6,7 +6,7 @@ Guía de trabajo para sostener coherencia entre necesidad, código, documentaci�
 
 Registrar cada pedido como corrección, nueva capacidad, prioridad o incidencia; enlazar RF/RN afectados, origen del pedido y criterio verificable. El SRS inicial es amplio y pedagógico: no convertir sus fases futuras en alcance sin acuerdo. La lista manual de afectados sí fue incorporada por confirmación actual del responsable.
 
-Proponer una tarjeta con problema, comportamiento esperado, criterio de aceptación, responsable, evidencia y commit/PR. El equipo elige Trello o su herramienta; no se verificó un tablero conectado ni se inventan tarjetas ya existentes.
+Proponer una tarjeta con problema, comportamiento esperado, criterio de aceptación, responsable, evidencia y commit/PR. El equipo incorporó Trello hacia el final del proyecto: reconstruyó tareas pasadas a partir de commits y usó el tablero para organizar pendientes reales. No se debe presentar el tablero retrospectivo como cronología original de asignación.
 
 ## Código y fan-out
 

@@ -1,6 +1,6 @@
 # Pruebas y aceptación
 
-Esta guía separa pruebas existentes, comprobaciones realizadas y casos pendientes. Revisión de alcance: 29 de octubre de 2026. **Los resultados enumerados más abajo son históricos y no prueban el commit actual.** Se actualizaron referencias puntuales de pruebas existentes a los métodos y rutas vigentes. **No se ejecutó ni aprobó la suite** sobre el cambio actual; su evaluación completa y ampliación corresponde a la entrega formal de Testing. No se ejecutó una suite integral nueva para estos cambios.
+Esta guía separa pruebas existentes, comprobaciones realizadas y casos pendientes. Revisión de alcance: 3 de noviembre de 2026. **Los resultados enumerados más abajo son históricos y no prueban el commit actual.** Se actualizaron referencias puntuales de pruebas existentes a los métodos y rutas vigentes. **No se ejecutó ni aprobó la suite** sobre el cambio actual; su evaluación completa y ampliación corresponde a la entrega formal de Testing. No se ejecutó una suite integral nueva para estos cambios.
 
 ## Ejecutar las comprobaciones disponibles
 
@@ -31,6 +31,7 @@ Clase `backend/src/test/java/ar/com/agendamedica/TurnoAgendaIntegrationTest.java
 | Método | Qué verifica |
 |---|---|
 | dobleReservaConcurrenteSoloPermiteUnTurno | Dos altas sobre una franja, un éxito y un conflicto |
+| dosPacientesDistintosNoObtienenLaMismaFranja | Reservas simultáneas de Recepción y Obras Sociales para dos pacientes distintos: un solo turno confirmado |
 | cancelarLiberaLaFranjaYRegistraEvento | Cancelación normal, liberación y evento |
 | reprogramarLiberaAnteriorYOcupaNueva | Identidad, origen/destino y evento |
 | noPermiteMarcarAtendidoAntesDelHorario | Rechazo de atención anticipada |
@@ -40,13 +41,15 @@ Clase `backend/src/test/java/ar/com/agendamedica/TurnoAgendaIntegrationTest.java
 | noReprogramaCancelacionSolicitadaPorPaciente | Rechaza reactivación y conserva destino libre |
 | dosReprogramacionesConcurrentesDelMismoTurnoNoDejanFranjasHuerfanas | Serializa cambios del mismo turno y deja sólo su destino final ocupado |
 | generaCuarentaAunqueLaPlantillaSeaAntiguaYLimpiaSoloLibresSinHistoria | Genera 18 horarios de 40, limpia legado libre sin historial y repite sin duplicar |
-| duracionFijaRechazaCambiosYPermiteGuardarSoloHorizonte | **Obsoleto**: invoca configuración/plantillas/aperturas retiradas; adaptar a horario fijo. |
+| duracionFijaYHorarioHabitualNoConfigurables | Rechaza cambios del horario y duración fija en la versión actual. |
 | noBorraNiModificaTurnoAntiguoCuandoImpideGenerarCuarenta | Mantiene cita antigua e intervalo original ante conflicto, sin cambios parciales |
 | reservasDeCuarentaEnFranjasDiferentesSuperpuestasSeSerializan | Un éxito y un conflicto entre dos IDs con intervalos superpuestos |
-| generacionMensualEsFinitaCercaDeMedianocheYNoAceptaDosMeses | **Obsoleto en parte**: el ejemplo usa horas 23:00 y plantillas editables. Conservar la verificación de un solo mes y el límite temporal, adaptando a 08:00–20:00. |
+| generacionMensualUsaHorarioFijoYRechazaDosMeses | Generación con horario habitual fijo y rechazo de un período de dos meses. |
 | usuariosPersistenCuartoRolYRevocanSesionAlCambiarCredenciales | Persiste OBRAS_SOCIALES, BCrypt, cambios de contraseña/rol, invalida JWT y protege último administrador |
 
 Estos escenarios llaman servicios. `AutorizacionHttpTest` agrega pruebas de autorización con filtros/controladores y JWT reales para los cuatro roles, servicios simulados y sin acceso a datos del consultorio. Ver [roles y permisos](roles-permisos.md). DisponibilidadServiceTest agrega seis pruebas sobre liberación, cierre parcial y destino cerrado. AgendaConsultaServiceTest agrega tres sobre contactos, cierres duplicados, cancelación individual y rango inválido. No hay medición de cobertura porcentual.
+
+`TurnoServicePermisosTest` incorpora casos para impedir que Obras Sociales recupere cancelaciones del consultorio o mueva un turno aún activo dentro de un cierre. `AutorizacionHttpTest` verifica también endpoints del catálogo y datos mínimos de Obras Sociales. Estas pruebas están incluidas en los parches, no se declara su ejecución exitosa aquí.
 
 `DevUsuariosSeederTest` verifica creación de los cuatro roles, conservación de cuentas existentes, reinicios sin duplicados, validación previa a inserciones, activación exclusiva en `dev`, deshabilitación y variables de configuración. `DevUsuariosIntegrationTest` arranca la aplicación con una BD MySQL nueva descartable y comprueba inicio de sesión con las cuatro cuentas y repetición de la inicialización sin cambiar hashes.
 
@@ -94,6 +97,10 @@ Usar una base descartable con un profesional activo y pacientes ficticios. Las f
 | CA-16 | En 360 px y navegadores acordados, completar reserva y navegar fechas con teclado; Hoy sólo en fecha actual |
 | CA-17 | Generar 40 con datos antiguos incompatibles; preservar citas/historial y no ofrecer franjas fuera del horario habitual. |
 | CA-18 | Dos cambios simultáneos del mismo turno no dejan destinos ocupados sin compromiso ni eventos incompatibles |
+| CA-20 | En dos sesiones separadas, Recepción y Obras Sociales reservan la misma franja: sólo una confirma; después de una cancelación de Obras Sociales, Recepción ve el horario liberado al volver al foco o antes de 30 s, salvo cierre. |
+| CA-21 | Obras Sociales crea un paciente desde Agenda y una obra social desde el selector; el alta queda vinculada. Sin obra social se registra como particular; duplicado de obra social se rechaza. |
+| CA-22 | Obras Sociales no puede editar/desactivar pacientes ni recuperar turnos cancelados por el consultorio o afectados por cierre (403). Sí puede reprogramar turnos activos normales y cancelar con origen PACIENTE. |
+| CA-23 | Un turno sin motivo de consulta no imprime «Sin motivo informado». Se muestra la obra social sólo cuando el paciente tiene una registrada. |
 
 ## Pruebas de carga y salida
 
@@ -102,3 +109,15 @@ Medir los objetivos del SRS con volumen, concurrencia, percentil y entorno regis
 Para cerrar aceptación: ejecutar casos críticos sin defectos P1, completar matriz de roles, persistencia y restauración; registrar pendientes aceptados con responsable y fecha; obtener conformidad del responsable del consultorio. Crear actas con evidencia concreta, no sólo casillas marcadas. La [trazabilidad](trazabilidad.md) relaciona cada caso con su necesidad.
 
 La prueba de recuperación de marca histórica valida el SQL contra una cancelación explícita del consultorio y un cambio voluntario, marcando únicamente el primer caso. También se verifica persistencia de la marca al volver a consultar, tras un cierre y en movimientos posteriores. La base local queda con anticipación 45 y la columna de procedencia preparada; la API debe reiniciarse para exponer el nuevo campo.
+
+## Prueba manual sugerida: dos usuarios en simultáneo
+
+1. Abrir dos sesiones aisladas (por ejemplo navegador normal e incógnito), una como Recepción y otra como Obras Sociales. No usar dos pestañas que compartan el mismo almacenamiento de sesión.
+2. Seleccionar en ambas **la misma franja futura libre**, con dos pacientes distintos. Confirmarla desde Obras Sociales.
+3. Intentar confirmarla también desde Recepción **sin recargar**. Debe rechazarse con conflicto, sin registrar dos turnos para el mismo horario.
+4. Desde Obras Sociales cancelar el turno con origen **PACIENTE**. Volver a la pestaña de Recepción o esperar a la actualización automática; la franja debe quedar libre, salvo un cierre.
+5. Intentar reservarla nuevamente desde Recepción y observar que Obras Sociales vea la nueva ocupación tras su próxima actualización.
+
+**Suspensión de jornada:** la usuaria del equipo informó que ya probó el circuito y funciona. Esa declaración es una comprobación manual preliminar; para la entrega formal de pruebas conservar pasos, fecha, datos y evidencia del resultado. No es necesario volver a probarlo sólo para editar documentación.
+
+Para ejecutar verificaciones automatizadas específicas: desde `backend/` `mvn test "-Dtest=AutorizacionHttpTest,TurnoServicePermisosTest"` y `mvn test "-Dtest=TurnoAgendaIntegrationTest"` (esta última requiere Docker). Desde `frontend/`, `npm ci`, `npm run build` y `npm test`. No se asignan resultados a estas ejecuciones si no se conservaron sus salidas.

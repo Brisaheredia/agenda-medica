@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** Verifica los filtros y controladores reales con JWT, sin escribir datos del consultorio. */
 @WebMvcTest(controllers = {AgendaController.class, AgendaConsultaController.class, TurnoController.class,
         PacienteController.class, UsuarioController.class, AuditoriaController.class,
-        ConfiguracionAgendaController.class, ProfesionalController.class, AuthController.class},
+        ConfiguracionAgendaController.class, ProfesionalController.class, AuthController.class, ObraSocialController.class},
         properties = {"app.jwt.secret=clave-exclusiva-para-pruebas-http-de-autorizacion",
                 "app.jwt.expiration-minutes=480"})
 @Import({SecurityConfig.class, JwtService.class, JwtAuthenticationFilter.class,
@@ -51,6 +51,7 @@ class AutorizacionHttpTest {
     private static final Set<RolUsuario> TODOS = Set.of(RolUsuario.values());
     private static final Set<RolUsuario> ADMIN = Set.of(RolUsuario.ADMIN);
     private static final Set<RolUsuario> GESTION = Set.of(RolUsuario.ADMIN, RolUsuario.RECEPCION);
+    private static final Set<RolUsuario> ALTAS = Set.of(RolUsuario.ADMIN, RolUsuario.RECEPCION, RolUsuario.OBRAS_SOCIALES);
     private static final Set<RolUsuario> TURNOS = Set.of(RolUsuario.ADMIN, RolUsuario.RECEPCION, RolUsuario.OBRAS_SOCIALES);
     private static final Set<RolUsuario> HORARIOS = Set.of(RolUsuario.ADMIN, RolUsuario.MEDICO);
     private static final Set<RolUsuario> RESULTADOS = Set.of(RolUsuario.ADMIN, RolUsuario.MEDICO, RolUsuario.RECEPCION);
@@ -63,6 +64,7 @@ class AutorizacionHttpTest {
     @MockitoBean AgendaConsultaService consultas;
     @MockitoBean TurnoService turnos;
     @MockitoBean PacienteService pacientes;
+    @MockitoBean ObraSocialService obrasSociales;
     @MockitoBean UsuarioService gestionUsuarios;
     @MockitoBean AuditoriaService auditoria;
     @MockitoBean ConfiguracionAgendaService configuracion;
@@ -101,7 +103,9 @@ class AutorizacionHttpTest {
                 new Operacion("GET", "/api/pacientes?query=Prueba", null, 200, RESULTADOS),
                 new Operacion("GET", "/api/pacientes/1", null, 200, RESULTADOS),
                 new Operacion("GET", "/api/pacientes/seleccion?query=Prueba", null, 200, TODOS),
-                new Operacion("POST", "/api/pacientes", paciente, 201, GESTION),
+                new Operacion("POST", "/api/pacientes", paciente, 201, ALTAS),
+                new Operacion("GET", "/api/obras-sociales", null, 200, TODOS),
+                new Operacion("POST", "/api/obras-sociales", "{\"nombre\":\"Obra social de prueba\"}", 201, ALTAS),
                 new Operacion("PUT", "/api/pacientes/1", paciente, 200, GESTION),
                 new Operacion("DELETE", "/api/pacientes/1", null, 204, GESTION),
                 new Operacion("GET", "/api/auditoria", null, 200, ADMIN),
@@ -131,7 +135,7 @@ class AutorizacionHttpTest {
             });
         });
         when(configuracion.obtener()).thenReturn(new ConfiguracionAgenda());
-        var turno = new ar.com.agendamedica.dto.TurnoResponse(1L, 1L, "Paciente Prueba", 1L, 1L,
+        var turno = new ar.com.agendamedica.dto.TurnoResponse(1L, 1L, "Paciente Prueba", "Obra Social de Prueba", 1L, 1L,
                 java.time.LocalDateTime.of(2099, 1, 5, 8, 0), java.time.LocalDateTime.of(2099, 1, 5, 8, 40),
                 ar.com.agendamedica.domain.enums.EstadoTurno.RESERVADO, "Dato reservado", null, null, "Dato cancelación", true);
         when(turnos.obtener(anyLong())).thenReturn(turno);
@@ -140,7 +144,7 @@ class AutorizacionHttpTest {
         when(turnos.cancelar(anyLong(), any())).thenReturn(turno);
         when(turnos.reprogramar(anyLong(), any())).thenReturn(turno);
         when(pacientes.seleccionar(anyString())).thenReturn(List.of(
-                new ar.com.agendamedica.dto.PacienteSeleccionResponse(1L, "12345678", "Paciente", "Prueba", true)));
+                new ar.com.agendamedica.dto.PacienteSeleccionResponse(1L, "12345678", "Paciente", "Prueba", true, null, null)));
     }
 
     @ParameterizedTest(name = "{0}: {1}")
@@ -202,6 +206,7 @@ class AutorizacionHttpTest {
         mvc.perform(get("/api/turnos/1").header("Authorization", autorizacion))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.motivoConsulta").isEmpty())
                 .andExpect(jsonPath("$.motivoCancelacion").isEmpty())
+                .andExpect(jsonPath("$.obraSocialNombre").value("Obra Social de Prueba"))
                 .andExpect(jsonPath("$.reprogramadoPorConsultorio").value(true));
         mvc.perform(get("/api/turnos?profesionalId=1&fecha=2099-01-05").header("Authorization", autorizacion))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].motivoConsulta").isEmpty());
@@ -255,6 +260,6 @@ class AutorizacionHttpTest {
     }
 
     private void verificarNegocioNoEjecutado() {
-        verifyNoInteractions(agenda, consultas, turnos, pacientes, gestionUsuarios, auditoria, configuracion, profesionales);
+        verifyNoInteractions(agenda, consultas, turnos, pacientes, obrasSociales, gestionUsuarios, auditoria, configuracion, profesionales);
     }
 }

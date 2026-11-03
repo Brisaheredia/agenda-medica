@@ -9,6 +9,7 @@ public record TurnoResponse(
         Long id,
         Long pacienteId,
         String paciente,
+        String obraSocialNombre,
         Long profesionalId,
         Long franjaId,
         LocalDateTime inicio,
@@ -21,7 +22,7 @@ public record TurnoResponse(
         boolean reprogramadoPorConsultorio
 ) {
     public TurnoResponse sinMotivos() {
-        return new TurnoResponse(id, pacienteId, paciente, profesionalId, franjaId, inicio, fin,
+        return new TurnoResponse(id, pacienteId, paciente, obraSocialNombre, profesionalId, franjaId, inicio, fin,
                 estado, null, createdAt, origenCancelacion, null, reprogramadoPorConsultorio);
     }
 
@@ -30,6 +31,7 @@ public record TurnoResponse(
                 turno.getId(),
                 turno.getPaciente().getId(),
                 turno.getPaciente().getApellido() + ", " + turno.getPaciente().getNombre(),
+                turno.getPaciente().getObraSocial() == null ? null : turno.getPaciente().getObraSocial().getNombre(),
                 turno.getProfesional().getId(),
                 turno.getFranja().getId(),
                 turno.getInicio(),

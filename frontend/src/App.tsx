@@ -68,6 +68,7 @@ export default function App() {
     franjas,
     turnos,
     excepciones,
+    revision,
     setRevision,
     cargando,
     errorAgenda,
@@ -272,6 +273,7 @@ export default function App() {
       errorAgenda={errorAgenda}
       setErrorAgenda={setErrorAgenda}
       setRevision={setRevision}
+      revision={revision}
       setIntentoProfesional={setIntentoProfesional}
       franjas={franjas}
       turnos={turnos}
@@ -282,6 +284,7 @@ export default function App() {
       gestionar={gestionar}
       cerrar={cerrar}
       gestionarPacientes={permisos.gestionarPacientes}
+      recuperarSuspendidos={permisos.recuperarSuspendidos}
       verContactos={permisos.verContactos}
       selected={selected}
       setSelected={setSelected}

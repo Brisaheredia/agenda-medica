@@ -1,6 +1,6 @@
 # Contrato de API
 
-Contrato revisado el 29 de octubre de 2026 según el alcance validado con Salvador. El DOCX inicial es referencia de análisis, no el alcance final. Base `/api`, JSON UTF-8. URL de ejemplo basada en el valor por defecto del proyecto: `http://localhost:8080`. Sustituir host y puerto por los efectivos de cada entorno; el contrato no exige un puerto particular. OpenAPI generado en `/v3/api-docs` y Swagger en `/swagger-ui.html` complementan esta descripción.
+Contrato revisado el 3 de noviembre de 2026 sobre los cambios de pacientes, obras sociales y permisos. El DOCX inicial es referencia de análisis, no el alcance final. Base `/api`, JSON UTF-8. URL de ejemplo basada en el valor por defecto del proyecto: `http://localhost:8080`. Sustituir host y puerto por los efectivos de cada entorno; el contrato no exige un puerto particular. OpenAPI generado en `/v3/api-docs` y Swagger en `/swagger-ui.html` complementan esta descripción.
 
 ## Autenticación y convenciones
 
@@ -26,9 +26,11 @@ Roles: **A**=ADMIN, **R**=RECEPCION, **M**=MEDICO, **O**=OBRAS_SOCIALES, **T**=c
 | GET | `/pacientes?query=` | A,M,R | 200 PacienteResponse[]; DNI exacto, apellido, teléfono o email; máximo 20 activos |
 | GET | `/pacientes/{id}` | A,M,R | 200 PacienteResponse |
 | GET | `/pacientes/seleccion?query=texto` | T | 200 PacienteSeleccionResponse[], mínimo tres caracteres; apellido, teléfono, email o DNI |
-| POST | `/pacientes` | A,R | 201 PacienteResponse |
+| POST | `/pacientes` | A,R,O | 201 PacienteResponse |
 | PUT | `/pacientes/{id}` | A,R | 200 PacienteResponse |
 | DELETE | `/pacientes/{id}` | A,R | 204, baja lógica |
+| GET | `/obras-sociales` | T | 200 ObraSocialResponse[] (por nombre) |
+| POST | `/obras-sociales` | A,R,O | 201 ObraSocialResponse |
 | GET | `/agenda?profesionalId=1&fecha=2026-10-19` | T | 200 FranjaResponse[] |
 | GET | `/agenda/disponibles?profesionalId=1&desde=2026-10-19T08:00:00` | T | 200 FranjaResponse[] |
 | GET | `/agenda/rango?profesionalId=1&desde=2026-10-19&hasta=2026-10-25` | T | 200 AgendaDiaRangoResponse[]; hasta 90 días inclusivos |
@@ -43,7 +45,7 @@ Roles: **A**=ADMIN, **R**=RECEPCION, **M**=MEDICO, **O**=OBRAS_SOCIALES, **T**=c
 | POST | `/turnos` | A,R,O | 201 TurnoResponse |
 | GET | `/turnos/{id}/historial` | A,M,R | 200 TurnoHistorialResponse[] |
 | POST | `/turnos/{id}/cancelacion` | A,R,O | 200 TurnoResponse |
-| POST | `/turnos/{id}/reprogramacion` | A,R,O | 200 TurnoResponse |
+| POST | `/turnos/{id}/reprogramacion` | A,R,O* | 200 TurnoResponse (*O no puede recuperar turnos de suspensión) |
 | POST | `/turnos/{id}/atencion` | A,M,R | 200 TurnoResponse, sin cuerpo de entrada |
 | POST | `/turnos/{id}/ausencia` | A,M,R | 200 TurnoResponse, sin cuerpo de entrada |
 | GET | `/auditoria` | A | 200 AuditoriaResponse[], últimos 100 |
@@ -62,10 +64,20 @@ Para `/agenda/disponibles`, desde es opcional y profesionalId obligatorio. Para 
 POST y PUT utilizan el mismo cuerpo completo:
 
 ```json
-{"dni":"DNI_FICTICIO","nombre":"Paciente","apellido":"Ejemplo","telefono":"","email":"paciente@example.test"}
+{"dni":"DNI_FICTICIO","nombre":"Paciente","apellido":"Ejemplo","telefono":"","email":"paciente@example.test","obraSocialId":null}
 ```
 
-DNI obligatorio, máximo 20; nombre/apellido obligatorios, máximo 100 cada uno; teléfono opcional hasta 50; email opcional con formato de email y máximo 150. Se normalizan espacios; DNI duplicado produce conflicto de negocio. Buscar sin query devuelve hasta 20 activos limitados desde SQL. Se contempla DNI exacto y coincidencia parcial de apellido, teléfono y email; no hay paginación pública.
+DNI obligatorio, máximo 20; nombre/apellido obligatorios, máximo 100 cada uno; teléfono opcional hasta 50; email opcional con formato de email y máximo 150; **obraSocialId opcional** (null para paciente particular). Se normalizan espacios; DNI duplicado produce conflicto de negocio. Buscar sin query devuelve hasta 20 activos limitados desde SQL. Se contempla DNI exacto y coincidencia parcial de apellido, teléfono y email; no hay paginación pública.
+
+### Catálogo de obras sociales
+
+`GET /api/obras-sociales` devuelve `[{"id":1,"nombre":"Obra Social de Prueba"}]`, ordenado por nombre. `POST /api/obras-sociales` acepta:
+
+```json
+{"nombre":"Obra Social de Prueba"}
+```
+
+El nombre es obligatorio, máximo 120 caracteres, y no puede duplicarse sin distinguir mayúsculas/minúsculas: el duplicado devuelve **409**. Crear una obra social no crea un paciente; después se envía su `id` como `obraSocialId` en POST/PUT de Pacientes. Si se envía un ID inexistente, el servidor responde 404. Obras Sociales puede crear pacientes, pero no actualizarlos ni desactivarlos.
 
 ### Configuración (contrato histórico)
 
@@ -145,11 +157,12 @@ Email obligatorio válido y único; password de al menos 8 caracteres y hasta 72
 
 | DTO | Campos |
 |---|---|
-| PacienteResponse | id, dni, nombre, apellido, telefono, email, activo |
-| PacienteSeleccionResponse | id, dni, nombre, apellido, activo; sin teléfono/email |
+| PacienteResponse | id, dni, nombre, apellido, telefono, email, activo, obraSocialId, obraSocialNombre (ambos opcionales) |
+| PacienteSeleccionResponse | id, dni, nombre, apellido, activo, obraSocialId, obraSocialNombre; sin teléfono/email |
+| ObraSocialResponse | id, nombre |
 | ProfesionalResponse | id, nombre, apellido, matricula, activo |
 | FranjaResponse | id, profesionalId, inicio, fin, estado, origen |
-| TurnoResponse | id, pacienteId, paciente (apellido/nombre), profesionalId, franjaId, inicio, fin, estado, motivoConsulta, createdAt, origenCancelacion, motivoCancelacion, reprogramadoPorConsultorio |
+| TurnoResponse | id, pacienteId, paciente (apellido/nombre), obraSocialNombre (opcional), profesionalId, franjaId, inicio, fin, estado, motivoConsulta, createdAt, origenCancelacion, motivoCancelacion, reprogramadoPorConsultorio |
 | PlantillaDisponibilidadResponse | id, profesionalId, diaSemana, horaInicio, horaFin, duracionMin, vigenciaDesde, vigenciaHasta |
 | ExcepcionAgendaResponse | id, profesionalId, fecha, horaInicio, horaFin, tipo, motivo, franjasCreadas, franjasBloqueadas, turnosAfectados (IDs) |
 | ExcepcionAgendaResumen | id, profesionalId, fecha, horaInicio, horaFin, tipo, motivo |
@@ -166,7 +179,7 @@ El advice de negocio devuelve `{timestamp,status,error,message,path,validationEr
 
 Spring Security responde JSON `{message}` con 401 ante sesión ausente/inválida/inactiva o credenciales/rol cambiados, y 403 ante operación no autorizada. Los despachos de error se permiten para que omitir profesionalId conserve el 400 correspondiente. No todos los errores técnicos pasan por el advice de negocio.
 
-La consulta de excepciones requiere profesionalId, desde y hasta (inclusive); rechaza hasta anterior a desde. Pendientes devuelve activos afectados por cierres y cancelados con origen CONSULTORIO, ordenados por inicio y sin duplicar por cierres solapados. Incluye fechas pasadas aún sin resolver y excluye cancelados por paciente o sin origen. No necesita una consulta por paciente. La lista con contactos sólo está disponible para A,M,R. O puede reprogramar desde la agenda; no recibe motivos de consulta/cancelación en TurnoResponse y al crear se ignora motivoConsulta. O sólo puede cancelar con origen PACIENTE (o null, que equivale a PACIENTE); CONSULTORIO devuelve 403.
+La consulta de excepciones requiere profesionalId, desde y hasta (inclusive); rechaza hasta anterior a desde. Pendientes devuelve activos afectados por cierres y cancelados con origen CONSULTORIO, ordenados por inicio y sin duplicar por cierres solapados. Incluye fechas pasadas aún sin resolver y excluye cancelados por paciente o sin origen. No necesita una consulta por paciente. La lista con contactos sólo está disponible para A,M,R. O puede reprogramar desde la agenda **sólo turnos activos no afectados por cierres**. No puede recuperar cancelados con origen CONSULTORIO ni mover activos afectados por una suspensión: devuelve **403**. No recibe motivos de consulta/cancelación en TurnoResponse y al crear se ignora motivoConsulta. Sí recibe `obraSocialNombre` cuando el paciente lo tiene. O sólo puede cancelar con origen PACIENTE (o null, que equivale a PACIENTE); CONSULTORIO devuelve 403.
 
 No existe edición de plantillas, alta pública de profesional, confirmación explícita de turno, notificaciones ni portal del paciente. Sí existe historial por turno (`GET /turnos/{id}/historial`) y consulta arbitraria de agenda (`GET /agenda/rango`). La consulta de excepciones es de lectura; las nuevas escrituras solo permiten cierres. Distinguir las funciones implementadas de las previstas en el análisis inicial. El [registro de pendientes](pendientes-riesgos.md) indica diferencias y prioridades.
 
